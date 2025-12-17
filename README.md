@@ -3,6 +3,7 @@
 A collection of AI-powered tools, experiments, and visualizations.
 
 **Live Demo**: [https://vinovator.github.io/my-ai-tools/index.html](https://vinovator.github.io/my-ai-tools/index.html)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 ## Projects
 

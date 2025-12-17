@@ -2,6 +2,8 @@
 
 > **Inspiration**: This project is an experimental visualization of the concepts presented in [How AI is transforming work at Anthropic](https://www.anthropic.com/research/how-ai-is-transforming-work-at-anthropic) and [Data Stories: Anthropic Work](https://sanand0.github.io/datastories/anthropic-work/).
 
+**Live Demo**: [https://vinovator.github.io/my-ai-tools/anthropic-viz/index.html](https://vinovator.github.io/my-ai-tools/anthropic-viz/index.html)
+
 This repository contains experimental HTML/JS visualizations illustrating how AI transforms engineering work at Anthropic.
 
 ## Visualizations

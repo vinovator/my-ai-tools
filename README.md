@@ -2,6 +2,8 @@
 
 A collection of AI-powered tools, experiments, and visualizations.
 
+**Live Demo**: [https://vinovator.github.io/my-ai-tools/index.html](https://vinovator.github.io/my-ai-tools/index.html)
+
 ## Projects
 
 ### [Anthropic Viz](./anthropic-viz/README.md)

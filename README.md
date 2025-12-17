@@ -1,4 +1,4 @@
-# My AI Tools
+# Vinoth's AI Tools
 
 A collection of AI-powered tools, experiments, and visualizations.
 

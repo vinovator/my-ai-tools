@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anthropic AI Productivity Patterns</title>
+    <style>
+        :root {
+            --bg: #0f1115;
+            --card-bg: #1a1d24;
+            --text: #e0e0e0;
+            --accent: #d292ff;
+            /* Anthropic-ish purple */
+            --accent-glow: rgba(210, 146, 255, 0.4);
+            --secondary: #4ade80;
+            --danger: #f87171;
+            --font: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            padding: 2rem;
+            text-align: center;
+            max-width: 800px;
+        }
+
+        h1 {
+            margin: 0;
+            font-weight: 300;
+            letter-spacing: -1px;
+        }
+
+        h2 {
+            font-size: 1rem;
+            color: #888;
+            margin-top: 0.5rem;
+            font-weight: 400;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            background: var(--card-bg);
+            padding: 0.5rem;
+            border-radius: 50px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: #888;
+            padding: 0.8rem 1.5rem;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .tab-btn.active {
+            background: var(--accent);
+            color: #000;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            width: 90%;
+            max-width: 1400px;
+            padding-bottom: 4rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            border: 1px solid #333;
+        }
+
+        .card h3 {
+            margin: 0 0 1rem 0;
+            font-size: 1.1rem;
+            color: #fff;
+            width: 100%;
+            text-align: left;
+        }
+
+        .card canvas {
+            width: 100%;
+            height: 300px;
+            border-radius: 8px;
+            background: radial-gradient(circle at center, #222 0%, #151515 100%);
+        }
+
+        .toggle-container {
+            margin: 2rem 0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #333;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: var(--accent);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(26px);
+        }
+
+        .legend {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 1rem;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        /* Tooltip */
+        .desc {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 0.8rem;
+            color: #666;
+            cursor: help;
+            border: 1px solid #444;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>Engineering Velocity</h1>
+        <h2>The Anthropic AI Effect</h2>
+    </header>
+
+    <div class="toggle-container">
+        <span>Traditional Workflow</span>
+        <label class="switch">
+            <input type="checkbox" id="aiToggle">
+            <span class="slider"></span>
+        </label>
+        <span style="color: var(--accent); font-weight: bold;">AI-Augmented</span>
+    </div>
+
+    <nav class="controls">
+        <button class="tab-btn active" onclick="setTab(0)">Full-Stack Expansion</button>
+        <button class="tab-btn" onclick="setTab(1)">Learning Velocity</button>
+        <button class="tab-btn" onclick="setTab(2)">Neglected Tasks</button>
+    </nav>
+
+    <main class="dashboard" id="dashboard">
+    </main>
+
+    <script>
+        // Global State
+        let isAI = false;
+        let activeTab = 0;
+        let animationFrames = [];
+
+        // --- UTILITIES ---
+        const lerp = (start, end, t) => start * (1 - t) + end * t;
+        const rnd = (min, max) => Math.random() * (max - min) + min;
+
+        // --- PATTERN 1: FULL STACK EXPANSION ---
+        const renderPattern1 = () => {
+            const container = document.getElementById('dashboard');
+            container.innerHTML = `
+            <div class="card">
+                <h3>1. The Skill Amoeba (Domain Reach)</h3>
+                <div class="desc" title="Visualizes the engineering expertise surface area. AI allows the shape to expand into new domains (Backend, UI, Ops) rapidly.">?</div>
+                <canvas id="c1"></canvas>
+                <div class="legend">Shape Area = Total Capability<br>Spikes = Depth of Knowledge</div>
+            </div>
+            <div class="card">
+                <h3>2. Context Switching Cost (The Stream)</h3>
+                <div class="desc" title="Shows the flow of work. Interruptions create turbulence. AI reduces the 'recovery time' needed to get back into flow.">?</div>
+                <canvas id="c2"></canvas>
+                <div class="legend">Particles = Cognitive Flow<br>Red Blocks = Context Switches</div>
+            </div>
+            <div class="card">
+                <h3>3. The Codebase DNA (Language Diversity)</h3>
+                <div class="desc" title="A cross section of code committed. Pre-AI is usually mono-colored (one language). AI enables multi-color contributions (Python + JS + Rust).">?</div>
+                <canvas id="c3"></canvas>
+                <div class="legend">Colors represent different languages/stacks.<br>Density = Commits per day.</div>
+            </div>
+        `;
+
+            initAmoeba('c1');
+            initStream('c2');
+            initDNA('c3');
+        };
+
+        // --- PATTERN 2: LEARNING VELOCITY ---
+        const renderPattern2 = () => {
+            const container = document.getElementById('dashboard');
+            container.innerHTML = `
+            <div class="card">
+                <h3>1. The Friction Spiral (Debug Time)</h3>
+                <div class="desc" title="The path taken to solve a bug. Traditional is chaotic and winding. AI makes the path direct and centripetal.">?</div>
+                <canvas id="c4"></canvas>
+                <div class="legend">Line length = Time wasted debugging.<br>Center = Solution.</div>
+            </div>
+            <div class="card">
+                <h3>2. Synaptic Growth (Concept Mapping)</h3>
+                <div class="desc" title="Visualizes how fast a new engineer builds a mental model of the codebase. AI accelerates connection density.">?</div>
+                <canvas id="c5"></canvas>
+                <div class="legend">Nodes = Code Concepts.<br>Connections = Understanding/Mastery.</div>
+            </div>
+            <div class="card">
+                <h3>3. The Feedback Metronome</h3>
+                <div class="desc" title="Rhythm of build/test/deploy cycles. AI creates a rapid, drum-and-bass tempo vs a slow waltz.">?</div>
+                <canvas id="c6"></canvas>
+                <div class="legend">Pulse Speed = Iteration Velocity.<br>Amplitude = Impact per iteration.</div>
+            </div>
+        `;
+
+            initSpiral('c4');
+            initSynapse('c5');
+            initMetronome('c6');
+        };
+
+        // --- PATTERN 3: NEGLECTED TASKS ---
+        const renderPattern3 = () => {
+            const container = document.getElementById('dashboard');
+            container.innerHTML = `
+            <div class="card">
+                <h3>1. The 'Effort' Filter (Task Rain)</h3>
+                <div class="desc" title="Tasks fall like rain. The 'Net' catches tasks worth doing. AI lowers the cost, making the net finer, catching small tasks (docs, tests).">?</div>
+                <canvas id="c7"></canvas>
+                <div class="legend">Falling dots = Potential Tasks.<br>Caught dots = Completed work.</div>
+            </div>
+            <div class="card">
+                <h3>2. The Tech Debt Glacier</h3>
+                <div class="desc" title="Visualizes the unseen base of the iceberg. AI allows us to chip away at the bottom (refactoring) while building the top (features).">?</div>
+                <canvas id="c8"></canvas>
+                <div class="legend">Top (White) = Features. Bottom (Blue) = Refactoring/Tests.<br>AI increases activity in the blue zone.</div>
+            </div>
+            <div class="card">
+                <h3>3. The Polishing Swarm</h3>
+                <div class="desc" title="Small agents (dots) repairing the edges of a central shape. AI provides more agents to smooth rough edges.">?</div>
+                <canvas id="c9"></canvas>
+                <div class="legend">Central Shape = Core Product.<br>Roughness = Edge cases/Bugs.</div>
+            </div>
+        `;
+
+            initRain('c7');
+            initGlacier('c8');
+            initSwarm('c9');
+        };
+
+        // --- ANIMATION ENGINES ---
+
+        // 1. Amoeba (Soft body simulation)
+        function initAmoeba(id) {
+            const ctx = setupCanvas(id);
+            let time = 0;
+            const points = 8;
+
+            function draw() {
+                if (!ctx) return;
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                time += 0.05;
+
+                // AI State: Radius is larger (more reach), Pulse is faster (speed), Color is multicolor
+                const baseRad = isAI ? 90 : 50;
+                const pulseSpeed = isAI ? 2 : 0.5;
+                const variance = isAI ? 25 : 10;
+
+                ctx.beginPath();
+                for (let i = 0; i <= points; i++) {
+                    const angle = (i / points) * Math.PI * 2;
+                    // Noise function for organic movement
+                    const r = baseRad + Math.sin(time * pulseSpeed + i * 1.5) * variance;
+                    const x = ctx.canvas.width / 2 + Math.cos(angle) * r;
+                    const y = ctx.canvas.height / 2 + Math.sin(angle) * r;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+
+                // Xenographic styling
+                ctx.strokeStyle = isAI ? '#d292ff' : '#666';
+                ctx.lineWidth = 3;
+                ctx.fillStyle = isAI ? 'rgba(210, 146, 255, 0.2)' : 'rgba(100,100,100,0.1)';
+                ctx.fill();
+                ctx.stroke();
+
+                // Draw "Skill Nodes"
+                const nodes = isAI ? ['Frontend', 'Backend', 'DB', 'DevOps', 'Rust', 'Python'] : ['Frontend', 'JS'];
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#fff';
+                ctx.font = '10px sans-serif';
+                nodes.forEach((n, i) => {
+                    const ang = (i / nodes.length) * Math.PI * 2 - Math.PI / 2;
+                    const dist = baseRad + 40;
+                    ctx.fillText(n, ctx.canvas.width / 2 + Math.cos(ang) * dist, ctx.canvas.height / 2 + Math.sin(ang) * dist);
+                });
+
+                animationFrames.push(requestAnimationFrame(draw));
+            }
+            draw();
+        }
+
+        // 2. The Stream (Particle Flow)
+        function initStream(id) {
+            const ctx = setupCanvas(id);
+            const particles = Array(50).fill().map(() => ({
+                x: Math.random() * 400,
+                y: Math.random() * 300,
+                speed: rnd(2, 4)
+            }));
+            let turbulence = 0;
+
+            function draw() {
+                if (!ctx) return;
+                ctx.fillStyle = 'rgba(20, 20, 30, 0.3)'; // Trail effect
+                ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+                // Logic: Without AI, "Blocks" (Context switches) cause high turbulence that lasts long
+                // With AI, turbulence resolves instantly (fast context recovery)
+                const targetTurbulence = isAI ? 0 : (Date.now() % 5000 < 1000 ? 50 : 0);
+                turbulence = lerp(turbulence, targetTurbulence, 0.05);
+
+                particles.forEach(p => {
+                    p.x += p.speed;
+                    // Add turbulence to Y
+                    p.y += (Math.random() - 0.5) * turbulence;
+
+                    // Reset
+                    if (p.x > ctx.canvas.width) {
+                        p.x = 0;
+                        p.y = rnd(50, 250);
+                    }
+
+                    ctx.fillStyle = isAI ? `hsl(${p.x / 2}, 70%, 60%)` : '#4ade80';
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, isAI ? 3 : 2, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // Draw Obstacle
+                if (turbulence > 10) {
+                    ctx.fillStyle = '#f87171';
+                    ctx.fillRect(ctx.canvas.width / 2, 100, 20, 100);
+                    ctx.fillText("CONTEXT SWITCH", ctx.canvas.width / 2 - 40, 90);
+                }
+
+                animationFrames.push(requestAnimationFrame(draw));
+            }
+            draw();
+        }
+
+        // 3. DNA (Stacked Bar / Matrix)
+        function initDNA(id) {
+            const ctx = setupCanvas(id);
+            let offset = 0;
+
+            function draw() {
+                if (!ctx) return;
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                offset += isAI ? 2 : 0.5; // Faster commits with AI
+
+                const w = 10;
+                const cols = Math.ceil(ctx.canvas.width / w);
+                const rows = 15;
+
+                for (let c = 0; c < cols; c++) {
+                    for (let r = 0; r < rows; r++) {
+                        // Generate a "hash" based on position to keep static pattern moving
+                        const val = Math.sin((c + offset / 10) * 0.5 + r);
+
+                        if (val > 0.5) {
+                            // Pre AI: mostly blue/green. Post AI: wild variety
+                            if (isAI) {
+                                const hue = (c * 10 + r * 20) % 360;
+                                ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
+                            } else {
+                                ctx.fillStyle = r > 10 ? '#4ade80' : '#333'; // Only one type of code usually
+                            }
+                            ctx.fillRect(c * w, r * 15 + 30, w - 1, 13);
+                        }
+                    }
+                }
+                animationFrames.push(requestAnimationFrame(draw));
+            }
+            draw();
+        }
+
+        // 4. Spiral (Radial convergence)
+        function initSpiral(id) {
+            const ctx = setupCanvas(id);
+            let particles = [];
+
+            function spawn() {
+                particles.push({
+                    ang: Math.random() * Math.PI * 2,
+                    dist: 140,
+                    speed: isAI ? 0.1 : 0.02, // AI solves faster
+                    wobble: isAI ? 0 : 20 // AI is more direct
+                });
+            }
+
+            function draw() {
+                if (!ctx) return;
+                ctx.fillStyle = 'rgba(20,20,30,0.2)';
+                ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+                if (Math.random() > 0.9) spawn();
+
+                ctx.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
+
+                particles.forEach((p, i) => {
+                    p.dist -= p.speed * 20;
+                    p.ang += p.speed;
+
+                    // Add wobble for non-AI (confusion)
+                    const r = p.dist + (Math.sin(p.ang * 10) * p.wobble);
+
+                    const x = Math.cos(p.ang) * r;
+                    const y = Math.sin(p.ang) * r;
+
+                    ctx.fillStyle = isAI ? '#d292ff' : '#f87171';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    if (p.dist < 5) particles.splice(i, 1);
+                });
+
+                // Goal node
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(0, 0, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                animationFrames.push(requestAnimationFrame(draw));
+            }
+            draw();
+        }
+
+        // 5. Synapse (Network Graph)
+        function initSynapse(id) {
+            const ctx = setupCanvas(id);
+            // Pre-generate nodes
+            const nodes = Array(20).fill().map(() => ({
+                x: rnd(20, ctx.canvas.width - 20),
+                y: rnd(20, ctx.canvas.height - 20),
+                connections: []
+            }));
+
+            function draw() {
+                if (!ctx) return;
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+                // Draw connections
+                // AI Threshold is higher distance (can connect disparate concepts)
+                const connectDist = isAI ? 150 : 60;
+
+                ctx.strokeStyle = isAI ? 'rgba(210, 146, 255, 0.4)' : 'rgba(100,100,100,0.3)';
+                ctx.lineWidth = 1;
+
+                for (let i = 0; i < nodes.length; i++) {
+                    for (let j = i + 1; j < nodes.length; j++) {
+                        const d = Math.hypot(nodes[i].x - nodes[j].x, nodes[i].y - nodes[j].y);
+                        if (d < connectDist) {
+                            ctx.beginPath();
+                            ctx.moveTo(nodes[i].x, nodes[i].y);
+                            ctx.lineTo(nodes[j].x, nodes[j].y);
+                            ctx.stroke();
+
+                            // Firing impulse
+                            if (isAI && Math.random() > 0.95) {
+                                ctx.fillStyle = '#fff';
+                                const t = Math.random();
+                                ctx.beginPath();
+                                ctx.arc(lerp(nodes[i].x, nodes[j].x, t), lerp(nodes[i].y, nodes[j].y, t), 3, 0, Math.PI * 2);
+                                ctx.fill();
+                            }
+                        }
+                    }
+
+                    ctx.fillStyle = '#fff';
+                    ctx.beginPath();
+                    ctx.arc(nodes[i].x, nodes[i].y, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                animationFrames.push(requestAnimationFrame(draw));
+            }
+            draw();
+        }
+
+        // 6. Metronome
+        function initMetronome(id) {
+            const ctx = setupCanvas(id);
+            let angle = 0;
+
+            function draw() {
+                if (!ctx) return;
+                ctx.fillStyle = 'rgba(20,20,30,0.4)';
+                ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+                const speed = isAI ? 0.3 : 0.05;
+                angle += speed;
+
+                const cx = ctx.canvas.width / 2;
+                const cy = 250;
+                const len = 180;
+
+                const x = cx + Math.sin(angle) * len;
+                const y = cy - Math.cos(angle) * len; // Inverted pend
+
+                // Draw trail
+                ctx.strokeStyle = isAI ? `hsl(${angle * 50}, 80%, 60%)` : '#666';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(x, y - 100); // Visual tweak
+                ctx.stroke();
+
+                // Beat markers
+                if (Math.abs(Math.sin(angle)) > 0.95) {
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                }
+
+                animationFrames.push(requestAnimationFrame(draw));
+            }
+            draw();
+        }
+
+        // 7. Task Rain
+        function initRain(id) {
+            const ctx = setupCanvas(id);
+            const tasks = [];
+
+            function draw() {
+                if (!ctx) return;
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+                if (Math.random() > 0.8) {
+                    tasks.push({
+                        x: rnd(10, ctx.canvas.width - 10),
+                        y: 0,
+                        size: rnd(2, 8), // Small = low effort task
+                        caught: false
+                    });
+                }
+
+                // The Filter Line
+                // AI lowers the cost threshold. 
+                // In graph: Line is higher = catches more (or visualized as mesh density)
+                // Let's visualize a "Net". 
+                // Pre-AI: Net has large holes (Small tasks fall through).
+                // Post-AI: Net has tiny holes (Catches everything).
+
+                const thresholdSize = isAI ? 0 : 6;
+                const netY = 200;
+
+                ctx.strokeStyle = '#555';
+                ctx.beginPath();
+                ctx.moveTo(0, netY);
+                ctx.lineTo(ctx.canvas.width, netY);
+                ctx.stroke();
+                ctx.fillStyle = '#888';
+                ctx.fillText(isAI ? "AI ASSISTED NET (Catches micro-tasks)" : "HUMAN ONLY NET (Only catches big features)", 10, netY - 10);
+
+                tasks.forEach((t, i) => {
+                    if (!t.caught) t.y += 2;
+
+                    // Collision with net
+                    if (Math.abs(t.y - netY) < 5) {
+                        if (t.size > thresholdSize) {
+                            t.caught = true; // Caught on line
+                        }
+                    }
+
+                    if (t.y > ctx.canvas.height) tasks.splice(i, 1);
+
+                    ctx.fillStyle = t.caught ? '#4ade80' : '#444';
+                    if (t.caught) ctx.fillStyle = isAI ? '#d292ff' : '#4ade80';
+
+                    ctx.beginPath();
+                    ctx.arc(t.x, t.y, t.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                animationFrames.push(requestAnimationFrame(draw));
+            }
+            draw();
+        }
+
+        // 8. Glacier (Layers)
+        function initGlacier(id) {
+            const ctx = setupCanvas(id);
+            let time = 0;
+
+            function draw() {
+                if (!ctx) return;
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                time += 0.02;
+
+                const layers = 5;
+                const h = 40;
+
+                for (let i = 0; i < layers; i++) {
+                    const y = 250 - (i * h);
+                    // Pre AI: Bottom layers are rigid/static (Technical debt).
+                    // Post AI: Bottom layers move/clean themselves.
+
+                    const isDebt = i < 2; // Bottom layers
+                    const flow = isDebt && !isAI ? 0 : Math.sin(time + i) * 10;
+
+                    ctx.fillStyle = isDebt ? (isAI ? '#60a5fa' : '#334155') : '#e2e8f0';
+
+                    ctx.beginPath();
+                    ctx.rect(50 + flow, y, ctx.canvas.width - 100, h - 5);
+                    ctx.fill();
+
+                    ctx.fillStyle = isDebt ? '#fff' : '#000';
+                    ctx.fillText(isDebt ? "Legacy / Tests" : "Feature", 60 + flow, y + 25);
+
+                    if (isDebt && isAI) {
+                        // Sparkles showing refactoring
+                        if (Math.random() > 0.8) {
+                            ctx.fillStyle = '#fff';
+                            ctx.fillRect(rnd(50, 300), y + rnd(0, 30), 2, 2);
+                        }
+                    }
+                }
+                animationFrames.push(requestAnimationFrame(draw));
+            }
+            draw();
+        }
+
+        // 9. Swarm
+        function initSwarm(id) {
+            const ctx = setupCanvas(id);
+            const agents = Array(isAI ? 50 : 5).fill().map(() => ({
+                angle: Math.random() * Math.PI * 2,
+                r: 100
+            }));
+
+            function draw() {
+                if (!ctx) return;
+                ctx.fillStyle = 'rgba(15,17,21,0.2)';
+                ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+                // Central Product
+                ctx.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
+                ctx.fillStyle = '#333';
+                ctx.beginPath();
+                ctx.arc(0, 0, 60, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Agents
+                agents.forEach(a => {
+                    a.angle += 0.05;
+                    const x = Math.cos(a.angle) * 70;
+                    const y = Math.sin(a.angle) * 70;
+
+                    ctx.fillStyle = isAI ? '#d292ff' : '#f87171';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // If AI, refill agents to 50, if not reduce to 5
+                const targetCount = isAI ? 50 : 5;
+                if (agents.length < targetCount) agents.push({ angle: 0, r: 100 });
+                if (agents.length > targetCount) agents.pop();
+
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                animationFrames.push(requestAnimationFrame(draw));
+            }
+            draw();
+        }
+
+
+        // --- INFRASTRUCTURE ---
+        function setupCanvas(id) {
+            const c = document.getElementById(id);
+            if (!c) return null;
+            c.width = c.parentElement.clientWidth;
+            c.height = 300;
+            return c.getContext('2d');
+        }
+
+        function cleanup() {
+            animationFrames.forEach(f => cancelAnimationFrame(f));
+            animationFrames = [];
+        }
+
+        function setTab(idx) {
+            cleanup();
+            activeTab = idx;
+            document.querySelectorAll('.tab-btn').forEach((b, i) => {
+                b.classList.toggle('active', i === idx);
+            });
+
+            if (idx === 0) renderPattern1();
+            if (idx === 1) renderPattern2();
+            if (idx === 2) renderPattern3();
+        }
+
+        // Toggle Listener
+        document.getElementById('aiToggle').addEventListener('change', (e) => {
+            isAI = e.target.checked;
+            // No need to re-render, the animation loops check the 'isAI' flag live
+            // But for some visualizations that init arrays, we might need logic updates
+            // For simplicity, we just let the update loops handle the visual shift
+        });
+
+        // Handle Resize
+        window.addEventListener('resize', () => {
+            setTab(activeTab);
+        });
+
+        // Init
+        setTab(0);
+
+    </script>
+</body>
+
+</html>

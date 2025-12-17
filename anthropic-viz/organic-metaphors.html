@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anthropic Productivity Patterns - Set 2</title>
+    <style>
+        :root {
+            --bg: #09090b;
+            --card: #18181b;
+            --text: #e4e4e7;
+            --accent: #a78bfa;
+            /* Soft Purple */
+            --accent-glow: rgba(167, 139, 250, 0.2);
+            --success: #34d399;
+            --warn: #fbbf24;
+            --danger: #f87171;
+            --font: 'SF Mono', 'Segoe UI Mono', 'Roboto Mono', monospace;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            padding: 3rem 1rem;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            letter-spacing: -0.05em;
+        }
+
+        p {
+            color: #71717a;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            background: #27272a;
+            padding: 0.5rem;
+            border-radius: 99px;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        button {
+            background: transparent;
+            border: none;
+            color: #71717a;
+            padding: 0.75rem 1.5rem;
+            border-radius: 99px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: var(--font);
+            font-size: 0.8rem;
+        }
+
+        button.active {
+            background: var(--accent);
+            color: #000;
+            font-weight: bold;
+        }
+
+        /* Toggle Switch */
+        .toggle-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+
+        .switch {
+            position: relative;
+            width: 50px;
+            height: 28px;
+            background: #3f3f46;
+            border-radius: 99px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .switch::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            transition: 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        .switch.on {
+            background: var(--accent);
+        }
+
+        .switch.on::after {
+            transform: translateX(22px);
+        }
+
+        /* Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            width: 90%;
+            max-width: 1200px;
+            padding-bottom: 4rem;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 1.25rem;
+            border: 1px solid #27272a;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .card h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .card .meta {
+            font-size: 0.75rem;
+            color: #71717a;
+            margin-bottom: 1rem;
+            height: 2.5em;
+        }
+
+        canvas {
+            width: 100%;
+            height: 240px;
+            background: #101012;
+            border-radius: 8px;
+            margin-top: auto;
+        }
+
+        /* Status Indicator in Card */
+        .status {
+            position: absolute;
+            top: 1.25rem;
+            right: 1.25rem;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--warn);
+            box-shadow: 0 0 10px var(--warn);
+            transition: 0.3s;
+        }
+
+        .status.ai {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>Engineering Velocity Patterns</h1>
+        <p>Visualization Set 2: Organic Metaphors</p>
+    </header>
+
+    <div class="toggle-wrapper">
+        <span style="opacity: 0.6">Standard Workflow</span>
+        <div class="switch" id="mainToggle"></div>
+        <span style="color: var(--accent); font-weight: bold;">AI Augmented</span>
+    </div>
+
+    <div class="controls">
+        <button class="active" onclick="setTab(0)">1. Full-Stack Reach</button>
+        <button onclick="setTab(1)">2. Learning Speed</button>
+        <button onclick="setTab(2)">3. Neglected Tasks</button>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <script>
+        // --- STATE MANAGEMENT ---
+        let isAI = false;
+        let activeTab = 0;
+        let frames = []; // Animation frame IDs
+
+        const toggle = document.getElementById('mainToggle');
+        toggle.addEventListener('click', () => {
+            isAI = !isAI;
+            toggle.classList.toggle('on', isAI);
+            document.querySelectorAll('.status').forEach(el => el.classList.toggle('ai', isAI));
+        });
+
+        const setTab = (idx) => {
+            // Clear previous animations
+            frames.forEach(cancelAnimationFrame);
+            frames = [];
+
+            activeTab = idx;
+            document.querySelectorAll('.controls button').forEach((b, i) => b.classList.toggle('active', i === idx));
+            renderGrid();
+        };
+
+        // --- RENDER LOOPS ---
+
+        const renderGrid = () => {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = ''; // Clear DOM
+
+            const patterns = [
+                // TAB 1: FULL STACK
+                [
+                    {
+                        title: "The Neural Loom",
+                        desc: "Connectivity between disparate systems. AI weaves a dense fabric; Human creates loose threads.",
+                        fn: initLoom
+                    },
+                    {
+                        title: "The Poly-Terrain",
+                        desc: "Complexity handling. AI acts as a high-poly renderer, smoothing out the jagged peaks of new tech.",
+                        fn: initTerrain
+                    },
+                    {
+                        title: "The Orbiting Satellites",
+                        desc: "Scope of influence. Humans manage 1-2 orbits. AI enables a swarm of satellites (microservices).",
+                        fn: initOrbits
+                    }
+                ],
+                // TAB 2: LEARNING SPEED
+                [
+                    {
+                        title: "The Diffusion Cloud",
+                        desc: "Knowledge transfer. AI acts as a catalyst, causing information (ink) to diffuse instantly through the water.",
+                        fn: initDiffusion
+                    },
+                    {
+                        title: "The Signal Tuner",
+                        desc: "Noise reduction. AI locks onto the signal (answer) immediately, reducing the amplitude of confusion.",
+                        fn: initSignal
+                    },
+                    {
+                        title: "The Gap Closer",
+                        desc: "Feedback loops. The open circle represents a pending test. AI spins the closer 10x faster.",
+                        fn: initLoops
+                    }
+                ],
+                // TAB 3: NEGLECTED TASKS
+                [
+                    {
+                        title: "The Repair Boids",
+                        desc: "Autonomous maintenance. A flock of 'boids' (AI agents) actively hunts down red dots (bugs/tech debt).",
+                        fn: initBoids
+                    },
+                    {
+                        title: "The Entropy Garden",
+                        desc: "Docs & comments. Without care, they wilt (turn gray). AI acts as an automated irrigation system.",
+                        fn: initGarden
+                    },
+                    {
+                        title: "The Tetris Backlog",
+                        desc: "Chore handling. Blocks fall. Human plays slowly (stack grows). AI plays perfectly (clears lines instantly).",
+                        fn: initTetris
+                    }
+                ]
+            ];
+
+            patterns[activeTab].forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                <div class="status ${isAI ? 'ai' : ''}"></div>
+                <h3>${p.title}</h3>
+                <div class="meta">${p.desc}</div>
+                <canvas></canvas>
+            `;
+                grid.appendChild(card);
+                const ctx = card.querySelector('canvas').getContext('2d');
+
+                // Handle high-DPI displays
+                const dpr = window.devicePixelRatio || 1;
+                const rect = card.getBoundingClientRect();
+                card.querySelector('canvas').width = (rect.width - 40) * dpr;
+                card.querySelector('canvas').height = 240 * dpr;
+                ctx.scale(dpr, dpr);
+
+                // Start Animation
+                frames.push(requestAnimationFrame((t) => p.fn(ctx, t)));
+            });
+        };
+
+        // --- ANIMATION ENGINES ---
+
+        // 1. NEURAL LOOM (Weaving connections)
+        const initLoom = (ctx, time) => {
+            const w = ctx.canvas.width / window.devicePixelRatio;
+            const h = ctx.canvas.height / window.devicePixelRatio;
+            let t = 0;
+
+            const loop = () => {
+                if (!ctx.canvas.isConnected) return;
+                ctx.clearRect(0, 0, w, h);
+                t += 0.01;
+
+                // AI = More nodes, more connections, faster pulse
+                const rows = isAI ? 8 : 3;
+                const cols = isAI ? 12 : 4;
+
+                ctx.strokeStyle = isAI ? 'rgba(167, 139, 250, 0.15)' : 'rgba(255,255,255,0.05)';
+                ctx.lineWidth = 1;
+
+                const points = [];
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const x = (w / cols) * c + (w / cols) / 2;
+                        const y = (h / rows) * r + (h / rows) / 2;
+                        // Organic float
+                        const dx = Math.sin(t + r) * 10;
+                        const dy = Math.cos(t + c) * 10;
+                        points.push({ x: x + dx, y: y + dy });
+
+                        ctx.fillStyle = isAI ? '#a78bfa' : '#71717a';
+                        ctx.beginPath();
+                        ctx.arc(x + dx, y + dy, 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                // Draw connections
+                ctx.beginPath();
+                points.forEach((p, i) => {
+                    // Connect to neighbors
+                    if (i + 1 < points.length && (i + 1) % cols !== 0) {
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(points[i + 1].x, points[i + 1].y);
+                    }
+                    if (i + cols < points.length) {
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(points[i + cols].x, points[i + cols].y);
+                    }
+                    // AI Cross-connections (Diagonal)
+                    if (isAI && i + cols + 1 < points.length) {
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(points[i + cols + 1].x, points[i + cols + 1].y);
+                    }
+                });
+                ctx.stroke();
+
+                frames.push(requestAnimationFrame(loop));
+            };
+            loop();
+        };
+
+        // 2. POLY-TERRAIN (Complexity Smoothing)
+        const initTerrain = (ctx, time) => {
+            const w = ctx.canvas.width / window.devicePixelRatio;
+            const h = ctx.canvas.height / window.devicePixelRatio;
+            let offset = 0;
+
+            const loop = () => {
+                if (!ctx.canvas.isConnected) return;
+                ctx.clearRect(0, 0, w, h);
+
+                // AI speed is faster (iteration)
+                offset += isAI ? 0.05 : 0.01;
+
+                ctx.beginPath();
+                const resolution = 20;
+
+                for (let x = 0; x < w; x += resolution) {
+                    // Perlin-ish noise
+                    // AI smooths the terrain (amplitude reduction)
+                    const amp = isAI ? 20 : 60;
+                    const freq = isAI ? 0.02 : 0.05; // AI is wider curves, Human is jagged
+
+                    const y = (h / 2) + Math.sin(x * freq + offset) * amp + Math.cos(x * 0.01 - offset) * (amp / 2);
+
+                    if (x === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+
+                    // Draw vertical lines
+                    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+                    ctx.stroke();
+
+                    // Draw points
+                    ctx.fillStyle = isAI ? '#34d399' : '#f87171'; // Green (Smooth) vs Red (Rough)
+                    ctx.fillRect(x - 1, y - 1, 2, 2);
+                }
+
+                // Fill bottom
+                ctx.lineTo(w, h);
+                ctx.lineTo(0, h);
+                ctx.fillStyle = 'rgba(255,255,255,0.02)';
+                ctx.fill();
+
+                frames.push(requestAnimationFrame(loop));
+            }
+            loop();
+        };
+
+        // 3. ORBITING SATELLITES (Scope)
+        const initOrbits = (ctx) => {
+            const w = ctx.canvas.width / window.devicePixelRatio;
+            const h = ctx.canvas.height / window.devicePixelRatio;
+            const sats = [];
+
+            // Populate array
+            for (let i = 0; i < 30; i++) sats.push({
+                r: 30 + Math.random() * 80,
+                ang: Math.random() * 6.28,
+                speed: (Math.random() * 0.05) + 0.01
+            });
+
+            const loop = () => {
+                if (!ctx.canvas.isConnected) return;
+                ctx.clearRect(0, 0, w, h);
+
+                // Center (The Engineer)
+                ctx.translate(w / 2, h / 2);
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(0, 0, 10, 0, Math.PI * 2);
+                ctx.fill();
+
+                // AI controls many, Human controls few
+                const count = isAI ? 30 : 3;
+
+                for (let i = 0; i < count; i++) {
+                    const s = sats[i];
+                    s.ang += s.speed;
+                    const x = Math.cos(s.ang) * s.r;
+                    const y = Math.sin(s.ang) * s.r;
+
+                    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, s.r, 0, Math.PI * 2); // Draw orbit path
+                    ctx.stroke();
+
+                    ctx.fillStyle = isAI ? '#a78bfa' : '#71717a';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                frames.push(requestAnimationFrame(loop));
+            }
+            loop();
+        };
+
+        // 4. DIFFUSION CLOUD (Learning)
+        const initDiffusion = (ctx) => {
+            const w = ctx.canvas.width / window.devicePixelRatio;
+            const h = ctx.canvas.height / window.devicePixelRatio;
+            const particles = Array(100).fill().map(() => ({
+                x: w / 2, y: h / 2,
+                vx: (Math.random() - 0.5),
+                vy: (Math.random() - 0.5),
+                life: 0
+            }));
+
+            const loop = () => {
+                if (!ctx.canvas.isConnected) return;
+                // Trail effect
+                ctx.fillStyle = 'rgba(9,9,11, 0.2)';
+                ctx.fillRect(0, 0, w, h);
+
+                const spreadSpeed = isAI ? 5 : 0.5; // AI diffuses info fast
+
+                particles.forEach(p => {
+                    p.x += p.vx * spreadSpeed;
+                    p.y += p.vy * spreadSpeed;
+                    p.life++;
+
+                    // Reset if off screen or too old
+                    if (p.x < 0 || p.x > w || p.y < 0 || p.y > h || p.life > 100) {
+                        p.x = w / 2;
+                        p.y = h / 2;
+                        p.life = 0;
+                        p.vx = (Math.random() - 0.5);
+                        p.vy = (Math.random() - 0.5);
+                    }
+
+                    const alpha = 1 - (p.life / 100);
+                    ctx.fillStyle = `rgba(${isAI ? '167, 139, 250' : '255,255,255'}, ${alpha})`;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, isAI ? 4 : 2, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                frames.push(requestAnimationFrame(loop));
+            }
+            loop();
+        };
+
+        // 5. SIGNAL TUNER (Clarity)
+        const initSignal = (ctx) => {
+            const w = ctx.canvas.width / window.devicePixelRatio;
+            const h = ctx.canvas.height / window.devicePixelRatio;
+            let t = 0;
+
+            const loop = () => {
+                if (!ctx.canvas.isConnected) return;
+                ctx.clearRect(0, 0, w, h);
+                t += 0.2;
+
+                ctx.beginPath();
+                ctx.strokeStyle = isAI ? '#34d399' : '#fbbf24';
+                ctx.lineWidth = 2;
+
+                for (let x = 0; x < w; x++) {
+                    // Base Sine Wave
+                    let y = Math.sin(x * 0.05 + t) * 20;
+
+                    // Add Noise
+                    // AI removes the noise component
+                    const noise = isAI ? 0 : (Math.random() - 0.5) * 40;
+
+                    // Converge line to center
+                    y += noise;
+
+                    ctx.lineTo(x, h / 2 + y);
+                }
+                ctx.stroke();
+
+                // Target Line
+                ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+                ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); ctx.stroke();
+
+                ctx.fillStyle = '#fff';
+                ctx.fillText(isAI ? "SIGNAL LOCKED" : "SEARCHING...", 10, 20);
+
+                frames.push(requestAnimationFrame(loop));
+            }
+            loop();
+        };
+
+        // 6. GAP CLOSER (Feedback Loops)
+        const initLoops = (ctx) => {
+            const w = ctx.canvas.width / window.devicePixelRatio;
+            const h = ctx.canvas.height / window.devicePixelRatio;
+            let ang = 0;
+
+            const loop = () => {
+                if (!ctx.canvas.isConnected) return;
+                ctx.clearRect(0, 0, w, h);
+
+                // AI spins much faster (tighter loops)
+                ang += isAI ? 0.3 : 0.02;
+
+                const cx = w / 2;
+                const cy = h / 2;
+                const r = 60;
+
+                // Draw Background Ring
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 10;
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Draw Active Arc
+                ctx.strokeStyle = isAI ? '#a78bfa' : '#71717a';
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, ang, ang + 4); // Fixed length arc
+                ctx.stroke();
+
+                // Text
+                ctx.fillStyle = '#fff';
+                ctx.textAlign = 'center';
+                ctx.font = '12px monospace';
+                ctx.fillText(isAI ? "15ms LOOP" : "24h LOOP", cx, cy + 5);
+
+                frames.push(requestAnimationFrame(loop));
+            }
+            loop();
+        };
+
+        // 7. REPAIR BOIDS (Neglected Tasks)
+        const initBoids = (ctx) => {
+            const w = ctx.canvas.width / window.devicePixelRatio;
+            const h = ctx.canvas.height / window.devicePixelRatio;
+
+            // Bugs (Static)
+            const bugs = Array(10).fill().map(() => ({ x: Math.random() * w, y: Math.random() * h, hp: 100 }));
+
+            // Agents
+            const agents = Array(20).fill().map(() => ({ x: w / 2, y: h / 2, vx: 0, vy: 0 }));
+
+            const loop = () => {
+                if (!ctx.canvas.isConnected) return;
+                ctx.fillStyle = 'rgba(9,9,11,0.3)';
+                ctx.fillRect(0, 0, w, h);
+
+                // Draw Bugs
+                bugs.forEach(b => {
+                    if (b.hp > 0) {
+                        // Respawn logic
+                        if (b.hp < 1) { b.x = Math.random() * w; b.y = Math.random() * h; b.hp = 100; }
+
+                        ctx.fillStyle = `rgba(248, 113, 113, ${b.hp / 100})`;
+                        ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI * 2); ctx.fill();
+                    }
+                });
+
+                // Agents Logic
+                // If AI, agents move fast and target bugs. If Human, they wander aimlessly.
+                const speed = isAI ? 3 : 0.5;
+
+                agents.forEach(a => {
+                    // Find nearest bug
+                    let target = null;
+                    let minDist = 9999;
+
+                    if (isAI) {
+                        bugs.forEach(b => {
+                            const d = Math.hypot(b.x - a.x, b.y - a.y);
+                            if (d < minDist && b.hp > 0) { minDist = d; target = b; }
+                        });
+                    }
+
+                    if (target) {
+                        const angle = Math.atan2(target.y - a.y, target.x - a.x);
+                        a.vx = Math.cos(angle) * speed;
+                        a.vy = Math.sin(angle) * speed;
+                        // Damage bug
+                        if (minDist < 10) target.hp -= 5;
+                    } else {
+                        // Wander
+                        a.vx += (Math.random() - 0.5) * 0.5;
+                        a.vy += (Math.random() - 0.5) * 0.5;
+                    }
+
+                    // Friction and move
+                    a.x += a.vx;
+                    a.y += a.vy;
+                    a.vx *= 0.95; a.vy *= 0.95;
+
+                    // Screen wrap
+                    if (a.x < 0) a.x = w; if (a.x > w) a.x = 0;
+                    if (a.y < 0) a.y = h; if (a.y > h) a.y = 0;
+
+                    // Draw Agent
+                    ctx.fillStyle = isAI ? '#fff' : '#444';
+                    ctx.fillRect(a.x, a.y, 2, 2);
+                });
+
+                frames.push(requestAnimationFrame(loop));
+            }
+            loop();
+        };
+
+        // 8. ENTROPY GARDEN (Maintenance)
+        const initGarden = (ctx) => {
+            const w = ctx.canvas.width / window.devicePixelRatio;
+            const h = ctx.canvas.height / window.devicePixelRatio;
+
+            // Plants
+            const plants = Array(15).fill().map((_, i) => ({
+                x: (w / 15) * i + 10,
+                h: 0,
+                maxH: 20 + Math.random() * 80,
+                health: 100
+            }));
+
+            const loop = () => {
+                if (!ctx.canvas.isConnected) return;
+                ctx.clearRect(0, 0, w, h);
+
+                plants.forEach(p => {
+                    // Growth logic
+                    if (p.h < p.maxH) p.h += 0.5;
+
+                    // Decay logic
+                    // If AI, health stays 100. If Human, health decays rapidly.
+                    if (isAI) {
+                        p.health = Math.min(100, p.health + 1);
+                    } else {
+                        p.health -= 0.5;
+                        if (p.health < 0) p.health = 0;
+                    }
+
+                    // Draw Stem
+                    const color = p.health > 50 ? '#34d399' : '#52525b'; // Green vs Gray
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, h);
+                    // Wither if unhealthy
+                    const droop = (100 - p.health);
+                    ctx.quadraticCurveTo(p.x, h - p.h / 2, p.x + (droop / 2), h - p.h + droop);
+                    ctx.stroke();
+
+                    // Draw Flower
+                    if (p.health > 20) {
+                        ctx.fillStyle = p.health > 80 ? '#a78bfa' : '#71717a';
+                        ctx.beginPath();
+                        const topX = p.x + (droop / 2);
+                        const topY = h - p.h + droop;
+                        ctx.arc(topX, topY, 5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                });
+
+                // Ground
+                ctx.fillStyle = '#27272a';
+                ctx.fillRect(0, h - 5, w, 5);
+
+                frames.push(requestAnimationFrame(loop));
+            }
+            loop();
+        };
+
+        // 9. TETRIS BACKLOG (Chores)
+        const initTetris = (ctx) => {
+            const w = ctx.canvas.width / window.devicePixelRatio;
+            const h = ctx.canvas.height / window.devicePixelRatio;
+            const bw = 20; // Block width
+            const cols = Math.floor(w / bw);
+            let blocks = [];
+            let timer = 0;
+
+            const loop = () => {
+                if (!ctx.canvas.isConnected) return;
+                ctx.clearRect(0, 0, w, h);
+                timer++;
+
+                // Spawn blocks (Tasks piling up)
+                if (timer % 10 === 0) {
+                    blocks.push({
+                        x: Math.floor(Math.random() * cols) * bw,
+                        y: -20,
+                        active: true
+                    });
+                }
+
+                // AI Resolution Speed (Clearing blocks)
+                const clearSpeed = isAI ? 5 : 1;
+
+                blocks.forEach((b, i) => {
+                    if (b.y < h - bw) {
+                        b.y += clearSpeed;
+                    } else {
+                        b.active = false; // Landed
+                    }
+
+                    // If AI, "Landed" blocks disappear (resolved). 
+                    // If Human, they stack up.
+                    if (!b.active && isAI) {
+                        // Flash and remove
+                        ctx.fillStyle = '#fff';
+                        ctx.fillRect(b.x, b.y, bw - 2, bw - 2);
+                        blocks.splice(i, 1);
+                        return;
+                    }
+
+                    // Draw
+                    ctx.fillStyle = b.active ? '#f87171' : '#3f3f46'; // Red (Urgent) vs Grey (Backlog)
+                    if (isAI && b.active) ctx.fillStyle = '#34d399'; // Green processing
+
+                    ctx.fillRect(b.x, b.y, bw - 2, bw - 2);
+                });
+
+                // Cleanup overflow
+                if (blocks.length > 200) blocks = blocks.slice(100);
+
+                frames.push(requestAnimationFrame(loop));
+            }
+            loop();
+        };
+
+        // Init
+        renderGrid();
+
+    </script>
+</body>
+
+</html>

@@ -4,57 +4,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My AI Tools Gallery</title>
+    <title>Anthropic Efficiency Visualizations</title>
     <style>
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --accent: #d292ff;
+            --accent-hover: #e0b0ff;
+            --border: #30363d;
+        }
+
         body {
-            font-family: system-ui, sans-serif;
-            background: #0f1115;
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
             margin: 0;
+            padding: 2rem;
+            line-height: 1.5;
         }
 
         .container {
-            text-align: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 3rem;
+        }
+
+        .back-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: var(--accent);
         }
 
         h1 {
-            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            margin: 0 0 1rem 0;
+            background: linear-gradient(90deg, #d292ff, #7e57c2);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        .menu {
+        .description {
+            color: var(--text-secondary);
+            max-width: 800px;
+            font-size: 1.1rem;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+            color: inherit;
             display: flex;
             flex-direction: column;
-            gap: 1rem;
+            height: 100%;
         }
 
-        a {
-            text-decoration: none;
-            color: #0f1115;
-            background: #d292ff;
-            padding: 1rem 2rem;
-            border-radius: 8px;
-            font-weight: bold;
-            transition: transform 0.2s;
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border-color: var(--accent);
         }
 
-        a:hover {
-            transform: scale(1.05);
-            background: #e0b0ff;
+        .card-content {
+            padding: 1.5rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card h2 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.25rem;
+            color: var(--accent);
+        }
+
+        .card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin: 0;
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <h1>My AI Visualization Tools</h1>
-        <div class="menu">
-            <a href="organic-metaphors.html">Organic Metaphors</a>
-            <a href="productivity-velocity.html">Productivity Velocity</a>
-            <a href="xenographic-workflows.html">Xenographic Workflows</a>
+        <a href="../index.html" class="back-link">← Back to My AI Tools</a>
+
+        <header>
+            <h1>Anthropic Efficiency Visualizations</h1>
+            <p class="description">
+                A collection of experimental visualizations illustrating how AI transforms engineering work.
+                Based on concepts from Anthropic's research on engineering velocity and productivity patterns.
+            </p>
+        </header>
+
+        <div class="gallery">
+            <a href="productivity-velocity.html" class="card">
+                <div class="card-content">
+                    <h2>Productivity Velocity</h2>
+                    <p>The initial set of visualizations focusing on engineering velocity, task completion rates, and
+                        the "full-stack" effect.</p>
+                </div>
+            </a>
+
+            <a href="organic-metaphors.html" class="card">
+                <div class="card-content">
+                    <h2>Organic Metaphors</h2>
+                    <p>A variation using organic and biological metaphors to represent the growth and evolution of
+                        engineering capabilities.</p>
+                </div>
+            </a>
+
+            <a href="xenographic-workflows.html" class="card">
+                <div class="card-content">
+                    <h2>Xenographic Workflows</h2>
+                    <p>Advanced experimental visualizations featuring "xenographic" chart types and diverse animation
+                        styles.</p>
+                </div>
+            </a>
         </div>
     </div>
 </body>

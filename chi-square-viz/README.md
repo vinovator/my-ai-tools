@@ -12,6 +12,10 @@ This single-page application helps users understand how statistical testing work
 
 ### 🎓 Guided Learning
 - **Step-by-Step Tutorial**: A walkthrough mode that explains the hypothesis testing process from the initial question to the final decision.
+- **Explicit Hypotheses**: A dedicated "Hypothesis Box" clear states the Null ($H_0$) and Alternative ($H_1$) hypotheses for every scenario.
+- **Visual Intuition**: 
+  - **Distribution Annotations**: Blue line marks your statistic, Red dashed line marks the critical value, and Red shading highlights the rejection region.
+  - **Calculation Clarity**: "Total" row in the data table explicitly connects the sum of $(O-E)^2/E$ to the final Chi-Square Statistic.
 - **Plain Language Tooltips**: Hover over any metric (e.g., P-Value, Degrees of Freedom) to see a simple, non-jargon explanation.
 - **Glossary**: Built-in definitions for key statistical terms.
 - **"What does this mean?"**: A dynamic summary panel that translates the statistical result into a real-world conclusion.

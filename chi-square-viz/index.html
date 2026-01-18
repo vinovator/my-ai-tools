@@ -26,7 +26,7 @@
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
+            /* overflow: hidden; Removed to allow tooltips to show */
         }
 
         .header {
@@ -94,16 +94,22 @@
         .tooltip-icon:hover::after {
             content: attr(data-tooltip);
             position: absolute;
-            left: 30px;
-            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            /* Center horizontally */
+            top: 30px;
+            /* Position below */
             background: #333;
             color: white;
             padding: 10px;
             border-radius: 5px;
-            width: 250px;
-            font-size: 12px;
-            z-index: 1000;
+            width: 200px;
+            min-width: 150px;
+            font-size: 13px;
+            z-index: 10000;
             line-height: 1.4;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            pointer-events: none;
         }
 
         .btn {

@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi-Square Goodness of Fit Explorer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 0;
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            padding: 30px;
+            border-right: 2px solid #e0e0e0;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+
+        .content-area {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tooltip-icon {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 20px;
+            font-size: 14px;
+            cursor: help;
+            position: relative;
+        }
+
+        .tooltip-icon:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: 30px;
+            top: -10px;
+            background: #333;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            width: 250px;
+            font-size: 12px;
+            z-index: 1000;
+            line-height: 1.4;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .scenario-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border: 2px solid #e0e0e0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .scenario-card:hover {
+            border-color: #667eea;
+            transform: translateX(5px);
+        }
+
+        .scenario-card.active {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .scenario-card h3 {
+            color: #667eea;
+            font-size: 1em;
+            margin-bottom: 5px;
+        }
+
+        .scenario-card p {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            transition: transform 0.3s;
+        }
+
+        .metric-card:hover {
+            transform: scale(1.05);
+        }
+
+        .metric-card h3 {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .metric-card .value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .metric-card .detail {
+            font-size: 0.85em;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+        }
+
+        .data-table th {
+            background: #667eea;
+            color: white;
+        }
+
+        .data-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .tutorial-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .tutorial-overlay.active {
+            display: flex;
+        }
+
+        .tutorial-box {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            max-width: 600px;
+            position: relative;
+        }
+
+        .tutorial-box h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .tutorial-navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+
+        .glossary-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .glossary-item h4 {
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .glossary-item p {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .quiz-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+            /* Hidden by default */
+        }
+
+        .quiz-question {
+            margin-bottom: 20px;
+        }
+
+        .quiz-options {
+            list-style: none;
+        }
+
+        .quiz-options li {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .quiz-options li:hover {
+            background: #e9ecef;
+        }
+
+        .quiz-options li.correct {
+            background: #d4edda;
+            border: 2px solid #28a745;
+        }
+
+        .quiz-options li.incorrect {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+        }
+
+        .summary-panel {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .summary-panel h3 {
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .summary-panel p {
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .highlight {
+            animation: pulse 1s ease-in-out;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .collapsible {
+            cursor: pointer;
+            padding: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            width: 100%;
+            text-align: left;
+            font-size: 16px;
+        }
+
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .collapsible-content.active {
+            max-height: 2000px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Chi-Square Goodness of Fit Test</h1>
+            <p>An Interactive Learning Experience</p>
+        </div>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="section">
+                    <button class="btn" onclick="startTutorial()">🎓 Start Tutorial</button>
+                    <button class="btn btn-secondary" id="animBtn" onclick="toggleAnimation()">▶️ Play
+                        Animation</button>
+                    <button class="btn btn-secondary" onclick="showQuiz()">🎯 Test Your Knowledge</button>
+                </div>
+
+                <div class="section">
+                    <h2>Real-World Scenarios</h2>
+                    <div class="scenario-card" onclick="loadScenario('dice')">
+                        <h3>🎲 Fair Dice Test</h3>
+                        <p>Is this casino die fair?</p>
+                    </div>
+                    <div class="scenario-card" onclick="loadScenario('genetics')">
+                        <h3>🧬 Genetics: Pea Plants</h3>
+                        <p>Mendel's inheritance patterns</p>
+                    </div>
+                    <div class="scenario-card" onclick="loadScenario('traffic')">
+                        <h3>🚗 Traffic Patterns</h3>
+                        <p>Daily traffic distribution</p>
+                    </div>
+                    <div class="scenario-card" onclick="loadScenario('market')">
+                        <h3>📈 Market Share</h3>
+                        <p>Product preference analysis</p>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <button class="collapsible" onclick="toggleGlossary()">📚 Glossary of Terms</button>
+                    <div class="collapsible-content" id="glossary">
+                        <div class="glossary-item">
+                            <h4>Chi-Square (χ²)</h4>
+                            <p>A statistical test that measures the difference between observed and expected
+                                frequencies.</p>
+                        </div>
+                        <div class="glossary-item">
+                            <h4>Null Hypothesis (H₀)</h4>
+                            <p>The assumption that there is no significant difference between observed and expected
+                                data.</p>
+                        </div>
+                        <div class="glossary-item">
+                            <h4>Degrees of Freedom</h4>
+                            <p>Number of categories minus 1. Determines the shape of the chi-square distribution.</p>
+                        </div>
+                        <div class="glossary-item">
+                            <h4>P-Value</h4>
+                            <p>Probability of obtaining results at least as extreme as observed, assuming H₀ is true.
+                            </p>
+                        </div>
+                        <div class="glossary-item">
+                            <h4>Critical Value</h4>
+                            <p>Threshold value that separates rejection and non-rejection regions.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-area">
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <h3>χ² Statistic <span class="tooltip-icon"
+                                data-tooltip="Sum of squared differences between observed and expected values, divided by expected values. Larger values suggest worse fit.">?</span>
+                        </h3>
+                        <div class="value" id="chiSquare">0.00</div>
+                        <div class="detail">Test statistic</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>P-Value <span class="tooltip-icon"
+                                data-tooltip="Probability of seeing this data if the null hypothesis is true. Values < 0.05 suggest rejecting the null hypothesis.">?</span>
+                        </h3>
+                        <div class="value" id="pValue">0.000</div>
+                        <div class="detail" id="decision">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Critical Value <span class="tooltip-icon"
+                                data-tooltip="The threshold value at α=0.05. If χ² > critical value, reject H₀.">?</span>
+                        </h3>
+                        <div class="value" id="criticalValue">0.00</div>
+                        <div class="detail">at α = 0.05</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Degrees of Freedom <span class="tooltip-icon"
+                                data-tooltip="Number of categories minus 1. Determines which chi-square distribution to use.">?</span>
+                        </h3>
+                        <div class="value" id="degreesOfFreedom">0</div>
+                        <div class="detail">n - 1</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="mainChart"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="distributionChart"></canvas>
+                </div>
+
+                <div id="dataTableContainer">
+                    <h2>Data Analysis Table</h2>
+                    <table class="data-table" id="dataTable">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Observed (O) <span class="tooltip-icon"
+                                        data-tooltip="The actual frequencies we measured or counted in our experiment.">?</span>
+                                </th>
+                                <th>Expected (E) <span class="tooltip-icon"
+                                        data-tooltip="The frequencies we would expect if the null hypothesis is true.">?</span>
+                                </th>
+                                <th>(O-E)² <span class="tooltip-icon"
+                                        data-tooltip="Squared difference between observed and expected values.">?</span>
+                                </th>
+                                <th>(O-E)²/E <span class="tooltip-icon"
+                                        data-tooltip="Contribution to the chi-square statistic from this category.">?</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="summary-panel" id="summaryPanel">
+                    <h3>📊 What Does This Mean?</h3>
+                    <p id="summaryText">Select a scenario to begin exploring hypothesis testing!</p>
+                </div>
+
+                <!-- Quiz Section -->
+                <div class="quiz-container" id="quizContainer">
+                    <h2>🎯 Knowledge Check</h2>
+                    <div id="quizContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tutorial-overlay" id="tutorialOverlay">
+        <div class="tutorial-box">
+            <h2 id="tutorialTitle">Welcome to Chi-Square Testing!</h2>
+            <div id="tutorialContent">
+                <p>This tutorial will guide you through the concept of chi-square goodness of fit testing step by step.
+                </p>
+            </div>
+            <div class="tutorial-navigation">
+                <button class="btn btn-secondary" onclick="previousTutorialStep()">← Previous</button>
+                <button class="btn" onclick="nextTutorialStep()">Next →</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let mainChart, distributionChart;
+        let currentScenario = null;
+        let tutorialStep = 0;
+        let animationRunning = false;
+        let animationInterval;
+
+        const tutorialSteps = [
+            {
+                title: "Welcome to Chi-Square Testing!",
+                content: "The chi-square goodness of fit test helps us determine if observed data matches an expected distribution. Let's learn how it works!"
+            },
+            {
+                title: "Step 1: The Question",
+                content: "We start with a question: 'Does our observed data fit the expected pattern?' For example, 'Is this die fair?' or 'Do customers prefer products equally?'"
+            },
+            {
+                title: "Step 2: Null Hypothesis (H₀)",
+                content: "We assume there IS a good fit (null hypothesis). For a fair die: H₀ = 'Each number appears with equal probability (1/6)'."
+            },
+            {
+                title: "Step 3: Collect Data",
+                content: "We observe actual frequencies. For example, rolling a die 60 times and counting how many times each number appears."
+            },
+            {
+                title: "Step 4: Calculate Expected",
+                content: "Under H₀, we calculate expected frequencies. For a fair die rolled 60 times: each number should appear 60/6 = 10 times."
+            },
+            {
+                title: "Step 5: Chi-Square Statistic",
+                content: "χ² = Σ[(O-E)²/E]. We calculate how much observed differs from expected. Larger χ² means worse fit!"
+            },
+            {
+                title: "Step 6: P-Value & Decision",
+                content: "The p-value tells us: 'If H₀ is true, what's the probability of seeing data this extreme?' If p < 0.05, we reject H₀."
+            },
+            {
+                title: "You're Ready!",
+                content: "Now try the real-world scenarios on the left. Watch how changing the data affects the chi-square statistic and p-value!"
+            }
+        ];
+
+        const scenarios = {
+            dice: {
+                name: "Fair Dice Test",
+                categories: ['1', '2', '3', '4', '5', '6'],
+                observed: [8, 12, 9, 11, 10, 10],
+                expected: [10, 10, 10, 10, 10, 10],
+                context: "A casino wants to verify their dice are fair. Each number should appear equally often.",
+                hypothesis: "H₀: The die is fair (each outcome has probability 1/6)"
+            },
+            genetics: {
+                name: "Mendel's Pea Plants",
+                categories: ['Round-Yellow', 'Round-Green', 'Wrinkled-Yellow', 'Wrinkled-Green'],
+                observed: [315, 108, 101, 32],
+                expected: [312.75, 104.25, 104.25, 34.75],
+                context: "Testing Mendel's 9:3:3:1 ratio for dihybrid cross in pea plants.",
+                hypothesis: "H₀: Traits follow Mendel's predicted 9:3:3:1 ratio"
+            },
+            traffic: {
+                name: "Daily Traffic Patterns",
+                categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+                observed: [145, 152, 138, 165, 150],
+                expected: [150, 150, 150, 150, 150],
+                context: "A highway authority checks if traffic is evenly distributed across weekdays.",
+                hypothesis: "H₀: Traffic is equally distributed across weekdays"
+            },
+            market: {
+                name: "Product Market Share",
+                categories: ['Brand A', 'Brand B', 'Brand C', 'Brand D'],
+                observed: [45, 38, 52, 65],
+                expected: [50, 50, 50, 50],
+                context: "Market research to see if consumers have equal preference for four brands.",
+                hypothesis: "H₀: All brands have equal market share"
+            }
+        };
+
+        const quizQuestions = [
+            {
+                q: "What does the Chi-Square statistic measure?",
+                opts: ["The average of the data", "Difference between observed and expected", "The standard deviation"],
+                correct: 1
+            },
+            {
+                q: "If P-Value < 0.05, what do we usually do?",
+                opts: ["Reject the null hypothesis", "Accept the null hypothesis", "Recalculate the data"],
+                correct: 0
+            },
+            {
+                q: "What is the Null Hypothesis for a fair coin?",
+                opts: ["Heads is more likely", "Heads and Tails are equally likely", "Tails is more likely"],
+                correct: 1
+            }
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            loadScenario('dice'); // Load default
+            renderQuiz();
+        });
+
+        function initCharts() {
+            const ctx1 = document.getElementById('mainChart').getContext('2d');
+            mainChart = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Observed',
+                        data: [],
+                        backgroundColor: 'rgba(102, 126, 234, 0.7)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 2
+                    }, {
+                        label: 'Expected',
+                        data: [],
+                        backgroundColor: 'rgba(118, 75, 162, 0.7)',
+                        borderColor: 'rgba(118, 75, 162, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: true, text: 'Observed vs Expected Frequencies', font: { size: 18 } },
+                        legend: { display: true, position: 'top' }
+                    },
+                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Frequency' } } }
+                }
+            });
+
+            const ctx2 = document.getElementById('distributionChart').getContext('2d');
+            distributionChart = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Chi-Square Distribution',
+                        data: [],
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: true, text: 'Chi-Square Distribution', font: { size: 18 } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Probability Density' } },
+                        x: { title: { display: true, text: 'χ² Value' } }
+                    }
+                }
+            });
+        }
+
+        function loadScenario(scenarioKey) {
+            currentScenario = JSON.parse(JSON.stringify(scenarios[scenarioKey])); // Deep copy
+
+            document.querySelectorAll('.scenario-card').forEach(card => card.classList.remove('active'));
+            const card = document.querySelector(`.scenario-card[onclick="loadScenario('${scenarioKey}')"]`);
+            if (card) card.classList.add('active');
+
+            updateVisualization();
+        }
+
+        function updateVisualization() {
+            if (!currentScenario) return;
+
+            // Update Chart
+            mainChart.data.labels = currentScenario.categories;
+            mainChart.data.datasets[0].data = currentScenario.observed;
+            mainChart.data.datasets[1].data = currentScenario.expected;
+            mainChart.options.plugins.title.text = currentScenario.name;
+            mainChart.update();
+
+            calculateChiSquare();
+            updateDataTable();
+            updateDistribution();
+            updateSummary();
+        }
+
+        function calculateChiSquare() {
+            const observed = currentScenario.observed;
+            const expected = currentScenario.expected;
+
+            let chiSquare = 0;
+            for (let i = 0; i < observed.length; i++) {
+                chiSquare += Math.pow(observed[i] - expected[i], 2) / expected[i];
+            }
+
+            const df = observed.length - 1;
+            const criticalValue = getCriticalValue(df, 0.05);
+            const pValue = chiSquarePValue(chiSquare, df);
+
+            document.getElementById('chiSquare').textContent = chiSquare.toFixed(2);
+            document.getElementById('pValue').textContent = pValue.toFixed(4);
+            document.getElementById('criticalValue').textContent = criticalValue.toFixed(2);
+            document.getElementById('degreesOfFreedom').textContent = df;
+
+            const decision = pValue < 0.05 ? 'Reject H₀' : 'Fail to Reject H₀';
+            const decisionEl = document.getElementById('decision');
+            decisionEl.textContent = decision;
+            decisionEl.style.color = pValue < 0.05 ? '#e53e3e' : '#38a169';
+            decisionEl.style.fontWeight = 'bold';
+        }
+
+        function updateDataTable() {
+            const tbody = document.getElementById('dataTableBody');
+            tbody.innerHTML = '';
+
+            const observed = currentScenario.observed;
+            const expected = currentScenario.expected;
+
+            for (let i = 0; i < observed.length; i++) {
+                const diff = observed[i] - expected[i];
+                const diffSquared = Math.pow(diff, 2);
+                const contribution = diffSquared / expected[i];
+
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td><strong>${currentScenario.categories[i]}</strong></td>
+                    <td>${observed[i]}</td>
+                    <td>${expected[i].toFixed(2)}</td>
+                    <td>${diffSquared.toFixed(2)}</td>
+                    <td>${contribution.toFixed(4)}</td>
+                `;
+            }
+        }
+
+        function updateDistribution() {
+            const df = currentScenario.observed.length - 1;
+            const labels = [];
+            const data = [];
+
+            // Limit x axis based on chi-square value to show relevant part of tail
+            const maxX = Math.max(20, parseFloat(document.getElementById('chiSquare').textContent) + 5);
+
+            for (let x = 0; x <= maxX; x += 0.5) {
+                labels.push(x.toFixed(1));
+                data.push(chiSquarePDF(x, df));
+            }
+
+            distributionChart.data.labels = labels;
+            distributionChart.data.datasets[0].data = data;
+
+            // Add vertical line annotation for current Chi-Square value
+            // Note: Simplification for Chart.js without annotation plugin
+            // but we can color the point if we want. For now standard chart.
+
+            distributionChart.update();
+        }
+
+        function chiSquarePDF(x, df) {
+            if (x <= 0) return 0;
+            const k = df / 2;
+            return (1 / (Math.pow(2, k) * gamma(k))) * Math.pow(x, k - 1) * Math.exp(-x / 2);
+        }
+
+        function gamma(n) {
+            if (n === 1) return 1;
+            if (n === 0.5) return Math.sqrt(Math.PI);
+            return (n - 1) * gamma(n - 1); // Simple recursion for integers and half-integers
+        }
+
+        // Approximate P-Value for visualization purposes
+        function chiSquarePValue(chiSquare, df) {
+            // Very rough approximation or use table lookup for JS simplicity
+            // or a proper integral. 
+            // Implementing a robust one is complex, let's use a simpler heuristic or the 
+            // Gamma incomplete function if needed.
+            // For this UI, let's use a simple approximation for small DF
+
+            // Actually, let's use the provided logic from the user's snippet which seemed to have an implementation
+            let sum = 0;
+            let term = 1;
+            for (let i = 0; i < 100; i++) {
+                sum += term;
+                term *= chiSquare / (df + 2 * i);
+            }
+            return Math.max(0, 1 - (Math.pow(chiSquare / 2, df / 2) * Math.exp(-chiSquare / 2) * sum / gamma(df / 2 + 1)));
+        }
+
+        function getCriticalValue(df, alpha) {
+            const criticalValues = {
+                1: 3.841, 2: 5.991, 3: 7.815, 4: 9.488,
+                5: 11.070, 6: 12.592, 7: 14.067, 8: 15.507
+            };
+            return criticalValues[df] || 0;
+        }
+
+        function updateSummary() {
+            if (!currentScenario) return;
+
+            const pValue = parseFloat(document.getElementById('pValue').textContent);
+            const decision = pValue < 0.05
+                ? "The difference is <strong>statistically significant</strong> (Reject H₀)."
+                : "The difference is <strong>not statistically significant</strong> (Fail to Reject H₀).";
+
+            const explanation = pValue < 0.05
+                ? `Evidence suggests the observed data does NOT fit the expected distribution for ${currentScenario.name}.`
+                : `Observed data matches the expected distribution for ${currentScenario.name} reasonably well.`;
+
+            document.getElementById('summaryText').innerHTML =
+                `${decision} <br><br> ${explanation} <br><br> Context: ${currentScenario.context}`;
+        }
+
+        // --- Interaction Functions ---
+
+        function startTutorial() {
+            tutorialStep = 0;
+            document.getElementById('tutorialOverlay').classList.add('active');
+            updateTutorialUI();
+        }
+
+        function closeTutorial() {
+            document.getElementById('tutorialOverlay').classList.remove('active');
+        }
+
+        function nextTutorialStep() {
+            if (tutorialStep < tutorialSteps.length - 1) {
+                tutorialStep++;
+                updateTutorialUI();
+            } else {
+                closeTutorial();
+            }
+        }
+
+        function previousTutorialStep() {
+            if (tutorialStep > 0) {
+                tutorialStep--;
+                updateTutorialUI();
+            }
+        }
+
+        function updateTutorialUI() {
+            const step = tutorialSteps[tutorialStep];
+            document.getElementById('tutorialTitle').innerText = step.title;
+            document.getElementById('tutorialContent').innerHTML = `<p>${step.content}</p>`;
+        }
+
+        function toggleAnimation() {
+            const btn = document.getElementById('animBtn');
+            if (animationRunning) {
+                clearInterval(animationInterval);
+                animationRunning = false;
+                btn.textContent = "▶️ Play Animation";
+                // Restore original values
+                loadScenario(Object.keys(scenarios).find(key => scenarios[key].name === currentScenario.name));
+            } else {
+                animationRunning = true;
+                btn.textContent = "⏹ Stop Animation";
+
+                // Animate: randomly perturb observed values
+                const baseObserved = [...currentScenario.observed];
+                animationInterval = setInterval(() => {
+                    const perturbed = baseObserved.map(v => Math.max(0, Math.round(v + (Math.random() - 0.5) * (v * 0.2)))); // +/- 10%
+
+                    mainChart.data.datasets[0].data = perturbed;
+                    mainChart.update();
+
+                    // Update stats live!
+                    currentScenario.observed = perturbed;
+                    calculateChiSquare();
+                    updateDataTable();
+                }, 500);
+            }
+        }
+
+        function toggleGlossary() {
+            document.getElementById('glossary').classList.toggle('active');
+        }
+
+        function showQuiz() {
+            const quizContainer = document.getElementById('quizContainer');
+            quizContainer.style.display = quizContainer.style.display === 'none' ? 'block' : 'none';
+            quizContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function renderQuiz() {
+            const container = document.getElementById('quizContent');
+            container.innerHTML = quizQuestions.map((q, i) => `
+                <div class="quiz-question">
+                    <p><strong>Q${i + 1}: ${q.q}</strong></p>
+                    <ul class="quiz-options">
+                        ${q.opts.map((opt, optIndex) => `
+                            <li onclick="checkAnswer(this, ${i}, ${optIndex})">${opt}</li>
+                        `).join('')}
+                    </ul>
+                </div>
+            `).join('');
+        }
+
+        function checkAnswer(el, qIndex, optIndex) {
+            const isCorrect = quizQuestions[qIndex].correct === optIndex;
+            if (isCorrect) {
+                el.classList.add('correct');
+                el.textContent += " ✅";
+            } else {
+                el.classList.add('incorrect');
+                el.textContent += " ❌";
+            }
+        }
+    </script>
+</body>
+
+</html>

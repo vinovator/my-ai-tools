@@ -18,6 +18,12 @@ A comprehensive educational tool designed as an "interactive textbook". Visualiz
 - **Scenario Mode**: Preset real-world examples (e.g., Steel Industry).
 - **Impact Analysis**: "Winners & Losers" panels and quizzes.
 
+### [Chi-Square Goodness of Fit Explorer](./chi-square-viz/README.md)
+Interactive platform for mastering statistical hypothesis testing. Features:
+- **Visual Learning**: Dynamic distribution curves and frequency charts.
+- **Real-World Scenarios**: Genetics key, Fair Dice, and Market Research presets.
+- **Guided Tutorials**: Step-by-step walkthroughs of the testing process.
+
 ---
 
 *More tools coming soon...*

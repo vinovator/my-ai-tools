@@ -1,5 +1,7 @@
 # Chi-Square Goodness of Fit Explorer
 
+**Live Demo**: [https://vinovator.github.io/my-ai-tools/chi-square-viz/index.html](https://vinovator.github.io/my-ai-tools/chi-square-viz/index.html)
+
 An interactive educational platform designed to make hypothesis testing intuitive and engaging. This tool functions as an "interactive textbook chapter," guiding users through the concepts of Chi-Square Goodness of Fit testing using real-world scenarios and dynamic visualizations.
 
 ## Overview

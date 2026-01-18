@@ -1,5 +1,7 @@
 # Interactive Tariff Economics Platform
 
+**Live Demo**: [https://vinovator.github.io/my-ai-tools/tariff-viz/index.html](https://vinovator.github.io/my-ai-tools/tariff-viz/index.html)
+
 An educational, interactive web tool designed to look and feel like a "living textbook" chapter. It allows users to visualize and experiment with the economic effects of tariffs on local markets, supply, and demand.
 
 ## Overview

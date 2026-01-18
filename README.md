@@ -11,6 +11,13 @@ A collection of AI-powered tools, experiments, and visualizations.
 Experimental HTML/JS visualizations illustrating how AI transforms engineering work, inspired by Anthropic's research on productivity patterns.
 Includes sets of animated "Xenographic" charts.
 
+### [Interactive Tariff Economics Platform](./tariff-viz/README.md)
+A comprehensive educational tool designed as an "interactive textbook". Visualizes the impact of tariffs on local markets with features including:
+- **Interactive Simulations**: Real-time supply/demand adjustments.
+- **Guided Learning**: Step-by-step tutorials and glossary.
+- **Scenario Mode**: Preset real-world examples (e.g., Steel Industry).
+- **Impact Analysis**: "Winners & Losers" panels and quizzes.
+
 ---
 
 *More tools coming soon...*

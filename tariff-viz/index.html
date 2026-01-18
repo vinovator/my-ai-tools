@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Tariff Economics - Educational Platform</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .tutorial-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #48bb78;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            animation: pulse 2s infinite;
+        }
+
+        .tutorial-badge:hover {
+            background: #38a169;
+            transform: scale(1.05);
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(72, 187, 120, 0.7);
+            }
+
+            50% {
+                box-shadow: 0 0 0 10px rgba(72, 187, 120, 0);
+            }
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 320px 1fr 280px;
+            gap: 0;
+        }
+
+        .controls {
+            background: #f7fafc;
+            padding: 25px;
+            border-right: 2px solid #e2e8f0;
+            overflow-y: auto;
+            max-height: calc(100vh - 200px);
+        }
+
+        .glossary-panel {
+            background: #f7fafc;
+            padding: 25px;
+            border-left: 2px solid #e2e8f0;
+            overflow-y: auto;
+            max-height: calc(100vh - 200px);
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+            padding: 18px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .control-group:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .control-group h3 {
+            color: #2d3748;
+            margin-bottom: 12px;
+            font-size: 1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tooltip-icon {
+            cursor: help;
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 18px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: auto;
+        }
+
+        .tooltip-content {
+            display: none;
+            position: absolute;
+            background: #2d3748;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            max-width: 250px;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .tooltip-icon:hover+.tooltip-content {
+            display: block;
+        }
+
+        .slider-container {
+            margin-bottom: 12px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 0.85em;
+            color: #4a5568;
+        }
+
+        .slider-value {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 5px;
+            background: #e2e8f0;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: #5a67d8;
+            transform: scale(1.2);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .scenario-btn {
+            padding: 10px;
+            margin: 5px 0;
+            font-size: 0.85em;
+        }
+
+        .charts {
+            padding: 25px;
+            overflow-y: auto;
+            max-height: calc(100vh - 200px);
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            position: relative;
+        }
+
+        .chart-title {
+            font-size: 1.2em;
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .comparison-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .comparison-chart {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .comparison-title {
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 6px;
+        }
+
+        .before-title {
+            background: #e6f7ff;
+            color: #0066cc;
+        }
+
+        .after-title {
+            background: #fff2e6;
+            color: #cc6600;
+        }
+
+        .winners-losers {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .winners-losers h3 {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+
+        .impact-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .impact-card {
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .impact-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .impact-icon {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+
+        .impact-label {
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .impact-value {
+            font-size: 1.3em;
+            font-weight: 700;
+        }
+
+        .impact-change {
+            font-size: 0.9em;
+            margin-top: 3px;
+        }
+
+        .winner {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+        }
+
+        .loser {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+            color: white;
+        }
+
+        .neutral {
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+            color: white;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .metric-card {
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .metric-label {
+            font-size: 0.8em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 1.5em;
+            font-weight: 700;
+        }
+
+        .glossary-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .glossary-item:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .glossary-term {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .glossary-def {
+            font-size: 0.85em;
+            color: #4a5568;
+            line-height: 1.5;
+        }
+
+        .glossary-def.collapsed {
+            display: none;
+        }
+
+        .expand-icon {
+            transition: transform 0.3s;
+        }
+
+        .expand-icon.expanded {
+            transform: rotate(180deg);
+        }
+
+        .quiz-container {
+            background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .quiz-question {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .quiz-option {
+            padding: 12px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .quiz-option:hover {
+            border-color: #667eea;
+            background: #f7fafc;
+        }
+
+        .quiz-option.correct {
+            border-color: #48bb78;
+            background: #f0fff4;
+        }
+
+        .quiz-option.incorrect {
+            border-color: #f56565;
+            background: #fff5f5;
+        }
+
+        .quiz-feedback {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .quiz-feedback.correct {
+            background: #f0fff4;
+            color: #22543d;
+        }
+
+        .quiz-feedback.incorrect {
+            background: #fff5f5;
+            color: #742a2a;
+        }
+
+        .quiz-score {
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #667eea;
+            margin-top: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #2d3748;
+        }
+
+        .close-btn {
+            font-size: 2em;
+            cursor: pointer;
+            color: #718096;
+            line-height: 1;
+        }
+
+        .close-btn:hover {
+            color: #2d3748;
+        }
+
+        .tutorial-step {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .tutorial-step h4 {
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .tutorial-step p {
+            color: #4a5568;
+            line-height: 1.6;
+        }
+
+        .try-this {
+            background: #fef5e7;
+            border-left: 4px solid #f39c12;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 6px;
+            font-style: italic;
+        }
+
+        .animation-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .play-btn {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .play-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+        }
+
+        .animation-status {
+            padding: 10px;
+            background: #e6f7ff;
+            border-radius: 8px;
+            font-weight: 600;
+            color: #0066cc;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease;
+        }
+
+        @keyframes highlight {
+
+            0%,
+            100% {
+                background-color: transparent;
+            }
+
+            50% {
+                background-color: rgba(102, 126, 234, 0.2);
+            }
+        }
+
+        .highlight-flash {
+            animation: highlight 1s ease;
+        }
+
+        @media (max-width: 1400px) {
+            .content {
+                grid-template-columns: 280px 1fr 250px;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+
+            .controls,
+            .glossary-panel {
+                border: none;
+                border-bottom: 2px solid #e2e8f0;
+                max-height: none;
+            }
+
+            .comparison-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Interactive Tariff Economics Platform</h1>
+            <p>Learn how tariffs affect markets through interactive visualization</p>
+            <div class="tutorial-badge" onclick="openTutorial()">
+                🎓 Start Tutorial
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- LEFT PANEL: Controls -->
+            <div class="controls">
+                <div class="control-group">
+                    <h3>
+                        🎯 Quick Scenarios
+                        <span class="tooltip-icon">?</span>
+                        <div class="tooltip-content">Load pre-configured real-world examples</div>
+                    </h3>
+                    <button class="btn btn-secondary scenario-btn" onclick="loadScenario('small')">Small Tariff
+                        (5%)</button>
+                    <button class="btn btn-secondary scenario-btn" onclick="loadScenario('large')">Large Tariff
+                        (50%)</button>
+                    <button class="btn btn-secondary scenario-btn" onclick="loadScenario('steel')">Steel Industry
+                        2018</button>
+                    <button class="btn btn-secondary scenario-btn" onclick="loadScenario('agriculture')">Agricultural
+                        Products</button>
+                    <button class="btn btn-secondary scenario-btn" onclick="loadScenario('elastic')">Elastic
+                        Demand</button>
+                    <button class="btn btn-secondary scenario-btn" onclick="loadScenario('inelastic')">Inelastic
+                        Demand</button>
+                </div>
+
+                <div class="control-group">
+                    <h3>
+                        💰 Tariff Settings
+                        <span class="tooltip-icon">?</span>
+                        <div class="tooltip-content">A tariff is a tax on imported goods. Higher tariffs increase prices
+                            for consumers.</div>
+                    </h3>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Tariff per Unit</span>
+                            <span class="slider-value">$<span id="tariff-value">5</span></span>
+                        </div>
+                        <input type="range" id="tariff" min="0" max="20" step="0.5" value="5">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>
+                        📈 Supply Parameters
+                        <span class="tooltip-icon">?</span>
+                        <div class="tooltip-content">Supply curve shows how much domestic producers are willing to sell
+                            at each price.</div>
+                    </h3>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Supply Slope</span>
+                            <span class="slider-value"><span id="supply-slope-value">2</span></span>
+                        </div>
+                        <input type="range" id="supply-slope" min="0.5" max="5" step="0.1" value="2">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>World Price</span>
+                            <span class="slider-value">$<span id="world-price-value">10</span></span>
+                        </div>
+                        <input type="range" id="world-price" min="5" max="20" step="0.5" value="10">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>
+                        📉 Demand Parameters
+                        <span class="tooltip-icon">?</span>
+                        <div class="tooltip-content">Demand curve shows how much consumers want to buy at each price.
+                        </div>
+                    </h3>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Demand Slope</span>
+                            <span class="slider-value"><span id="demand-slope-value">-1.5</span></span>
+                        </div>
+                        <input type="range" id="demand-slope" min="-3" max="-0.5" step="0.1" value="-1.5">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Demand Intercept</span>
+                            <span class="slider-value"><span id="demand-intercept-value">30</span></span>
+                        </div>
+                        <input type="range" id="demand-intercept" min="20" max="50" step="1" value="30">
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" id="toggle-tariff">
+                    🔄 Toggle Tariff View
+                </button>
+
+                <button class="btn btn-secondary" onclick="playAnimation()">
+                    ▶️ Play Animation
+                </button>
+            </div>
+
+            <!-- MIDDLE PANEL: Charts -->
+            <div class="charts">
+                <div class="animation-controls">
+                    <div class="animation-status" id="animation-status">
+                        Ready to animate
+                    </div>
+                </div>
+
+                <!-- Winners & Losers Panel -->
+                <div class="winners-losers fade-in">
+                    <h3>👥 Who Wins and Who Loses?</h3>
+                    <div class="impact-grid" id="impact-grid">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Main Chart -->
+                <div class="chart-container fade-in">
+                    <div class="chart-title">Supply & Demand with Tariff Effects</div>
+                    <canvas id="main-chart"></canvas>
+                </div>
+
+                <!-- Before/After Comparison -->
+                <div class="comparison-container fade-in">
+                    <div class="comparison-chart">
+                        <div class="comparison-title before-title">📊 Without Tariff</div>
+                        <canvas id="before-chart"></canvas>
+                    </div>
+                    <div class="comparison-chart">
+                        <div class="comparison-title after-title">📊 With Tariff</div>
+                        <canvas id="after-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Metrics -->
+                <div class="metrics" id="metrics-container"></div>
+
+                <!-- Quiz Section -->
+                <div class="quiz-container fade-in" id="quiz-container">
+                    <h3 style="text-align: center; margin-bottom: 15px;">🧠 Test Your Understanding</h3>
+                    <div id="quiz-content"></div>
+                    <div class="quiz-score" id="quiz-score">Score: 0/0</div>
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL: Glossary -->
+            <div class="glossary-panel">
+                <h3 style="margin-bottom: 15px; color: #2d3748;">📚 Economic Concepts</h3>
+                <div id="glossary-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tutorial Modal -->
+    <div class="modal" id="tutorial-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">🎓 Interactive Tutorial</div>
+                <span class="close-btn" onclick="closeTutorial()">&times;</span>
+            </div>
+            <div id="tutorial-content"></div>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        let state = {
+            tariff: 5,
+            supplySlope: 2,
+            worldPrice: 10,
+            demandSlope: -1.5,
+            demandIntercept: 30,
+            showTariff: true,
+            animating: false
+        };
+
+        let charts = {
+            main: null,
+            before: null,
+            after: null
+        };
+
+        let quizState = {
+            currentQuestion: 0,
+            score: 0,
+            answered: 0
+        };
+
+        // Quiz questions
+        const quizQuestions = [
+            {
+                question: "What happens to consumer surplus when a tariff is imposed?",
+                options: [
+                    "It increases",
+                    "It decreases",
+                    "It stays the same",
+                    "It doubles"
+                ],
+                correct: 1,
+                explanation: "Consumer surplus decreases because consumers pay a higher price and consume less quantity."
+            },
+            {
+                question: "Who benefits from tariff revenue?",
+                options: [
+                    "Consumers",
+                    "Foreign producers",
+                    "Government",
+                    "No one"
+                ],
+                correct: 2,
+                explanation: "The government collects tariff revenue (tariff × imports), which can be used for public spending."
+            },
+            {
+                question: "What does deadweight loss represent?",
+                options: [
+                    "Government profit",
+                    "Economic inefficiency",
+                    "Producer gains",
+                    "Consumer savings"
+                ],
+                correct: 1,
+                explanation: "Deadweight loss represents the economic inefficiency created by the tariff - value lost to society that no one gains."
+            },
+            {
+                question: "What happens to domestic production when a tariff is imposed?",
+                options: [
+                    "It decreases",
+                    "It stays the same",
+                    "It increases",
+                    "It becomes zero"
+                ],
+                correct: 2,
+                explanation: "Domestic production increases as the higher price makes it profitable for local producers to supply more."
+            }
+        ];
+
+        // Glossary terms
+        const glossaryTerms = [
+            {
+                term: "Consumer Surplus",
+                definition: "The difference between what consumers are willing to pay and what they actually pay. It represents consumer benefit. When prices rise due to tariffs, consumer surplus decreases."
+            },
+            {
+                term: "Producer Surplus",
+                definition: "The difference between what producers receive and the minimum they're willing to accept. Domestic producers gain when tariffs protect them from foreign competition."
+            },
+            {
+                term: "Deadweight Loss",
+                definition: "The loss of economic efficiency when the equilibrium is not achieved. Tariffs create deadweight loss by reducing total trade and consumption below optimal levels."
+            },
+            {
+                term: "Tariff",
+                definition: "A tax imposed on imported goods. It raises the domestic price, reduces imports, and transfers wealth from consumers to domestic producers and government."
+            },
+            {
+                term: "Government Revenue",
+                definition: "Money collected by the government from tariffs (tariff rate × quantity of imports). This is a transfer from consumers to government, not a net loss."
+            },
+            {
+                term: "World Price",
+                definition: "The international market price without trade barriers. It's typically lower than domestic prices with tariffs, which is why countries import."
+            },
+            {
+                term: "Imports",
+                definition: "The quantity of goods purchased from foreign producers. Imports = Domestic Demand - Domestic Supply at the given price."
+            },
+            {
+                term: "Elastic Demand",
+                definition: "When demand is very responsive to price changes (flatter demand curve). Tariffs on elastic goods create larger deadweight losses."
+            },
+            {
+                term: "Inelastic Demand",
+                definition: "When demand is not very responsive to price changes (steeper demand curve). Essential goods often have inelastic demand."
+            }
+        ];
+
+        // Tutorial content
+        const tutorialSteps = [
+            {
+                title: "Step 1: Understanding the Graph",
+                content: "The graph shows supply and demand curves. The blue line is demand (consumers), the green line is domestic supply (producers). Where they meet at the world price determines how much is traded.",
+                tryThis: "Try This: Look at where the horizontal world price line intersects the blue and green curves."
+            },
+            {
+                title: "Step 2: The World Price",
+                content: "Without tariffs, we buy and sell at the World Price. Domestic suppliers produce less than consumers want, so the difference is imported.",
+                tryThis: "Try This: Check the 'Imports' value in the metrics panel."
+            },
+            {
+                title: "Step 3: Adding a Tariff",
+                content: "A tariff adds a tax to imports, raising the price. This encourages domestic production but makes goods more expensive for consumers.",
+                tryThis: "Try This: Use the Tariff slider to increase the tax. Notice how the 'Price with Tariff' line moves up."
+            },
+            {
+                title: "Step 4: Deadweight Loss",
+                content: "The red triangles that appear represent value lost to the economy. It's efficiency that disappears because trade is artificially restricted.",
+                tryThis: "Try This: See how Deadweight Loss grows as you increase the tariff."
+            }
+        ];
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeControls();
+            createCharts();
+            renderGlossary();
+            renderQuiz();
+            updateVisualization();
+        });
+
+        function initializeControls() {
+            const controls = {
+                'tariff': 'tariff-value',
+                'supply-slope': 'supply-slope-value',
+                'world-price': 'world-price-value',
+                'demand-slope': 'demand-slope-value',
+                'demand-intercept': 'demand-intercept-value'
+            };
+
+            Object.keys(controls).forEach(id => {
+                const slider = document.getElementById(id);
+                const display = document.getElementById(controls[id]);
+
+                if (slider && display) {
+                    slider.addEventListener('input', (e) => {
+                        const value = parseFloat(e.target.value);
+                        display.textContent = value.toFixed(1);
+
+                        const key = id.replace(/-./g, m => m[1].toUpperCase());
+                        state[key] = value;
+                        updateVisualization();
+                    });
+                }
+            });
+
+            document.getElementById('toggle-tariff').addEventListener('click', () => {
+                state.showTariff = !state.showTariff;
+                updateVisualization();
+            });
+        }
+
+        function loadScenario(type) {
+            const scenarios = {
+                'small': { tariff: 2, worldPrice: 10, supplySlope: 2, demandSlope: -1.5 },
+                'large': { tariff: 15, worldPrice: 8, supplySlope: 2, demandSlope: -1.5 },
+                'steel': { tariff: 8, worldPrice: 12, supplySlope: 1.5, demandSlope: -0.8 }, // Inelastic supply & demand
+                'agriculture': { tariff: 5, worldPrice: 10, supplySlope: 4, demandSlope: -2 }, // Elastic
+                'elastic': { tariff: 5, worldPrice: 10, supplySlope: 4, demandSlope: -3 }, // Highly elastic
+                'inelastic': { tariff: 10, worldPrice: 10, supplySlope: 0.8, demandSlope: -0.5 } // Highly inelastic
+            };
+
+            if (scenarios[type]) {
+                const s = scenarios[type];
+                state = { ...state, ...s, showTariff: true };
+
+                // Update slider UI
+                Object.keys(s).forEach(key => {
+                    const id = key.replace(/[A-Z]/g, m => "-" + m.toLowerCase());
+                    const slider = document.getElementById(id);
+                    const display = document.getElementById(id + '-value');
+                    if (slider) slider.value = s[key];
+                    if (display) display.textContent = s[key].toFixed(1);
+                });
+
+                updateVisualization();
+
+                // Visual feedback
+                const btn = event.target;
+                btn.style.transform = "scale(0.95)";
+                setTimeout(() => btn.style.transform = "", 150);
+            }
+        }
+
+        function calculateEquilibrium(customState = state) {
+            const { tariff, supplySlope, worldPrice, demandSlope, demandIntercept, showTariff } = customState;
+
+            // Effective price
+            const effectivePrice = showTariff ? worldPrice + tariff : worldPrice;
+
+            // Quantities
+            const qDemand = Math.max(0, demandIntercept + demandSlope * effectivePrice);
+            const qSupply = Math.max(0, supplySlope * effectivePrice);
+
+            // Imports
+            const imports = Math.max(0, qDemand - qSupply);
+
+            // Reference (No Tariff)
+            const qDemandNoTariff = Math.max(0, demandIntercept + demandSlope * worldPrice);
+            const qSupplyNoTariff = Math.max(0, supplySlope * worldPrice);
+            const importsNoTariff = Math.max(0, qDemandNoTariff - qSupplyNoTariff);
+
+            // Intercepts for area calculations
+            const priceIntercept = demandIntercept / -demandSlope;
+
+            // Consumer Surplus: 0.5 * base * height
+            const consumerSurplus = 0.5 * qDemand * (priceIntercept - effectivePrice);
+            const consumerSurplusNoTariff = 0.5 * qDemandNoTariff * (priceIntercept - worldPrice);
+
+            // Producer Surplus
+            const producerSurplus = 0.5 * qSupply * effectivePrice;
+            const producerSurplusNoTariff = 0.5 * qSupplyNoTariff * worldPrice;
+
+            // Government Revenue
+            const govRevenue = showTariff ? tariff * imports : 0;
+
+            // Deadweight Loss
+            // 1. Production distortion: 0.5 * (qSupply - qSupplyNoTariff) * tariff
+            // 2. Consumption distortion: 0.5 * (qDemandNoTariff - qDemand) * tariff
+            // Total DWL is triangle area lost
+            const deadweightLoss = showTariff ?
+                0.5 * tariff * ((qSupply - qSupplyNoTariff) + (qDemandNoTariff - qDemand)) : 0;
+
+            return {
+                effectivePrice,
+                qDemand,
+                qSupply,
+                imports,
+                consumerSurplus,
+                producerSurplus,
+                govRevenue,
+                deadweightLoss,
+                consumerSurplusChange: consumerSurplus - consumerSurplusNoTariff,
+                producerSurplusChange: producerSurplus - producerSurplusNoTariff,
+                priceIntercept,
+                qDemandNoTariff,
+                qSupplyNoTariff
+            };
+        }
+
+        function createChartConfig(title, isMain = false) {
+            return {
+                type: 'line',
+                data: { datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: isMain ? 1.8 : 1.5,
+                    animation: {
+                        duration: 600,
+                        easing: 'easeOutQuart'
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            min: 0,
+                            suggestedMax: 40,
+                            title: { display: isMain, text: 'Quantity' }
+                        },
+                        y: {
+                            min: 0,
+                            suggestedMax: 25,
+                            title: { display: isMain, text: 'Price ($)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: isMain },
+                        tooltip: { enabled: true }
+                    }
+                }
+            };
+        }
+
+        function createCharts() {
+            charts.main = new Chart(document.getElementById('main-chart').getContext('2d'), createChartConfig('Main Analysis', true));
+            charts.before = new Chart(document.getElementById('before-chart').getContext('2d'), createChartConfig('Before Tariff'));
+            charts.after = new Chart(document.getElementById('after-chart').getContext('2d'), createChartConfig('After Tariff'));
+        }
+
+        function generateChartData(eq, showTariffLines) {
+            const { supplySlope, demandSlope, demandIntercept, worldPrice, tariff } = state;
+
+            const maxQ = Math.max(eq.qDemandNoTariff, eq.qSupplyNoTariff) * 1.4;
+
+            // Curves
+            const demandData = [{ x: 0, y: -demandIntercept / demandSlope }, { x: demandIntercept, y: 0 }];
+            const supplyData = [{ x: 0, y: 0 }, { x: maxQ, y: maxQ / supplySlope }];
+
+            const datasets = [
+                {
+                    label: 'Demand',
+                    data: demandData,
+                    borderColor: 'rgb(102, 126, 234)',
+                    borderWidth: 3,
+                },
+                {
+                    label: 'Supply',
+                    data: supplyData,
+                    borderColor: 'rgb(72, 187, 120)',
+                    borderWidth: 3,
+                }
+            ];
+
+            // World Price Line
+            datasets.push({
+                label: 'World Price',
+                data: [{ x: 0, y: worldPrice }, { x: maxQ, y: worldPrice }],
+                borderColor: 'rgb(66, 153, 225)',
+                borderDash: [5, 5],
+                borderWidth: 2,
+                pointRadius: 0
+            });
+
+            if (showTariffLines && state.tariff > 0) {
+                const pTariff = worldPrice + tariff;
+                datasets.push({
+                    label: 'Price + Tariff',
+                    data: [{ x: 0, y: pTariff }, { x: maxQ, y: pTariff }],
+                    borderColor: 'rgb(237, 137, 54)',
+                    borderWidth: 2,
+                    pointRadius: 0
+                });
+
+                // Highlight Equilibrium points
+                datasets.push({
+                    label: 'New Equilibrium',
+                    data: [
+                        { x: eq.qSupply, y: pTariff },
+                        { x: eq.qDemand, y: pTariff }
+                    ],
+                    backgroundColor: 'rgb(237, 137, 54)',
+                    pointRadius: 6,
+                    type: 'scatter'
+                });
+            } else {
+                // Baseline Equilibrium
+                const qDemand = demandIntercept + demandSlope * worldPrice;
+                const qSupply = supplySlope * worldPrice;
+                datasets.push({
+                    label: 'Equilibrium',
+                    data: [
+                        { x: qSupply, y: worldPrice },
+                        { x: qDemand, y: worldPrice }
+                    ],
+                    backgroundColor: 'rgb(66, 153, 225)',
+                    pointRadius: 6,
+                    type: 'scatter'
+                });
+            }
+
+            return datasets;
+        }
+
+        function updateVisualization() {
+            const eq = calculateEquilibrium();
+            const eqNoTariff = calculateEquilibrium({ ...state, showTariff: false });
+
+            // Update Main Chart
+            charts.main.data.datasets = generateChartData(eq, state.showTariff);
+            charts.main.update();
+
+            // Update Comparison Charts
+            charts.before.data.datasets = generateChartData(eqNoTariff, false);
+            charts.before.update();
+
+            charts.after.data.datasets = generateChartData(calculateEquilibrium({ ...state, showTariff: true }), true);
+            charts.after.update();
+
+            updateMetrics(eq);
+            updateImpactAnalysis(eq);
+        }
+
+        function updateMetrics(eq) {
+            const metricsHtml = `
+                <div class="metric-card">
+                    <div class="metric-label">Consumer Surplus</div>
+                    <div class="metric-value">$${eq.consumerSurplus.toFixed(1)}</div>
+                    <div class="metric-change" style="color: ${eq.consumerSurplusChange >= 0 ? '#48bb78' : '#f56565'}">
+                        ${eq.consumerSurplusChange >= 0 ? '+' : ''}${eq.consumerSurplusChange.toFixed(1)}
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Producer Surplus</div>
+                    <div class="metric-value">$${eq.producerSurplus.toFixed(1)}</div>
+                    <div class="metric-change" style="color: ${eq.producerSurplusChange >= 0 ? '#48bb78' : '#f56565'}">
+                        ${eq.producerSurplusChange >= 0 ? '+' : ''}${eq.producerSurplusChange.toFixed(1)}
+                    </div>
+                </div>
+                <div class="metric-card" style="border-bottom: 3px solid #ed8936">
+                    <div class="metric-label">Gov Revenue</div>
+                    <div class="metric-value">$${eq.govRevenue.toFixed(1)}</div>
+                </div>
+                <div class="metric-card" style="border-bottom: 3px solid #f56565">
+                    <div class="metric-label">Deadweight Loss</div>
+                    <div class="metric-value">$${eq.deadweightLoss.toFixed(1)}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Imports</div>
+                    <div class="metric-value">${eq.imports.toFixed(1)}</div>
+                </div>
+            `;
+            document.getElementById('metrics-container').innerHTML = metricsHtml;
+        }
+
+        function updateImpactAnalysis(eq) {
+            const winners = [];
+            const losers = [];
+
+            if (eq.producerSurplusChange > 0) winners.push({ name: "Domestic Producers", amount: eq.producerSurplusChange, icon: "🏭" });
+            if (eq.govRevenue > 0) winners.push({ name: "Government", amount: eq.govRevenue, icon: "🏛️" });
+
+            if (eq.consumerSurplusChange < 0) losers.push({ name: "Consumers", amount: eq.consumerSurplusChange, icon: "🛒" });
+            if (eq.deadweightLoss > 0) losers.push({ name: "Economy (Efficiency)", amount: -eq.deadweightLoss, icon: "📉" });
+
+            let html = '';
+
+            winners.forEach(w => {
+                html += `
+                    <div class="impact-card winner">
+                        <div class="impact-icon">${w.icon}</div>
+                        <div class="impact-label">${w.name} Win</div>
+                        <div class="impact-value">+$${w.amount.toFixed(1)}</div>
+                    </div>
+                `;
+            });
+
+            losers.forEach(l => {
+                html += `
+                    <div class="impact-card loser">
+                        <div class="impact-icon">${l.icon}</div>
+                        <div class="impact-label">${l.name} Lose</div>
+                        <div class="impact-value">$${l.amount.toFixed(1)}</div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('impact-grid').innerHTML = html;
+        }
+
+        // --- Educational Features ---
+
+        function renderGlossary() {
+            const container = document.getElementById('glossary-container');
+            container.innerHTML = glossaryTerms.map((item, index) => `
+                <div class="glossary-item" onclick="toggleGlossary(${index})">
+                    <div class="glossary-term">
+                        ${item.term}
+                        <span class="expand-icon" id="glossary-icon-${index}">▼</span>
+                    </div>
+                    <div class="glossary-def collapsed" id="glossary-def-${index}">
+                        ${item.definition}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleGlossary(index) {
+            document.getElementById(`glossary-def-${index}`).classList.toggle('collapsed');
+            document.getElementById(`glossary-icon-${index}`).classList.toggle('expanded');
+        }
+
+        function renderQuiz() {
+            const container = document.getElementById('quiz-content');
+            const q = quizQuestions[quizState.currentQuestion];
+
+            container.innerHTML = `
+                <div class="quiz-question">${quizState.currentQuestion + 1}. ${q.question}</div>
+                <div class="quiz-options">
+                    ${q.options.map((opt, i) => `
+                        <button class="quiz-option" onclick="checkAnswer(${i})" id="opt-${i}">
+                            ${opt}
+                        </button>
+                    `).join('')}
+                </div>
+                <div id="quiz-feedback" class="quiz-feedback" style="display:none"></div>
+            `;
+
+            updateQuizScore();
+        }
+
+        function checkAnswer(selectedIndex) {
+            const q = quizQuestions[quizState.currentQuestion];
+            const feedback = document.getElementById('quiz-feedback');
+            const opts = document.querySelectorAll('.quiz-option');
+
+            opts.forEach(btn => btn.disabled = true);
+
+            if (selectedIndex === q.correct) {
+                document.getElementById(`opt-${selectedIndex}`).classList.add('correct');
+                feedback.className = 'quiz-feedback correct';
+                feedback.innerHTML = `✅ Correct! ${q.explanation}`;
+                if (quizState.answered <= quizState.currentQuestion) quizState.score++;
+            } else {
+                document.getElementById(`opt-${selectedIndex}`).classList.add('incorrect');
+                document.getElementById(`opt-${q.correct}`).classList.add('correct');
+                feedback.className = 'quiz-feedback incorrect';
+                feedback.innerHTML = `❌ Incorrect. ${q.explanation}`;
+            }
+
+            feedback.style.display = 'block';
+            quizState.answered = Math.max(quizState.answered, quizState.currentQuestion + 1);
+            updateQuizScore();
+
+            setTimeout(() => {
+                if (quizState.currentQuestion < quizQuestions.length - 1) {
+                    quizState.currentQuestion++;
+                    renderQuiz();
+                } else {
+                    feedback.innerHTML += "<br><b>Quiz Complete!</b>";
+                }
+            }, 3000);
+        }
+
+        function updateQuizScore() {
+            document.getElementById('quiz-score').textContent = `Score: ${quizState.score}/${quizQuestions.length}`;
+        }
+
+        // --- Animations & Tutorial ---
+
+        function playAnimation() {
+            const status = document.getElementById('animation-status');
+            status.textContent = "Animating Tariff Increase...";
+
+            // Reset to base state
+            state.tariff = 0;
+            updateVisualization();
+
+            let frame = 0;
+            const maxFrames = 50;
+            const targetTariff = 10;
+
+            const interval = setInterval(() => {
+                frame++;
+                state.tariff = (frame / maxFrames) * targetTariff;
+
+                // Update slider visually
+                document.getElementById('tariff').value = state.tariff;
+                document.getElementById('tariff-value').textContent = state.tariff.toFixed(1);
+
+                updateVisualization();
+
+                if (frame >= maxFrames) {
+                    clearInterval(interval);
+                    status.textContent = "Animation Complete";
+                    setTimeout(() => status.textContent = "Ready to animate", 2000);
+                }
+            }, 50);
+        }
+
+        function openTutorial() {
+            document.getElementById('tutorial-modal').classList.add('active');
+            renderTutorialStep(0);
+        }
+
+        function closeTutorial() {
+            document.getElementById('tutorial-modal').classList.remove('active');
+        }
+
+        function renderTutorialStep(index) {
+            const step = tutorialSteps[index];
+            const container = document.getElementById('tutorial-content');
+
+            container.innerHTML = `
+                <div class="tutorial-step">
+                    <h4>${step.title}</h4>
+                    <p>${step.content}</p>
+                    <div class="try-this">${step.tryThis}</div>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                    <button class="btn btn-secondary" style="width: 48%" onclick="renderTutorialStep(${Math.max(0, index - 1)})" ${index === 0 ? 'disabled' : ''}>Previous</button>
+                    ${index < tutorialSteps.length - 1
+                    ? `<button class="btn btn-primary" style="width: 48%" onclick="renderTutorialStep(${index + 1})">Next</button>`
+                    : `<button class="btn btn-primary" style="width: 48%" onclick="closeTutorial()">Finish</button>`
+                }
+                </div>
+            `;
+        }
+    </script>
+</body>
+
+</html>

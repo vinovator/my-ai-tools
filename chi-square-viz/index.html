@@ -603,136 +603,136 @@
                     </div>
                 </div>
 
-                <div class="content-area">
-                    <div class="hypothesis-box" id="hypothesisContainer">
-                        <div class="hypothesis-item">
-                            <span class="hypothesis-label">Null Hypothesis (H₀):</span>
-                            <span id="h0-text">Loading...</span>
-                        </div>
-                        <div class="hypothesis-item">
-                            <span class="hypothesis-label">Alternative Hypothesis (H₁):</span>
-                            <span id="h1-text">Loading...</span>
-                        </div>
+            </div>
+            <div class="content-area">
+                <div class="hypothesis-box" id="hypothesisContainer">
+                    <div class="hypothesis-item">
+                        <span class="hypothesis-label">Null Hypothesis (H₀):</span>
+                        <span id="h0-text">Loading...</span>
                     </div>
+                    <div class="hypothesis-item">
+                        <span class="hypothesis-label">Alternative Hypothesis (H₁):</span>
+                        <span id="h1-text">Loading...</span>
+                    </div>
+                </div>
 
-                    <div class="metrics-grid">
-                        <div class="metric-card">
-                            <h3>χ² Statistic <span class="tooltip-icon"
-                                    data-tooltip="Sum of squared differences between observed and expected values, divided by expected values. Larger values suggest worse fit.">?</span>
-                            </h3>
-                            <div class="value" id="chiSquare">0.00</div>
-                            <div class="detail">Test statistic</div>
-                        </div>
-                        <div class="metric-card">
-                            <h3>P-Value <span class="tooltip-icon"
-                                    data-tooltip="Probability of seeing this data if the null hypothesis is true. Values < 0.05 suggest rejecting the null hypothesis.">?</span>
-                            </h3>
-                            <div class="value" id="pValue">0.000</div>
-                            <div class="detail" id="decision">-</div>
-                        </div>
-                        <div class="metric-card">
-                            <h3>Critical Value <span class="tooltip-icon"
-                                    data-tooltip="The threshold value at α=0.05. If χ² > critical value, reject H₀.">?</span>
-                            </h3>
-                            <div class="value" id="criticalValue">0.00</div>
-                            <div class="detail">at α = 0.05</div>
-                        </div>
-                        <div class="metric-card">
-                            <h3>Degrees of Freedom <span class="tooltip-icon"
-                                    data-tooltip="Number of categories minus 1. Determines which chi-square distribution to use.">?</span>
-                            </h3>
-                            <div class="value" id="degreesOfFreedom">0</div>
-                            <div class="detail">n - 1</div>
-                        </div>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <h3>χ² Statistic <span class="tooltip-icon"
+                                data-tooltip="Sum of squared differences between observed and expected values, divided by expected values. Larger values suggest worse fit.">?</span>
+                        </h3>
+                        <div class="value" id="chiSquare">0.00</div>
+                        <div class="detail">Test statistic</div>
                     </div>
+                    <div class="metric-card">
+                        <h3>P-Value <span class="tooltip-icon"
+                                data-tooltip="Probability of seeing this data if the null hypothesis is true. Values < 0.05 suggest rejecting the null hypothesis.">?</span>
+                        </h3>
+                        <div class="value" id="pValue">0.000</div>
+                        <div class="detail" id="decision">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Critical Value <span class="tooltip-icon"
+                                data-tooltip="The threshold value at α=0.05. If χ² > critical value, reject H₀.">?</span>
+                        </h3>
+                        <div class="value" id="criticalValue">0.00</div>
+                        <div class="detail">at α = 0.05</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Degrees of Freedom <span class="tooltip-icon"
+                                data-tooltip="Number of categories minus 1. Determines which chi-square distribution to use.">?</span>
+                        </h3>
+                        <div class="value" id="degreesOfFreedom">0</div>
+                        <div class="detail">n - 1</div>
+                    </div>
+                </div>
 
-                    <div class="chart-container">
-                        <div style="height: 400px; position: relative;">
-                            <canvas id="mainChart"></canvas>
-                        </div>
+                <div class="chart-container">
+                    <div style="height: 400px; position: relative;">
+                        <canvas id="mainChart"></canvas>
                     </div>
+                </div>
 
-                    <div id="dataTableContainer">
-                        <h2>Data Analysis Table</h2>
-                        <table class="data-table" id="dataTable">
-                            <thead>
-                                <tr>
-                                    <th>Category</th>
-                                    <th>Observed (O) <span class="tooltip-icon"
-                                            data-tooltip="The actual frequencies we measured or counted in our experiment.">?</span>
-                                    </th>
-                                    <th>Expected (E) <span class="tooltip-icon"
-                                            data-tooltip="The frequencies we would expect if the null hypothesis is true.">?</span>
-                                    </th>
-                                    <th>(O-E)² <span class="tooltip-icon"
-                                            data-tooltip="Squared difference between observed and expected values.">?</span>
-                                    </th>
-                                    <th>(O-E)²/E <span class="tooltip-icon"
-                                            data-tooltip="Contribution to the chi-square statistic from this category.">?</span>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody id="dataTableBody">
-                            </tbody>
-                        </table>
-                    </div>
+                <div id="dataTableContainer">
+                    <h2>Data Analysis Table</h2>
+                    <table class="data-table" id="dataTable">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Observed (O) <span class="tooltip-icon"
+                                        data-tooltip="The actual frequencies we measured or counted in our experiment.">?</span>
+                                </th>
+                                <th>Expected (E) <span class="tooltip-icon"
+                                        data-tooltip="The frequencies we would expect if the null hypothesis is true.">?</span>
+                                </th>
+                                <th>(O-E)² <span class="tooltip-icon"
+                                        data-tooltip="Squared difference between observed and expected values.">?</span>
+                                </th>
+                                <th>(O-E)²/E <span class="tooltip-icon"
+                                        data-tooltip="Contribution to the chi-square statistic from this category.">?</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                        </tbody>
+                    </table>
+                </div>
 
-                    <div class="chart-container">
-                        <div style="height: 400px; position: relative;">
-                            <canvas id="distributionChart"></canvas>
-                        </div>
-                        <details class="chart-guide">
-                            <summary>ℹ️ How to read this chart?</summary>
-                            <ul>
-                                <li><strong>The Curve (PDF):</strong> Represents the probability of getting a specific
-                                    Chi-Square value just by random chance. Imagine running the experiment 10,000 times
-                                    with
-                                    a perfectly fair system—this curve shows how the results would be distributed. Most
-                                    results would be near 0 (perfect fit), but occasionally you'd get higher values just
-                                    by
-                                    luck.</li>
-                                <li><strong>X-Axis:</strong> The Chi-Square Statistic value (0 means perfect fit, higher
-                                    means worse fit).</li>
-                                <li><strong>Blue Line:</strong> Your calculated statistic. Where does your data fall?
-                                </li>
-                                <li><strong>Red Line (Critical Value):</strong> The "Limit". If your blue line is to the
-                                    right of this red line (in the shaded area), your result is too extreme to be just
-                                    luck
-                                    (probability < 5%).</li>
-                            </ul>
-                        </details>
-                        <details class="chart-guide" style="margin-top: 5px;">
-                            <summary>📉 Intuitive: How is this curve drawn?</summary>
-                            <p style="padding: 10px; color: #555; line-height: 1.5;">
-                                Think of this curve as a "Pile of Possibilities".
-                                <br><br>
-                                1. <strong>Simulation:</strong> Imagine we simulate a "null" world (e.g., a perfectly
-                                fair
-                                die) millions of times.
-                                <br>
-                                2. <strong>Calculate:</strong> For each simulation, we calculate the Chi-Square score
-                                (measure of "weirdness").
-                                <br>
-                                3. <strong>Stack:</strong> We stack all those scores up. The curve is highest where the
-                                scores are most common.
-                                <br>
-                                4. <strong>The Tail:</strong> The long tail to the right represents those rare,
-                                super-weird
-                                outcomes that shouldn't happen often if everything is fair.
-                            </p>
-                        </details>
+                <div class="chart-container">
+                    <div style="height: 400px; position: relative;">
+                        <canvas id="distributionChart"></canvas>
                     </div>
+                    <details class="chart-guide">
+                        <summary>ℹ️ How to read this chart?</summary>
+                        <ul>
+                            <li><strong>The Curve (PDF):</strong> Represents the probability of getting a specific
+                                Chi-Square value just by random chance. Imagine running the experiment 10,000 times
+                                with
+                                a perfectly fair system—this curve shows how the results would be distributed. Most
+                                results would be near 0 (perfect fit), but occasionally you'd get higher values just
+                                by
+                                luck.</li>
+                            <li><strong>X-Axis:</strong> The Chi-Square Statistic value (0 means perfect fit, higher
+                                means worse fit).</li>
+                            <li><strong>Blue Line:</strong> Your calculated statistic. Where does your data fall?
+                            </li>
+                            <li><strong>Red Line (Critical Value):</strong> The "Limit". If your blue line is to the
+                                right of this red line (in the shaded area), your result is too extreme to be just
+                                luck
+                                (probability < 5%).</li>
+                        </ul>
+                    </details>
+                    <details class="chart-guide" style="margin-top: 5px;">
+                        <summary>📉 Intuitive: How is this curve drawn?</summary>
+                        <p style="padding: 10px; color: #555; line-height: 1.5;">
+                            Think of this curve as a "Pile of Possibilities".
+                            <br><br>
+                            1. <strong>Simulation:</strong> Imagine we simulate a "null" world (e.g., a perfectly
+                            fair
+                            die) millions of times.
+                            <br>
+                            2. <strong>Calculate:</strong> For each simulation, we calculate the Chi-Square score
+                            (measure of "weirdness").
+                            <br>
+                            3. <strong>Stack:</strong> We stack all those scores up. The curve is highest where the
+                            scores are most common.
+                            <br>
+                            4. <strong>The Tail:</strong> The long tail to the right represents those rare,
+                            super-weird
+                            outcomes that shouldn't happen often if everything is fair.
+                        </p>
+                    </details>
+                </div>
 
-                    <div class="summary-panel" id="summaryPanel">
-                        <h3>📊 What Does This Mean?</h3>
-                        <p id="summaryText">Select a scenario to begin exploring hypothesis testing!</p>
-                    </div>
+                <div class="summary-panel" id="summaryPanel">
+                    <h3>📊 What Does This Mean?</h3>
+                    <p id="summaryText">Select a scenario to begin exploring hypothesis testing!</p>
+                </div>
 
-                    <!-- Quiz Section -->
-                    <div class="quiz-container" id="quizContainer">
-                        <h2>🎯 Knowledge Check</h2>
-                        <div id="quizContent"></div>
-                    </div>
+                <!-- Quiz Section -->
+                <div class="quiz-container" id="quizContainer">
+                    <h2>🎯 Knowledge Check</h2>
+                    <div id="quizContent"></div>
                 </div>
             </div>
         </div>

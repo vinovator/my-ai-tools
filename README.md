@@ -24,6 +24,12 @@ Interactive platform for mastering statistical hypothesis testing. Features:
 - **Real-World Scenarios**: Genetics key, Fair Dice, and Market Research presets.
 - **Guided Tutorials**: Step-by-step walkthroughs of the testing process.
 
+### [Chi-Square Goodness of Fit Tool](./goodness-of-fit/README.md)
+A dedicated statistical calculator tool for performing Chi-Square Goodness of Fit tests on your own data.
+- **Data Import**: Support for CSV/Excel uploads and manual entry.
+- **Analysis**: Instant calculation of Test Statistic, P-Value, and Critical Value.
+- **Visualization**: Interactive distribution curves and bar charts.
+
 ---
 
 *More tools coming soon...*

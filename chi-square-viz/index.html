@@ -722,6 +722,22 @@
                             outcomes that shouldn't happen often if everything is fair.
                         </p>
                     </details>
+                    <details class="chart-guide" style="margin-top: 5px;">
+                        <summary>🧮 How is P-Value calculated?</summary>
+                        <p style="padding: 10px; color: #555; line-height: 1.5;">
+                            The P-Value represents the <strong>area under the curve</strong> to the right of your
+                            statistic.
+                            <br><br>
+                            Mathematically, it is the integral of the probability density function (PDF) from your
+                            χ² value to infinity:
+                            <br>
+                            <code
+                                style="display:block; text-align:center; margin: 10px 0; background:#eee; padding:5px;">P = ∫ f(x; k) dx</code>
+                            <br>
+                            In this app, we use a numerical approximation (<strong>series expansion</strong> of the
+                            Incomplete Gamma Function) to calculate this area.
+                        </p>
+                    </details>
                 </div>
 
                 <div class="summary-panel" id="summaryPanel">

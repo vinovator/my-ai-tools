@@ -361,12 +361,8 @@
             margin-top: 20px;
         }
 
-        /* Quiz */
-        .quiz-container {
-            background: white;
-            border: 1px solid var(--border);
-            box-shadow: var(--shadow-sm);
-        }
+        /* Quiz (Base) */
+        /* Note: .quiz-container is fully defined below in the "Quiz Options" section override */
 
         /* Tutorial */
         .tutorial-overlay {
@@ -447,46 +443,91 @@
             max-height: 2000px;
         }
 
-        /* Quiz Options */
+        /* Quiz Container */
+        .quiz-container {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            padding: 30px;
+            margin-top: 40px;
+            border: 1px solid var(--border);
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            display: none;
+            /* Initially hidden */
+        }
+
+        .quiz-container h2 {
+            color: var(--primary);
+            margin-bottom: 25px;
+            text-align: center;
+            font-size: 1.8rem;
+            position: relative;
+        }
+
+        .quiz-container h2::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 4px;
+            background: var(--accent);
+            margin: 10px auto 0;
+            border-radius: 2px;
+        }
+
+        /* Quiz Items */
         .quiz-question {
-            margin-bottom: 24px;
+            background: #F9FAFB;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border: 1px solid #E5E7EB;
         }
 
         .quiz-question p {
+            font-size: 1.1rem;
             font-weight: 600;
-            margin-bottom: 12px;
             color: var(--text-main);
+            margin-bottom: 20px;
         }
 
         .quiz-options {
             list-style: none;
+            display: grid;
+            gap: 12px;
         }
 
         .quiz-options li {
-            padding: 12px 16px;
-            margin: 8px 0;
+            padding: 16px 20px;
             background: white;
-            border: 1px solid var(--border);
-            border-radius: 8px;
+            border: 2px solid #E5E7EB;
+            border-radius: 10px;
             cursor: pointer;
-            transition: all 0.2s;
+            font-weight: 500;
+            color: var(--text-main);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
         }
 
         .quiz-options li:hover {
-            background: #F3F4F6;
             border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
 
         .quiz-options li.correct {
-            background: #ECFDF5;
+            background-color: #ECFDF5;
             border-color: #10B981;
             color: #065F46;
+            pointer-events: none;
         }
 
         .quiz-options li.incorrect {
-            background: #FEF2F2;
+            background-color: #FEF2F2;
             border-color: #EF4444;
             color: #991B1B;
+            pointer-events: none;
         }
 
         .summary-panel {

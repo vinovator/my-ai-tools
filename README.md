@@ -36,6 +36,12 @@ An interactive unit circle explorer designed to build intuition for trigonometri
 - **Step-by-Step Lessons**: Guided explanations of core concepts.
 - **Wave Visualization**: Connects circular motion to sine waves.
 
+### [Fourier Audio Lab + AI](./fourier-lab/README.md)
+Interactive signal processing and AI playground.
+- **Synthesis:** Build sounds by mixing sine wave harmonics.
+- **Visualization:** Real-time Waveform and FFT (Frequency Spectrum) displays.
+- **AI Classification:** Train a neural network in-browser to recognize instrument timbres from their harmonic fingerprints.
+
 ---
 
 *More tools coming soon...*

@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fourier Audio Lab + AI</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Fira+Code:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0c0a0f;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        const TAU = 2 * Math.PI;
+
+        /* ── Color palette: warm analog studio ── */
+        const C = {
+            bg: "#0c0a0f",
+            panel: "#151218",
+            border: "#2a2330",
+            wave: "#00ffa3",
+            waveGlow: "#00ffa320",
+            freq: "#ff6b35",
+            freqGlow: "#ff6b3520",
+            accent1: "#00ffa3",
+            accent2: "#ff6b35",
+            accent3: "#a78bfa",
+            accent4: "#38bdf8",
+            text: "#a09aae",
+            textBright: "#e8e4ef",
+            knob: "#2a2330",
+            knobActive: "#3d3548",
+            danger: "#ff4466",
+            success: "#00ffa3",
+        };
+
+        const FONT = '"IBM Plex Mono", "Fira Code", monospace';
+
+        /* ── Instrument Presets (harmonic amplitude profiles) ── */
+        const PRESETS = {
+            "Pure Tone": [1, 0, 0, 0, 0, 0, 0, 0],
+            Clarinet: [1, 0, 0.75, 0, 0.5, 0, 0.14, 0],
+            Organ: [1, 0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
+            Square: [1, 0, 0.33, 0, 0.2, 0, 0.14, 0],
+            Sawtooth: [1, 0.5, 0.33, 0.25, 0.2, 0.17, 0.14, 0.12],
+            Bell: [1, 0.6, 0, 0.4, 0, 0, 0.2, 0],
+        };
+
+        const PRESET_NAMES = Object.keys(PRESETS);
+
+        /* ── Simple Neural Network (from scratch, no library) ── */
+        class TinyNet {
+            constructor(inputSize, hiddenSize, outputSize) {
+                this.lr = 0.05;
+                this.w1 = this.randMatrix(inputSize, hiddenSize, 0.5);
+                this.b1 = new Array(hiddenSize).fill(0);
+                this.w2 = this.randMatrix(hiddenSize, outputSize, 0.5);
+                this.b2 = new Array(outputSize).fill(0);
+                this.trained = false;
+                this.epochs = 0;
+                this.loss = 1;
+            }
+
+            randMatrix(rows, cols, scale) {
+                return Array.from({ length: rows }, () =>
+                    Array.from({ length: cols }, () => (Math.random() - 0.5) * scale)
+                );
+            }
+
+            relu(x) { return Math.max(0, x); }
+            reluDeriv(x) { return x > 0 ? 1 : 0; }
+
+            softmax(arr) {
+                const max = Math.max(...arr);
+                const exps = arr.map((v) => Math.exp(v - max));
+                const sum = exps.reduce((a, b) => a + b, 0);
+                return exps.map((v) => v / sum);
+            }
+
+            forward(input) {
+                // Hidden layer
+                const hidden = this.b1.map((b, j) =>
+                    this.relu(input.reduce((sum, x, i) => sum + x * this.w1[i][j], b))
+                );
+                // Output layer
+                const output = this.b2.map((b, j) =>
+                    hidden.reduce((sum, h, i) => sum + h * this.w2[i][j], b)
+                );
+                return { hidden, output, probs: this.softmax(output) };
+            }
+
+            train(inputs, labels, epochs = 50) {
+                for (let e = 0; e < epochs; e++) {
+                    let totalLoss = 0;
+                    for (let s = 0; s < inputs.length; s++) {
+                        const input = inputs[s];
+                        const target = labels[s];
+                        const { hidden, output, probs } = this.forward(input);
+
+                        // Cross-entropy loss
+                        totalLoss -= Math.log(probs[target] + 1e-10);
+
+                        // Output gradients
+                        const dOutput = probs.map((p, i) => p - (i === target ? 1 : 0));
+
+                        // Backprop to w2, b2
+                        for (let i = 0; i < hidden.length; i++) {
+                            for (let j = 0; j < dOutput.length; j++) {
+                                this.w2[i][j] -= this.lr * hidden[i] * dOutput[j];
+                            }
+                        }
+                        for (let j = 0; j < dOutput.length; j++) {
+                            this.b2[j] -= this.lr * dOutput[j];
+                        }
+
+                        // Backprop to w1, b1
+                        const dHidden = hidden.map((h, i) => {
+                            const grad = dOutput.reduce((sum, d, j) => sum + d * this.w2[i][j], 0);
+                            return grad * this.reluDeriv(h);
+                        });
+
+                        for (let i = 0; i < input.length; i++) {
+                            for (let j = 0; j < dHidden.length; j++) {
+                                this.w1[i][j] -= this.lr * input[i] * dHidden[j];
+                            }
+                        }
+                        for (let j = 0; j < dHidden.length; j++) {
+                            this.b1[j] -= this.lr * dHidden[j];
+                        }
+                    }
+                    this.loss = totalLoss / inputs.length;
+                    this.epochs++;
+                }
+                this.trained = true;
+            }
+
+            predict(input) {
+                const { probs } = this.forward(input);
+                return probs;
+            }
+        }
+
+        /* ── Generate training data with noise ── */
+        function generateTrainingData(n = 80) {
+            const inputs = [];
+            const labels = [];
+            for (let i = 0; i < n; i++) {
+                const presetIdx = Math.floor(Math.random() * PRESET_NAMES.length);
+                const base = PRESETS[PRESET_NAMES[presetIdx]];
+                // Add noise for generalization
+                const noisy = base.map((v) => Math.max(0, v + (Math.random() - 0.5) * 0.2));
+                // Normalize
+                const max = Math.max(...noisy, 0.01);
+                inputs.push(noisy.map((v) => v / max));
+                labels.push(presetIdx);
+            }
+            return { inputs, labels };
+        }
+
+        /* ── Canvas: Waveform ── */
+        function WaveformCanvas({ harmonics, baseFreq }) {
+            const canvasRef = useRef(null);
+
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const ctx = canvas.getContext("2d");
+                const dpr = window.devicePixelRatio || 1;
+                const w = canvas.clientWidth;
+                const h = canvas.clientHeight;
+                canvas.width = w * dpr;
+                canvas.height = h * dpr;
+                ctx.scale(dpr, dpr);
+
+                ctx.fillStyle = C.bg;
+                ctx.fillRect(0, 0, w, h);
+
+                // Grid lines
+                ctx.strokeStyle = "#1e1a24";
+                ctx.lineWidth = 0.5;
+                for (let i = 0; i <= 8; i++) {
+                    const y = (h / 8) * i;
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+                }
+                for (let i = 0; i <= 16; i++) {
+                    const x = (w / 16) * i;
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+                }
+
+                // Center line
+                ctx.strokeStyle = "#2a2330";
+                ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); ctx.stroke();
+
+                // Waveform glow
+                ctx.shadowColor = C.wave;
+                ctx.shadowBlur = 8;
+                ctx.strokeStyle = C.wave;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+
+                const samples = 512;
+                const periods = 3;
+                for (let i = 0; i <= samples; i++) {
+                    const t = (i / samples) * periods;
+                    let y = 0;
+                    harmonics.forEach((amp, idx) => {
+                        y += amp * Math.sin(TAU * (idx + 1) * t);
+                    });
+                    const maxAmp = harmonics.reduce((a, b) => a + Math.abs(b), 0) || 1;
+                    const px = (i / samples) * w;
+                    const py = h / 2 - (y / maxAmp) * (h * 0.4);
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Individual harmonics (faint)
+                harmonics.forEach((amp, idx) => {
+                    if (amp < 0.01) return;
+                    ctx.strokeStyle = `hsla(${160 + idx * 30}, 80%, 60%, 0.15)`;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    for (let i = 0; i <= samples; i++) {
+                        const t = (i / samples) * periods;
+                        const y = amp * Math.sin(TAU * (idx + 1) * t);
+                        const maxAmp = harmonics.reduce((a, b) => a + Math.abs(b), 0) || 1;
+                        const px = (i / samples) * w;
+                        const py = h / 2 - (y / maxAmp) * (h * 0.4);
+                        if (i === 0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    }
+                    ctx.stroke();
+                });
+
+                // Label
+                ctx.fillStyle = C.text;
+                ctx.font = `10px ${FONT}`;
+                ctx.fillText("TIME DOMAIN — Waveform", 8, 14);
+            }, [harmonics, baseFreq]);
+
+            return <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: "block", borderRadius: 8 }} />;
+        }
+
+        /* ── Canvas: FFT / Frequency spectrum ── */
+        function FFTCanvas({ harmonics, baseFreq }) {
+            const canvasRef = useRef(null);
+
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const ctx = canvas.getContext("2d");
+                const dpr = window.devicePixelRatio || 1;
+                const w = canvas.clientWidth;
+                const h = canvas.clientHeight;
+                canvas.width = w * dpr;
+                canvas.height = h * dpr;
+                ctx.scale(dpr, dpr);
+
+                ctx.fillStyle = C.bg;
+                ctx.fillRect(0, 0, w, h);
+
+                // Grid
+                ctx.strokeStyle = "#1e1a24";
+                ctx.lineWidth = 0.5;
+                for (let i = 0; i <= 8; i++) {
+                    const y = (h / 8) * i;
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+                }
+
+                const barWidth = w / (harmonics.length + 1);
+                const maxAmp = Math.max(...harmonics, 0.01);
+                const margin = barWidth * 0.6;
+
+                harmonics.forEach((amp, i) => {
+                    const x = (i + 0.5) * barWidth + margin / 2;
+                    const barH = (amp / maxAmp) * (h * 0.7);
+                    const freq = baseFreq * (i + 1);
+
+                    // Glow bar
+                    const grad = ctx.createLinearGradient(x, h - barH - 20, x, h - 20);
+                    grad.addColorStop(0, C.freq);
+                    grad.addColorStop(1, "#ff6b3540");
+                    ctx.fillStyle = grad;
+                    ctx.shadowColor = C.freq;
+                    ctx.shadowBlur = amp > 0.1 ? 12 : 0;
+                    ctx.fillRect(x, h - barH - 20, barWidth - margin, barH);
+                    ctx.shadowBlur = 0;
+
+                    // Frequency label
+                    ctx.fillStyle = C.text;
+                    ctx.font = `9px ${FONT}`;
+                    ctx.textAlign = "center";
+                    ctx.fillText(`${freq}Hz`, x + (barWidth - margin) / 2, h - 5);
+
+                    // Harmonic number
+                    ctx.fillStyle = C.accent2;
+                    ctx.font = `bold 10px ${FONT}`;
+                    ctx.fillText(`H${i + 1}`, x + (barWidth - margin) / 2, h - barH - 26);
+                });
+
+                ctx.fillStyle = C.text;
+                ctx.font = `10px ${FONT}`;
+                ctx.textAlign = "left";
+                ctx.fillText("FREQUENCY DOMAIN — Fourier Spectrum", 8, 14);
+            }, [harmonics, baseFreq]);
+
+            return <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: "block", borderRadius: 8 }} />;
+        }
+
+        /* ── Harmonic Slider ── */
+        function HarmonicSlider({ index, value, onChange, baseFreq }) {
+            const colors = ["#00ffa3", "#38bdf8", "#a78bfa", "#ff6b35", "#f472b6", "#facc15", "#34d399", "#fb923c"];
+            const color = colors[index % colors.length];
+
+            return (
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 10, color, fontWeight: 700, width: 24, fontFamily: FONT }}>
+                        H{index + 1}
+                    </span>
+                    <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={Math.round(value * 100)}
+                        onChange={(e) => onChange(parseFloat(e.target.value) / 100)}
+                        style={{ flex: 1, accentColor: color, height: 4 }}
+                    />
+                    <span style={{ fontSize: 10, color: C.text, width: 32, textAlign: "right", fontFamily: FONT }}>
+                        {(value * 100).toFixed(0)}%
+                    </span>
+                </div>
+            );
+        }
+
+        /* ── Neural Network Visualization ── */
+        function NetVizCanvas({ predictions, activePreset }) {
+            const canvasRef = useRef(null);
+
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const ctx = canvas.getContext("2d");
+                const dpr = window.devicePixelRatio || 1;
+                const w = canvas.clientWidth;
+                const h = canvas.clientHeight;
+                canvas.width = w * dpr;
+                canvas.height = h * dpr;
+                ctx.scale(dpr, dpr);
+
+                ctx.fillStyle = C.panel;
+                ctx.fillRect(0, 0, w, h);
+
+                if (!predictions) return;
+
+                const barH = 18;
+                const gap = 6;
+                const startY = 8;
+                const maxWidth = w - 100;
+
+                predictions.forEach((prob, i) => {
+                    const y = startY + i * (barH + gap);
+                    const bw = prob * maxWidth;
+                    const isTop = prob === Math.max(...predictions);
+
+                    // Bar background
+                    ctx.fillStyle = "#1e1a24";
+                    ctx.beginPath();
+                    ctx.roundRect(80, y, maxWidth, barH, 4);
+                    ctx.fill();
+
+                    // Bar fill
+                    const grad = ctx.createLinearGradient(80, y, 80 + bw, y);
+                    grad.addColorStop(0, isTop ? C.accent1 : "#475569");
+                    grad.addColorStop(1, isTop ? "#00ffa380" : "#47556940");
+                    ctx.fillStyle = grad;
+                    if (bw > 2) {
+                        ctx.beginPath();
+                        ctx.roundRect(80, y, bw, barH, 4);
+                        ctx.fill();
+                    }
+
+                    // Label
+                    ctx.fillStyle = isTop ? C.textBright : C.text;
+                    ctx.font = `${isTop ? "bold " : ""}10px ${FONT}`;
+                    ctx.textAlign = "right";
+                    ctx.fillText(PRESET_NAMES[i], 74, y + 13);
+
+                    // Probability
+                    ctx.fillStyle = isTop ? C.accent1 : C.text;
+                    ctx.textAlign = "left";
+                    ctx.fillText(`${(prob * 100).toFixed(1)}%`, 80 + maxWidth + 4, y + 13);
+                });
+            }, [predictions, activePreset]);
+
+            return <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: "block", borderRadius: 8 }} />;
+        }
+
+        /* ── Main App ── */
+        function FourierAI() {
+            const [harmonics, setHarmonics] = useState([1, 0, 0, 0, 0, 0, 0, 0]);
+            const [baseFreq, setBaseFreq] = useState(220);
+            const [activePreset, setActivePreset] = useState("Pure Tone");
+            const [net, setNet] = useState(null);
+            const [predictions, setPredictions] = useState(null);
+            const [isTraining, setIsTraining] = useState(false);
+            const [trainStatus, setTrainStatus] = useState(null);
+            const [isPlaying, setIsPlaying] = useState(false);
+            const audioCtxRef = useRef(null);
+            const oscillatorsRef = useRef([]);
+            const gainsRef = useRef([]);
+
+            const updateHarmonic = (idx, val) => {
+                const next = [...harmonics];
+                next[idx] = val;
+                setHarmonics(next);
+                setActivePreset(null);
+            };
+
+            const loadPreset = (name) => {
+                setHarmonics([...PRESETS[name]]);
+                setActivePreset(name);
+            };
+
+            // Audio playback
+            const startAudio = useCallback(() => {
+                if (!audioCtxRef.current) {
+                    audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                const ctx = audioCtxRef.current;
+                stopAudio();
+
+                const masterGain = ctx.createGain();
+                masterGain.gain.value = 0.15;
+                masterGain.connect(ctx.destination);
+
+                const oscs = [];
+                const gains = [];
+                harmonics.forEach((amp, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = "sine";
+                    osc.frequency.value = baseFreq * (i + 1);
+                    gain.gain.value = amp;
+                    osc.connect(gain);
+                    gain.connect(masterGain);
+                    osc.start();
+                    oscs.push(osc);
+                    gains.push(gain);
+                });
+
+                oscillatorsRef.current = oscs;
+                gainsRef.current = gains;
+                setIsPlaying(true);
+            }, [harmonics, baseFreq]);
+
+            const stopAudio = useCallback(() => {
+                oscillatorsRef.current.forEach((o) => {
+                    try { o.stop(); } catch (e) { }
+                });
+                oscillatorsRef.current = [];
+                gainsRef.current = [];
+                setIsPlaying(false);
+            }, []);
+
+            // Update running oscillators
+            useEffect(() => {
+                if (isPlaying && gainsRef.current.length === harmonics.length) {
+                    harmonics.forEach((amp, i) => {
+                        if (gainsRef.current[i]) {
+                            gainsRef.current[i].gain.value = amp;
+                        }
+                    });
+                }
+            }, [harmonics, isPlaying]);
+
+            // Train neural network
+            const trainNetwork = useCallback(() => {
+                setIsTraining(true);
+                setTrainStatus("Generating training data...");
+
+                setTimeout(() => {
+                    const { inputs, labels } = generateTrainingData(200);
+                    const network = new TinyNet(8, 16, PRESET_NAMES.length);
+
+                    setTrainStatus("Training neural network...");
+
+                    setTimeout(() => {
+                        network.train(inputs, labels, 300);
+                        setNet(network);
+                        setTrainStatus(`Trained! Loss: ${network.loss.toFixed(4)} (${network.epochs} epochs)`);
+                        setIsTraining(false);
+                    }, 100);
+                }, 100);
+            }, []);
+
+            // Run prediction whenever harmonics change
+            useEffect(() => {
+                if (net && net.trained) {
+                    const maxH = Math.max(...harmonics, 0.01);
+                    const normalized = harmonics.map((v) => v / maxH);
+                    const probs = net.predict(normalized);
+                    setPredictions(probs);
+                }
+            }, [harmonics, net]);
+
+            const predBarH = PRESET_NAMES.length * 24 + 16;
+
+            return (
+                <div style={{
+                    background: C.bg,
+                    minHeight: "100vh",
+                    fontFamily: FONT,
+                    color: C.textBright,
+                    display: "flex",
+                    flexDirection: "column",
+                }}>
+                    {/* Title */}
+                    <div style={{ padding: "16px 20px 0", textAlign: "center" }}>
+                        <h1 style={{
+                            fontSize: 18, fontWeight: 800, margin: 0, letterSpacing: "0.04em",
+                            background: `linear-gradient(135deg, ${C.accent1}, ${C.accent2})`,
+                            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+                        }}>
+                            FOURIER AUDIO LAB + AI
+                        </h1>
+                        <p style={{ color: C.text, fontSize: 11, margin: "2px 0 0", letterSpacing: "0.06em" }}>
+                            Build sounds from sine waves · See the Fourier transform · Train a neural net to classify them
+                        </p>
+                    </div>
+
+                    {/* Waveform display */}
+                    <div style={{ padding: "12px 16px 0", height: 160 }}>
+                        <WaveformCanvas harmonics={harmonics} baseFreq={baseFreq} />
+                    </div>
+
+                    {/* FFT display */}
+                    <div style={{ padding: "8px 16px 0", height: 170 }}>
+                        <FFTCanvas harmonics={harmonics} baseFreq={baseFreq} />
+                    </div>
+
+                    {/* Presets */}
+                    <div style={{ padding: "12px 16px 0" }}>
+                        <div style={{ fontSize: 10, color: C.text, marginBottom: 6, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                            Instrument Presets — Each has a unique harmonic fingerprint
+                        </div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                            {PRESET_NAMES.map((name) => (
+                                <button
+                                    key={name}
+                                    onClick={() => loadPreset(name)}
+                                    style={{
+                                        padding: "6px 12px",
+                                        borderRadius: 6,
+                                        border: `1px solid ${activePreset === name ? C.accent1 : C.border}`,
+                                        background: activePreset === name ? C.accent1 + "18" : "transparent",
+                                        color: activePreset === name ? C.accent1 : C.text,
+                                        cursor: "pointer",
+                                        fontSize: 11,
+                                        fontFamily: FONT,
+                                        fontWeight: activePreset === name ? 700 : 400,
+                                        transition: "all 0.15s",
+                                    }}
+                                >
+                                    {name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Harmonic sliders */}
+                    <div style={{ padding: "12px 16px 0" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                            <span style={{ fontSize: 10, color: C.text, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                                Harmonic Amplitudes — Drag to reshape the sound
+                            </span>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                            {harmonics.map((val, i) => (
+                                <HarmonicSlider
+                                    key={i}
+                                    index={i}
+                                    value={val}
+                                    onChange={(v) => updateHarmonic(i, v)}
+                                    baseFreq={baseFreq}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Base frequency + Play */}
+                    <div style={{ padding: "12px 16px 0", display: "flex", gap: 8, alignItems: "center" }}>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: C.text, marginBottom: 4 }}>
+                                <span>Base Frequency</span>
+                                <span style={{ color: C.textBright }}>{baseFreq} Hz</span>
+                            </div>
+                            <input
+                                type="range"
+                                min={55}
+                                max={880}
+                                step={1}
+                                value={baseFreq}
+                                onChange={(e) => setBaseFreq(parseInt(e.target.value))}
+                                style={{ width: "100%", accentColor: C.accent1, height: 4 }}
+                            />
+                        </div>
+                        <button
+                            onClick={isPlaying ? stopAudio : startAudio}
+                            style={{
+                                padding: "10px 20px",
+                                borderRadius: 8,
+                                border: `1.5px solid ${isPlaying ? C.danger : C.accent1}`,
+                                background: isPlaying ? C.danger + "18" : C.accent1 + "18",
+                                color: isPlaying ? C.danger : C.accent1,
+                                cursor: "pointer",
+                                fontSize: 12,
+                                fontFamily: FONT,
+                                fontWeight: 700,
+                                whiteSpace: "nowrap",
+                            }}
+                        >
+                            {isPlaying ? "■ Stop" : "♫ Play"}
+                        </button>
+                    </div>
+
+                    {/* AI Section */}
+                    <div style={{
+                        margin: "16px 16px 0",
+                        padding: 16,
+                        background: C.panel,
+                        border: `1px solid ${C.border}`,
+                        borderRadius: 12,
+                    }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                            <div>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: C.accent3 }}>
+                                    🧠 Neural Network Classifier
+                                </div>
+                                <div style={{ fontSize: 10, color: C.text, marginTop: 2 }}>
+                                    Trains on harmonic profiles, then classifies your sound in real-time
+                                </div>
+                            </div>
+                            <button
+                                onClick={trainNetwork}
+                                disabled={isTraining}
+                                style={{
+                                    padding: "8px 16px",
+                                    borderRadius: 8,
+                                    border: `1.5px solid ${C.accent3}`,
+                                    background: isTraining ? C.accent3 + "30" : C.accent3 + "18",
+                                    color: C.accent3,
+                                    cursor: isTraining ? "wait" : "pointer",
+                                    fontSize: 11,
+                                    fontFamily: FONT,
+                                    fontWeight: 700,
+                                }}
+                            >
+                                {isTraining ? "Training..." : net ? "Retrain" : "Train Network"}
+                            </button>
+                        </div>
+
+                        {trainStatus && (
+                            <div style={{
+                                fontSize: 10,
+                                color: net?.trained ? C.success : C.accent3,
+                                padding: "6px 10px",
+                                background: "#1e1a24",
+                                borderRadius: 6,
+                                marginBottom: 8,
+                                fontFamily: FONT,
+                            }}>
+                                {trainStatus}
+                            </div>
+                        )}
+
+                        {!net && (
+                            <div style={{
+                                fontSize: 11, color: C.text, textAlign: "center", padding: "20px 0", lineHeight: 1.6,
+                            }}>
+                                Hit "Train Network" to build a neural net (8→16→{PRESET_NAMES.length}) that learns<br />
+                                each instrument's harmonic fingerprint. Then adjust the sliders and watch it classify!
+                            </div>
+                        )}
+
+                        {predictions && (
+                            <div style={{ height: predBarH }}>
+                                <NetVizCanvas predictions={predictions} activePreset={activePreset} />
+                            </div>
+                        )}
+
+                        {predictions && (
+                            <div style={{ fontSize: 10, color: C.text, marginTop: 8, lineHeight: 1.5 }}>
+                                <strong style={{ color: C.accent1 }}>
+                                    Prediction: {PRESET_NAMES[predictions.indexOf(Math.max(...predictions))]}
+                                </strong>{" "}
+                                ({(Math.max(...predictions) * 100).toFixed(1)}% confidence)
+                                {activePreset && (
+                                    <span style={{ color: predictions.indexOf(Math.max(...predictions)) === PRESET_NAMES.indexOf(activePreset) ? C.success : C.danger }}>
+                                        {" "}— {predictions.indexOf(Math.max(...predictions)) === PRESET_NAMES.indexOf(activePreset) ? "✓ Correct!" : "✗ Misclassified"}
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* How it works */}
+                    <div style={{
+                        margin: "12px 16px 20px",
+                        padding: 14,
+                        background: C.panel,
+                        border: `1px solid ${C.border}`,
+                        borderRadius: 12,
+                    }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: C.accent4, marginBottom: 6 }}>
+                            How This Connects Trig → Fourier → AI
+                        </div>
+                        <div style={{ fontSize: 11, color: C.text, lineHeight: 1.7 }}>
+                            <strong style={{ color: C.accent1 }}>1. Trig:</strong> Each harmonic is a sine wave — sin(n·2π·f·t). The sliders control amplitude.
+                            <br />
+                            <strong style={{ color: C.accent2 }}>2. Fourier:</strong> Any sound = sum of sine waves. The FFT bars show this decomposition. Different "instruments" have different harmonic recipes.
+                            <br />
+                            <strong style={{ color: C.accent3 }}>3. AI:</strong> The neural net takes 8 harmonic amplitudes as input features and learns to map each pattern to an instrument. It's doing the same thing your ear does — recognizing timbral fingerprints.
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<FourierAI />);
+    </script>
+</body>
+
+</html>

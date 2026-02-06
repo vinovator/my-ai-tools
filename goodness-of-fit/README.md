@@ -1,5 +1,7 @@
 # Chi-Square Goodness of Fit Test App
 
+**Live Demo**: [https://vinovator.github.io/my-ai-tools/goodness-of-fit/index.html](https://vinovator.github.io/my-ai-tools/goodness-of-fit/index.html)
+
 A single-page interactive HTML application to perform Chi-Square Goodness of Fit tests. This tool helps you statistically determine if your observed data matches expected theoretical values, running entirely in your browser.
 
 ## 🌟 Features

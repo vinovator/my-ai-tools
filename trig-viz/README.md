@@ -2,6 +2,8 @@
 
 An interactive unit circle explorer designed to help visualize and understand the fundamental concepts of trigonometry.
 
+**Live Demo**: [https://vinovator.github.io/my-ai-tools/trig-viz/index.html](https://vinovator.github.io/my-ai-tools/trig-viz/index.html)
+
 ## Features
 
 - **Interactive Unit Circle**: Drag and explore angles to see how sine, cosine, and tangent change in real-time.

@@ -56,6 +56,22 @@
         function UnitCircleCanvas({ angle, showSine, showCosine, showTangent, showWave }) {
             const canvasRef = useRef(null);
             const waveHistory = useRef([]);
+            // Add state to force re-render on resize
+            const [, setDimensions] = useState({ width: 0, height: 0 });
+
+            useEffect(() => {
+                const handleResize = () => {
+                    if (canvasRef.current) {
+                        setDimensions({
+                            width: canvasRef.current.clientWidth,
+                            height: canvasRef.current.clientHeight
+                        });
+                    }
+                };
+
+                window.addEventListener('resize', handleResize);
+                return () => window.removeEventListener('resize', handleResize);
+            }, []);
 
             useEffect(() => {
                 const canvas = canvasRef.current;
@@ -454,7 +470,8 @@
                 <div
                     style={{
                         background: COLORS.bg,
-                        minHeight: "100vh",
+                        height: "100dvh",
+                        overflow: "hidden",
                         color: COLORS.textBright,
                         fontFamily: '"JetBrains Mono", "SF Mono", monospace',
                         display: "flex",
@@ -462,7 +479,8 @@
                     }}
                 >
                     {/* Header */}
-                    <div style={{ padding: "20px 24px 0", textAlign: "center" }}>
+                    {/* Header */}
+                    <div style={{ padding: "12px 16px 0", textAlign: "center", flexShrink: 0 }}>
                         <h1
                             style={{
                                 fontSize: 20,
@@ -483,7 +501,7 @@
 
                     {/* Lesson Cards */}
                     {!freeMode && (
-                        <div style={{ padding: "16px 24px 0" }}>
+                        <div style={{ padding: "12px 16px 0", flexShrink: 0 }}>
                             <div
                                 style={{
                                     background: COLORS.bgCard,
@@ -601,8 +619,9 @@
                     <div
                         style={{
                             flex: 1,
-                            minHeight: 350,
-                            padding: "12px 8px",
+                            minHeight: 0,
+                            padding: "8px",
+                            position: "relative",
                         }}
                     >
                         <UnitCircleCanvas
@@ -617,10 +636,11 @@
                     {/* Controls */}
                     <div
                         style={{
-                            padding: "0 24px 20px",
+                            padding: "0 16px 16px",
                             display: "flex",
                             flexDirection: "column",
                             gap: 12,
+                            flexShrink: 0,
                         }}
                     >
                         {/* Angle slider */}

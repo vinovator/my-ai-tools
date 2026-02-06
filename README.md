@@ -30,6 +30,12 @@ A dedicated statistical calculator tool for performing Chi-Square Goodness of Fi
 - **Analysis**: Instant calculation of Test Statistic, P-Value, and Critical Value.
 - **Visualization**: Interactive distribution curves and bar charts.
 
+### [Trigonometry Visualized](./trig-viz/README.md)
+An interactive unit circle explorer designed to build intuition for trigonometric concepts.
+- **Interactive Unit Circle**: Manipulate angles to see sine, cosine, and tangent in real-time.
+- **Step-by-Step Lessons**: Guided explanations of core concepts.
+- **Wave Visualization**: Connects circular motion to sine waves.
+
 ---
 
 *More tools coming soon...*

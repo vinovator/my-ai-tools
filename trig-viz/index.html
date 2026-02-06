@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trigonometry Visualized</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0a0e17;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        const TAU = 2 * Math.PI;
+
+        const COLORS = {
+            bg: "#0a0e17",
+            bgCard: "#111827",
+            circle: "#334155",
+            radius: "#e2e8f0",
+            sine: "#f472b6",
+            cosine: "#38bdf8",
+            tangent: "#a78bfa",
+            grid: "#1e293b",
+            text: "#94a3b8",
+            textBright: "#e2e8f0",
+            dot: "#ffffff",
+            shadow: "#f472b660",
+            shadowCos: "#38bdf860",
+        };
+
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+
+        function UnitCircleCanvas({ angle, showSine, showCosine, showTangent, showWave }) {
+            const canvasRef = useRef(null);
+            const waveHistory = useRef([]);
+
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const ctx = canvas.getContext("2d");
+                const dpr = window.devicePixelRatio || 1;
+                const w = canvas.clientWidth;
+                const h = canvas.clientHeight;
+                canvas.width = w * dpr;
+                canvas.height = h * dpr;
+                ctx.scale(dpr, dpr);
+
+                const cx = showWave ? w * 0.3 : w * 0.5;
+                const cy = h * 0.5;
+                const r = Math.min(w * (showWave ? 0.22 : 0.32), h * 0.36);
+
+                const sinVal = Math.sin(angle);
+                const cosVal = Math.cos(angle);
+                const tipX = cx + r * cosVal;
+                const tipY = cy - r * sinVal;
+
+                // Background
+                ctx.fillStyle = COLORS.bg;
+                ctx.fillRect(0, 0, w, h);
+
+                // Grid
+                ctx.strokeStyle = COLORS.grid;
+                ctx.lineWidth = 0.5;
+                for (let i = -3; i <= 3; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(cx + i * (r / 2), cy - r * 1.6);
+                    ctx.lineTo(cx + i * (r / 2), cy + r * 1.6);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(cx - r * 1.6, cy + i * (r / 2));
+                    ctx.lineTo(showWave ? w : cx + r * 1.6, cy + i * (r / 2));
+                    ctx.stroke();
+                }
+
+                // Axes
+                ctx.strokeStyle = "#475569";
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(cx - r * 1.5, cy);
+                ctx.lineTo(showWave ? w - 20 : cx + r * 1.5, cy);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(cx, cy - r * 1.5);
+                ctx.lineTo(cx, cy + r * 1.5);
+                ctx.stroke();
+
+                // Unit circle
+                ctx.strokeStyle = COLORS.circle;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, TAU);
+                ctx.stroke();
+
+                // Angle arc
+                ctx.strokeStyle = "#64748b";
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(cx, cy, r * 0.15, 0, -angle, angle > 0);
+                ctx.stroke();
+
+                // Angle label
+                const deg = ((angle * 180) / Math.PI) % 360;
+                const labelAngle = -angle / 2;
+                ctx.fillStyle = COLORS.textBright;
+                ctx.font = `bold ${Math.max(11, r * 0.1)}px "JetBrains Mono", monospace`;
+                ctx.textAlign = "left";
+                ctx.fillText(
+                    `${Math.round(deg < 0 ? deg + 360 : deg)}°`,
+                    cx + r * 0.2 * Math.cos(labelAngle),
+                    cy + r * 0.2 * Math.sin(labelAngle) + 4
+                );
+
+                // === COSINE (horizontal projection) ===
+                if (showCosine) {
+                    // Horizontal line from origin to tip x
+                    ctx.strokeStyle = COLORS.cosine;
+                    ctx.lineWidth = 3;
+                    ctx.setLineDash([]);
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(tipX, cy);
+                    ctx.stroke();
+
+                    // Dashed drop line from tip to x-axis
+                    ctx.strokeStyle = COLORS.shadowCos;
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(tipX, tipY);
+                    ctx.lineTo(tipX, cy);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    // Label
+                    ctx.fillStyle = COLORS.cosine;
+                    ctx.font = `bold ${Math.max(12, r * 0.11)}px "JetBrains Mono", monospace`;
+                    ctx.textAlign = "center";
+                    ctx.fillText(`cos = ${cosVal.toFixed(2)}`, (cx + tipX) / 2, cy + r * 0.18);
+                }
+
+                // === SINE (vertical projection) ===
+                if (showSine) {
+                    // Vertical line from x-axis to tip
+                    ctx.strokeStyle = COLORS.sine;
+                    ctx.lineWidth = 3;
+                    ctx.setLineDash([]);
+                    ctx.beginPath();
+                    ctx.moveTo(tipX, cy);
+                    ctx.lineTo(tipX, tipY);
+                    ctx.stroke();
+
+                    // Dashed line from tip to y-axis
+                    ctx.strokeStyle = COLORS.shadow;
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(tipX, tipY);
+                    ctx.lineTo(cx, tipY);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    // Label
+                    ctx.fillStyle = COLORS.sine;
+                    ctx.font = `bold ${Math.max(12, r * 0.11)}px "JetBrains Mono", monospace`;
+                    ctx.textAlign = "left";
+                    ctx.fillText(`sin = ${sinVal.toFixed(2)}`, tipX + 8, (cy + tipY) / 2 + 4);
+                }
+
+                // === TANGENT LINE ===
+                if (showTangent) {
+                    const tanVal = Math.tan(angle);
+                    if (Math.abs(tanVal) < 10) {
+                        const tanEndY = cy - r * tanVal;
+                        // Tangent line from (cx + r, cy) going vertical
+                        ctx.strokeStyle = COLORS.tangent;
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.moveTo(cx + r, cy);
+                        ctx.lineTo(cx + r, tanEndY);
+                        ctx.stroke();
+
+                        // Extended radius to tangent line
+                        ctx.strokeStyle = "#a78bfa40";
+                        ctx.lineWidth = 1;
+                        ctx.setLineDash([3, 3]);
+                        ctx.beginPath();
+                        ctx.moveTo(tipX, tipY);
+                        ctx.lineTo(cx + r, tanEndY);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+
+                        // Tangent dot
+                        ctx.fillStyle = COLORS.tangent;
+                        ctx.beginPath();
+                        ctx.arc(cx + r, tanEndY, 4, 0, TAU);
+                        ctx.fill();
+
+                        // Label
+                        ctx.fillStyle = COLORS.tangent;
+                        ctx.font = `bold ${Math.max(12, r * 0.11)}px "JetBrains Mono", monospace`;
+                        ctx.textAlign = "left";
+                        ctx.fillText(`tan = ${tanVal.toFixed(2)}`, cx + r + 8, (cy + tanEndY) / 2 + 4);
+                    }
+                }
+
+                // Radius line
+                ctx.strokeStyle = COLORS.radius;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(tipX, tipY);
+                ctx.stroke();
+
+                // Right angle marker
+                if (showSine && showCosine) {
+                    const sz = 8;
+                    const sx = cosVal >= 0 ? -sz : sz;
+                    const sy = sinVal >= 0 ? sz : -sz;
+                    ctx.strokeStyle = "#64748b";
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(tipX + sx, cy);
+                    ctx.lineTo(tipX + sx, cy + sy * -1);
+                    ctx.lineTo(tipX, cy + sy * -1);
+                    ctx.stroke();
+                }
+
+                // Tip dot
+                ctx.fillStyle = COLORS.dot;
+                ctx.shadowColor = "#ffffff80";
+                ctx.shadowBlur = 12;
+                ctx.beginPath();
+                ctx.arc(tipX, tipY, 6, 0, TAU);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // Origin dot
+                ctx.fillStyle = "#64748b";
+                ctx.beginPath();
+                ctx.arc(cx, cy, 3, 0, TAU);
+                ctx.fill();
+
+                // Axis labels
+                ctx.fillStyle = COLORS.text;
+                ctx.font = `${Math.max(10, r * 0.09)}px "JetBrains Mono", monospace`;
+                ctx.textAlign = "center";
+                ctx.fillText("1", cx + r, cy + 16);
+                ctx.fillText("-1", cx - r, cy + 16);
+                ctx.fillText("1", cx - 14, cy - r + 4);
+                ctx.fillText("-1", cx - 18, cy + r + 4);
+
+                // === SINE WAVE TRACE ===
+                if (showWave) {
+                    const waveStart = cx + r * 1.4;
+                    const waveWidth = w - waveStart - 20;
+
+                    // Connecting dashed line from tip to wave
+                    ctx.strokeStyle = COLORS.shadow;
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(tipX, tipY);
+                    ctx.lineTo(waveStart, tipY);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    // Draw sine wave
+                    ctx.strokeStyle = COLORS.sine;
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    const periods = 1.5;
+                    for (let i = 0; i <= 300; i++) {
+                        const t = i / 300;
+                        const x = waveStart + t * waveWidth;
+                        const waveAngle = angle - t * periods * TAU;
+                        const y = cy - r * Math.sin(waveAngle);
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+
+                    // Current point on wave
+                    ctx.fillStyle = COLORS.sine;
+                    ctx.shadowColor = COLORS.shadow;
+                    ctx.shadowBlur = 10;
+                    ctx.beginPath();
+                    ctx.arc(waveStart, tipY, 5, 0, TAU);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+
+                    // Wave label
+                    ctx.fillStyle = COLORS.text;
+                    ctx.font = `${Math.max(10, r * 0.09)}px "JetBrains Mono", monospace`;
+                    ctx.textAlign = "center";
+                    ctx.fillText("sine wave →", waveStart + waveWidth / 2, cy + r + 24);
+                }
+            }, [angle, showSine, showCosine, showTangent, showWave]);
+
+            return (
+                <canvas
+                    ref={canvasRef}
+                    style={{ width: "100%", height: "100%", display: "block" }}
+                />
+            );
+        }
+
+        function Toggle({ label, color, active, onClick }) {
+            return (
+                <button
+                    onClick={onClick}
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        padding: "8px 16px",
+                        borderRadius: 8,
+                        border: `1.5px solid ${active ? color : "#334155"}`,
+                        background: active ? color + "18" : "transparent",
+                        color: active ? color : COLORS.text,
+                        cursor: "pointer",
+                        fontFamily: '"JetBrains Mono", monospace',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        transition: "all 0.2s",
+                    }}
+                >
+                    <span
+                        style={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: "50%",
+                            background: active ? color : "transparent",
+                            border: `2px solid ${active ? color : "#475569"}`,
+                            transition: "all 0.2s",
+                        }}
+                    />
+                    {label}
+                </button>
+            );
+        }
+
+        const LESSONS = [
+            {
+                id: "intro",
+                title: "The Unit Circle",
+                text: "This is a circle with radius 1, centered at the origin. The white dot moves around it. Its position at any angle is the heart of trigonometry.",
+                show: { sine: false, cosine: false, tangent: false, wave: false },
+            },
+            {
+                id: "cosine",
+                title: "Cosine — How Far Right?",
+                text: "Cosine is the horizontal (x) coordinate of the point. Watch the blue line — as the dot moves, cosine tracks how far left or right it is. At 0° it's 1 (fully right). At 90° it's 0. At 180° it's −1.",
+                show: { sine: false, cosine: true, tangent: false, wave: false },
+            },
+            {
+                id: "sine",
+                title: "Sine — How High?",
+                text: "Sine is the vertical (y) coordinate. The pink line shows how high the dot is. At 0° it's 0 (on the ground). At 90° it's 1 (top of circle). They're just coordinates!",
+                show: { sine: true, cosine: false, tangent: false, wave: false },
+            },
+            {
+                id: "both",
+                title: "The Right Triangle",
+                text: "Together, sine and cosine form a right triangle with the radius. The radius is always 1, so sin² + cos² = 1 — that's just the Pythagorean theorem. Notice the right angle marker.",
+                show: { sine: true, cosine: true, tangent: false, wave: false },
+            },
+            {
+                id: "tangent",
+                title: "Tangent — The Slope",
+                text: "Tangent = sin ÷ cos. It's the slope of the radius line. The purple line shows it geometrically: a vertical line at x=1, intersected by extending the radius. Watch it shoot to infinity near 90°!",
+                show: { sine: false, cosine: false, tangent: true, wave: false },
+            },
+            {
+                id: "wave",
+                title: "The Sine Wave",
+                text: "Unroll the circle over time and you get the sine wave. The dot's height traces out the classic wave shape. This is why circular motion and waves are deeply connected — they're the same thing.",
+                show: { sine: true, cosine: false, tangent: false, wave: true },
+            },
+        ];
+
+        function TrigViz() {
+            const [angle, setAngle] = useState(Math.PI / 4);
+            const [playing, setPlaying] = useState(false);
+            const [lesson, setLesson] = useState(0);
+            const [showSine, setShowSine] = useState(true);
+            const [showCosine, setShowCosine] = useState(true);
+            const [showTangent, setShowTangent] = useState(false);
+            const [showWave, setShowWave] = useState(false);
+            const [freeMode, setFreeMode] = useState(false);
+            const animRef = useRef(null);
+            const lastTime = useRef(null);
+
+            const currentLesson = LESSONS[lesson];
+
+            useEffect(() => {
+                if (!freeMode && currentLesson) {
+                    setShowSine(currentLesson.show.sine);
+                    setShowCosine(currentLesson.show.cosine);
+                    setShowTangent(currentLesson.show.tangent);
+                    setShowWave(currentLesson.show.wave);
+                }
+            }, [lesson, freeMode]);
+
+            const animate = useCallback(
+                (time) => {
+                    if (lastTime.current != null) {
+                        const dt = (time - lastTime.current) / 1000;
+                        setAngle((a) => a + dt * 1.2);
+                    }
+                    lastTime.current = time;
+                    animRef.current = requestAnimationFrame(animate);
+                },
+                []
+            );
+
+            useEffect(() => {
+                if (playing) {
+                    lastTime.current = null;
+                    animRef.current = requestAnimationFrame(animate);
+                } else {
+                    if (animRef.current) cancelAnimationFrame(animRef.current);
+                }
+                return () => {
+                    if (animRef.current) cancelAnimationFrame(animRef.current);
+                };
+            }, [playing, animate]);
+
+            const deg = ((((angle * 180) / Math.PI) % 360) + 360) % 360;
+
+            return (
+                <div
+                    style={{
+                        background: COLORS.bg,
+                        minHeight: "100vh",
+                        color: COLORS.textBright,
+                        fontFamily: '"JetBrains Mono", "SF Mono", monospace',
+                        display: "flex",
+                        flexDirection: "column",
+                    }}
+                >
+                    {/* Header */}
+                    <div style={{ padding: "20px 24px 0", textAlign: "center" }}>
+                        <h1
+                            style={{
+                                fontSize: 20,
+                                fontWeight: 700,
+                                margin: 0,
+                                letterSpacing: "-0.02em",
+                                background: "linear-gradient(135deg, #f472b6, #38bdf8, #a78bfa)",
+                                WebkitBackgroundClip: "text",
+                                WebkitTextFillColor: "transparent",
+                            }}
+                        >
+                            Trigonometry Visualized
+                        </h1>
+                        <p style={{ color: COLORS.text, fontSize: 12, margin: "4px 0 0" }}>
+                            Interactive unit circle explorer
+                        </p>
+                    </div>
+
+                    {/* Lesson Cards */}
+                    {!freeMode && (
+                        <div style={{ padding: "16px 24px 0" }}>
+                            <div
+                                style={{
+                                    background: COLORS.bgCard,
+                                    border: "1px solid #1e293b",
+                                    borderRadius: 12,
+                                    padding: 16,
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        alignItems: "center",
+                                        marginBottom: 8,
+                                    }}
+                                >
+                                    <span
+                                        style={{
+                                            fontSize: 10,
+                                            color: COLORS.text,
+                                            textTransform: "uppercase",
+                                            letterSpacing: "0.1em",
+                                        }}
+                                    >
+                                        Step {lesson + 1} of {LESSONS.length}
+                                    </span>
+                                    <div style={{ display: "flex", gap: 4 }}>
+                                        {LESSONS.map((_, i) => (
+                                            <span
+                                                key={i}
+                                                onClick={() => setLesson(i)}
+                                                style={{
+                                                    width: i === lesson ? 20 : 6,
+                                                    height: 6,
+                                                    borderRadius: 3,
+                                                    background: i === lesson ? "#38bdf8" : "#334155",
+                                                    cursor: "pointer",
+                                                    transition: "all 0.3s",
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                                <h2
+                                    style={{
+                                        fontSize: 16,
+                                        fontWeight: 700,
+                                        margin: "0 0 6px",
+                                        color: COLORS.textBright,
+                                    }}
+                                >
+                                    {currentLesson.title}
+                                </h2>
+                                <p
+                                    style={{
+                                        fontSize: 13,
+                                        lineHeight: 1.6,
+                                        color: COLORS.text,
+                                        margin: 0,
+                                    }}
+                                >
+                                    {currentLesson.text}
+                                </p>
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        marginTop: 12,
+                                        gap: 8,
+                                    }}
+                                >
+                                    <button
+                                        onClick={() => setLesson(Math.max(0, lesson - 1))}
+                                        disabled={lesson === 0}
+                                        style={{
+                                            flex: 1,
+                                            padding: "8px 0",
+                                            borderRadius: 8,
+                                            border: "1px solid #334155",
+                                            background: "transparent",
+                                            color: lesson === 0 ? "#334155" : COLORS.text,
+                                            cursor: lesson === 0 ? "default" : "pointer",
+                                            fontSize: 12,
+                                            fontFamily: "inherit",
+                                        }}
+                                    >
+                                        ← Prev
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (lesson < LESSONS.length - 1) setLesson(lesson + 1);
+                                            else setFreeMode(true);
+                                        }}
+                                        style={{
+                                            flex: 1,
+                                            padding: "8px 0",
+                                            borderRadius: 8,
+                                            border: "none",
+                                            background: "linear-gradient(135deg, #38bdf8, #818cf8)",
+                                            color: "#fff",
+                                            cursor: "pointer",
+                                            fontSize: 12,
+                                            fontWeight: 600,
+                                            fontFamily: "inherit",
+                                        }}
+                                    >
+                                        {lesson < LESSONS.length - 1 ? "Next →" : "Free Explore →"}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Canvas */}
+                    <div
+                        style={{
+                            flex: 1,
+                            minHeight: 350,
+                            padding: "12px 8px",
+                        }}
+                    >
+                        <UnitCircleCanvas
+                            angle={angle}
+                            showSine={showSine}
+                            showCosine={showCosine}
+                            showTangent={showTangent}
+                            showWave={showWave}
+                        />
+                    </div>
+
+                    {/* Controls */}
+                    <div
+                        style={{
+                            padding: "0 24px 20px",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 12,
+                        }}
+                    >
+                        {/* Angle slider */}
+                        <div>
+                            <div
+                                style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    fontSize: 11,
+                                    color: COLORS.text,
+                                    marginBottom: 6,
+                                }}
+                            >
+                                <span>Angle</span>
+                                <span style={{ color: COLORS.textBright }}>
+                                    {Math.round(deg)}° ({(angle % TAU).toFixed(2)} rad)
+                                </span>
+                            </div>
+                            <input
+                                type="range"
+                                min={0}
+                                max={360}
+                                step={1}
+                                value={deg}
+                                onChange={(e) =>
+                                    setAngle((parseFloat(e.target.value) * Math.PI) / 180)
+                                }
+                                style={{
+                                    width: "100%",
+                                    accentColor: "#38bdf8",
+                                    height: 6,
+                                }}
+                            />
+                        </div>
+
+                        {/* Play/Pause */}
+                        <button
+                            onClick={() => setPlaying(!playing)}
+                            style={{
+                                width: "100%",
+                                padding: "10px 0",
+                                borderRadius: 10,
+                                border: "1px solid #334155",
+                                background: playing ? "#1e293b" : "transparent",
+                                color: COLORS.textBright,
+                                cursor: "pointer",
+                                fontSize: 13,
+                                fontFamily: "inherit",
+                                fontWeight: 600,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: 8,
+                            }}
+                        >
+                            {playing ? "⏸ Pause" : "▶ Animate"}
+                        </button>
+
+                        {/* Toggles */}
+                        {freeMode && (
+                            <div
+                                style={{
+                                    display: "flex",
+                                    flexWrap: "wrap",
+                                    gap: 8,
+                                }}
+                            >
+                                <Toggle
+                                    label="sin"
+                                    color={COLORS.sine}
+                                    active={showSine}
+                                    onClick={() => setShowSine(!showSine)}
+                                />
+                                <Toggle
+                                    label="cos"
+                                    color={COLORS.cosine}
+                                    active={showCosine}
+                                    onClick={() => setShowCosine(!showCosine)}
+                                />
+                                <Toggle
+                                    label="tan"
+                                    color={COLORS.tangent}
+                                    active={showTangent}
+                                    onClick={() => setShowTangent(!showTangent)}
+                                />
+                                <Toggle
+                                    label="wave"
+                                    color={COLORS.sine}
+                                    active={showWave}
+                                    onClick={() => setShowWave(!showWave)}
+                                />
+                                <button
+                                    onClick={() => {
+                                        setFreeMode(false);
+                                        setLesson(0);
+                                    }}
+                                    style={{
+                                        marginLeft: "auto",
+                                        padding: "8px 14px",
+                                        borderRadius: 8,
+                                        border: "1px solid #334155",
+                                        background: "transparent",
+                                        color: COLORS.text,
+                                        cursor: "pointer",
+                                        fontFamily: "inherit",
+                                        fontSize: 12,
+                                    }}
+                                >
+                                    ↺ Restart Lessons
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Values readout */}
+                        <div
+                            style={{
+                                display: "grid",
+                                gridTemplateColumns: "1fr 1fr 1fr",
+                                gap: 8,
+                            }}
+                        >
+                            {[
+                                { label: "sin", value: Math.sin(angle), color: COLORS.sine },
+                                { label: "cos", value: Math.cos(angle), color: COLORS.cosine },
+                                {
+                                    label: "tan",
+                                    value: Math.abs(Math.cos(angle)) < 0.01 ? "∞" : Math.tan(angle),
+                                    color: COLORS.tangent,
+                                },
+                            ].map(({ label, value, color }) => (
+                                <div
+                                    key={label}
+                                    style={{
+                                        background: COLORS.bgCard,
+                                        border: "1px solid #1e293b",
+                                        borderRadius: 8,
+                                        padding: "8px 12px",
+                                        textAlign: "center",
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            fontSize: 10,
+                                            color,
+                                            textTransform: "uppercase",
+                                            letterSpacing: "0.1em",
+                                            marginBottom: 2,
+                                        }}
+                                    >
+                                        {label}
+                                    </div>
+                                    <div
+                                        style={{ fontSize: 16, fontWeight: 700, color: COLORS.textBright }}
+                                    >
+                                        {typeof value === "number" ? value.toFixed(3) : value}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<TrigViz />);
+    </script>
+</body>
+
+</html>

@@ -90,20 +90,6 @@
             font-weight: 300;
         }
 
-        .privacy-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.18);
-            backdrop-filter: blur(4px);
-            color: white;
-            padding: 8px 14px;
-            border-radius: 999px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            white-space: nowrap;
-        }
 
         .main-content {
             display: grid;
@@ -629,14 +615,17 @@
                 <h1>PDF Merge &amp; Split</h1>
                 <p>Combine PDFs into one, or split a PDF at chosen page numbers.</p>
             </div>
-            <span class="privacy-badge" title="Files never leave your browser">
-                <span aria-hidden="true">&#128274;</span>
-                <span>Your files are safe: Processing happens entirely in your browser and your data never leaves your device.</span>
-            </span>
         </header>
 
         <div class="main-content">
             <aside class="sidebar">
+                <div style="padding: 12px 14px; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; margin-bottom: 20px; font-size: 0.85rem; color: #1E3A8A; line-height: 1.4;">
+                    <strong style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 0.9rem;">
+                        <span aria-hidden="true">&#128274;</span> Your files are safe
+                    </strong>
+                    Processing happens entirely in your browser and your data never leaves your device.
+                </div>
+
                 <div class="tabs" role="tablist">
                     <button class="tab-btn active" id="tab-merge" role="tab" aria-selected="true">Merge</button>
                     <button class="tab-btn" id="tab-split" role="tab" aria-selected="false">Split</button>

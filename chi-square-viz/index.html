@@ -1263,22 +1263,22 @@
                 return (n - 1) * gamma(n - 1); // Simple recursion for integers and half-integers
             }
 
-            // Approximate P-Value for visualization purposes
+            // P-Value via the regularized lower incomplete gamma series.
+            // p = 1 - P(s, x) where s = df/2, x = chi²/2,
+            // P(s, x) = (x^s · e^(-x) / Γ(s)) · Σ_{k=0}^∞ x^k / [s(s+1)...(s+k)]
             function chiSquarePValue(chiSquare, df) {
-                // Very rough approximation or use table lookup for JS simplicity
-                // or a proper integral. 
-                // Implementing a robust one is complex, let's use a simpler heuristic or the 
-                // Gamma incomplete function if needed.
-                // For this UI, let's use a simple approximation for small DF
-
-                // Actually, let's use the provided logic from the user's snippet which seemed to have an implementation
-                let sum = 0;
-                let term = 1;
-                for (let i = 0; i < 100; i++) {
+                if (chiSquare <= 0) return 1;
+                const s = df / 2;
+                const x = chiSquare / 2;
+                let term = 1 / s;
+                let sum = term;
+                for (let k = 1; k < 200; k++) {
+                    term *= x / (s + k);
                     sum += term;
-                    term *= chiSquare / (df + 2 * i);
+                    if (Math.abs(term) < 1e-15 * Math.abs(sum)) break;
                 }
-                return Math.max(0, 1 - (Math.pow(chiSquare / 2, df / 2) * Math.exp(-chiSquare / 2) * sum / gamma(df / 2 + 1)));
+                const P = Math.pow(x, s) * Math.exp(-x) * sum / gamma(s);
+                return Math.max(0, Math.min(1, 1 - P));
             }
 
             function getCriticalValue(df, alpha) {
@@ -1363,6 +1363,7 @@
                         currentScenario.observed = perturbed;
                         calculateChiSquare();
                         updateDataTable();
+                        updateDistribution();
                     }, 500);
                 }
             }

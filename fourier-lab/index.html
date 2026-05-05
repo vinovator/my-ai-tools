@@ -486,16 +486,36 @@
                 setIsPlaying(false);
             }, []);
 
-            // Update running oscillators
+            // Update running oscillators (gains AND frequencies — base freq must
+            // re-key the harmonic series live, otherwise the slider only takes
+            // effect after Stop/Play).
             useEffect(() => {
                 if (isPlaying && gainsRef.current.length === harmonics.length) {
                     harmonics.forEach((amp, i) => {
                         if (gainsRef.current[i]) {
                             gainsRef.current[i].gain.value = amp;
                         }
+                        if (oscillatorsRef.current[i]) {
+                            oscillatorsRef.current[i].frequency.value = baseFreq * (i + 1);
+                        }
                     });
                 }
-            }, [harmonics, isPlaying]);
+            }, [harmonics, baseFreq, isPlaying]);
+
+            // Stop audio + close AudioContext when the component unmounts so
+            // oscillators don't keep playing after navigation.
+            useEffect(() => {
+                return () => {
+                    oscillatorsRef.current.forEach((o) => {
+                        try { o.stop(); } catch (e) { }
+                    });
+                    oscillatorsRef.current = [];
+                    gainsRef.current = [];
+                    if (audioCtxRef.current) {
+                        try { audioCtxRef.current.close(); } catch (e) { }
+                    }
+                };
+            }, []);
 
             // Train neural network
             const trainNetwork = useCallback(() => {

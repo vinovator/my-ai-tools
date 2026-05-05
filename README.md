@@ -42,6 +42,12 @@ Interactive signal processing and AI playground.
 - **Visualization:** Real-time Waveform and FFT (Frequency Spectrum) displays.
 - **AI Classification:** Train a neural network in-browser to recognize instrument timbres from their harmonic fingerprints.
 
+### [PDF Merge & Split](./pdf-play/README.md)
+A privacy-first browser tool for everyday PDF wrangling — files never leave your tab.
+- **Merge:** Combine 1+ PDFs into one output, in the order you arrange them.
+- **Split:** Partition a PDF into 2+ documents at chosen page numbers, with a live preview of the resulting parts.
+- **Local-only:** No upload, no analytics, no persistence. Runs entirely in-browser using pdf-lib and JSZip.
+
 ---
 
 *More tools coming soon...*

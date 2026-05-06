@@ -48,6 +48,12 @@ A privacy-first browser tool for everyday PDF wrangling — files never leave yo
 - **Split:** Partition a PDF into 2+ documents at chosen page numbers, with a live preview of the resulting parts.
 - **Local-only:** No upload, no analytics, no persistence. Runs entirely in-browser using pdf-lib and JSZip.
 
+### [MCP Unpack](./mcp-unpack/README.md)
+Paste any remote MCP server URL and render a clean, shareable reference of every tool, resource, and prompt it exposes — "the npm package page, but for an MCP server."
+- **Read-only inspector:** Function-signature view per tool, expandable schema tree, per-section search.
+- **Copy as Markdown:** Export the full spec to your clipboard for READMEs, Notion pages, or Slack.
+- **Browser-only:** Hand-rolled JSON-RPC client over the Streamable HTTP transport. No build step, no backend, no tracking.
+
 ---
 
 *More tools coming soon...*

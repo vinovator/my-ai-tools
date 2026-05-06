@@ -1,0 +1,19 @@
+{
+  "examples": [
+    {
+      "name": "Hugging Face MCP",
+      "url": "https://hf.co/mcp",
+      "description": "Hugging Face's public MCP endpoint. Verify URL and CORS allowance before relying on this entry."
+    },
+    {
+      "name": "Reference: Everything (local)",
+      "url": "http://localhost:3001/mcp",
+      "description": "The reference 'everything' demo server, run locally via the MCP TypeScript SDK examples."
+    },
+    {
+      "name": "Your server here",
+      "url": "https://your-server.example.com/mcp",
+      "description": "Replace this entry by editing examples.json. Drop in any MCP server URL that supports the Streamable HTTP transport and CORS for your origin."
+    }
+  ]
+}

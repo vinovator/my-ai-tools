@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Unpack — Inspect any remote MCP server</title>
+    <meta name="description" content="Paste an MCP server URL to render a clean, shareable reference of every tool, resource, and prompt it exposes. Browser-only, no backend, no tracking.">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="MCP Unpack">
+    <meta property="og:description" content="The npm package page, but for an MCP server. Paste a URL, get a shareable capabilities reference.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+    <script type="module" src="./js/main.js"></script>
+</head>
+<body data-status="idle">
+
+<header class="page-header">
+    <div class="container">
+        <h1 class="page-title">MCP Unpack</h1>
+        <p class="page-subtitle">The npm package page, but for an MCP server. Paste a URL, get a shareable capabilities reference.</p>
+    </div>
+</header>
+
+<main class="container main-content">
+    <aside class="sidebar">
+        <div class="privacy-alert">
+            <strong><span aria-hidden="true">&#128274;</span> Your data stays in your browser</strong>
+            Network requests go only to the MCP server URL you enter. No analytics, no tracking, no persistence.
+        </div>
+
+        <section class="sidebar-block" id="examples-block">
+            <h2 class="sidebar-heading">Try an example</h2>
+            <ul class="examples-list" id="examples-list" aria-live="polite"></ul>
+        </section>
+
+        <section class="sidebar-block">
+            <h2 class="sidebar-heading">About</h2>
+            <p class="sidebar-text">Read-only inspector for remote MCP servers using the <a href="https://modelcontextprotocol.io/specification" target="_blank" rel="noopener">Streamable HTTP transport</a>. Lists every tool, resource, resource template, and prompt the server exposes.</p>
+            <p class="sidebar-text">Doesn't execute tools. Doesn't support stdio servers. Doesn't run OAuth flows.</p>
+        </section>
+    </aside>
+
+    <div class="content-area">
+        <form class="connect-form" id="connect-form" novalidate>
+            <label class="field">
+                <span class="field-label">MCP server URL</span>
+                <input id="server-url" type="url" inputmode="url" autocomplete="off" spellcheck="false"
+                       placeholder="https://example.com/mcp" required>
+            </label>
+
+            <div class="connect-row">
+                <button class="btn btn-primary" id="connect-btn" type="submit">Connect</button>
+                <button class="btn-link" id="advanced-toggle" type="button" aria-expanded="false" aria-controls="advanced-panel">Advanced</button>
+            </div>
+
+            <div class="advanced-panel" id="advanced-panel" hidden>
+                <label class="field">
+                    <span class="field-label">Bearer token <span class="field-hint">(optional)</span></span>
+                    <input id="bearer-token" type="password" autocomplete="off" spellcheck="false"
+                           placeholder="For servers that gate access with a static token">
+                </label>
+            </div>
+
+            <p class="connect-hint" id="connect-hint" hidden></p>
+        </form>
+
+        <div class="error-box" id="error-box" role="alert" hidden>
+            <strong class="error-heading" id="error-heading"></strong>
+            <p class="error-message" id="error-message"></p>
+            <p class="error-hint" id="error-hint"></p>
+        </div>
+
+        <div class="loading-indicator" id="loading-indicator">
+            <div class="spinner" aria-hidden="true"></div>
+            <span>Connecting…</span>
+        </div>
+
+        <div class="connected-view" id="connected-view">
+            <div class="header-card-section" id="header-card-section"></div>
+
+            <div class="action-row">
+                <button class="btn btn-secondary" id="copy-md-btn" type="button">Copy as Markdown</button>
+            </div>
+
+            <section class="gallery-section" id="tools-section" hidden></section>
+            <section class="gallery-section" id="resources-section" hidden></section>
+            <section class="gallery-section" id="templates-section" hidden></section>
+            <section class="gallery-section" id="prompts-section" hidden></section>
+        </div>
+    </div>
+</main>
+
+<footer class="page-footer">
+    <div class="container">
+        <p class="footer-line"><span id="totals"></span></p>
+        <details class="footer-raw" id="raw-details">
+            <summary>Raw <code>initialize</code> response</summary>
+            <pre id="raw-initialize" class="schema-raw"></pre>
+        </details>
+        <p class="footer-credits">
+            Built with vanilla HTML/CSS/JavaScript ES modules. No build step, no backend, no tracking.
+            <a href="../index.html">← Back to all tools</a>
+        </p>
+    </div>
+</footer>
+
+</body>
+</html>

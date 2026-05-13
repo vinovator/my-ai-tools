@@ -54,6 +54,12 @@ Paste any remote MCP server URL and render a clean, shareable reference of every
 - **Copy as Markdown:** Export the full spec to your clipboard for READMEs, Notion pages, or Slack.
 - **Browser-only:** Hand-rolled JSON-RPC client over the Streamable HTTP transport. No build step, no backend, no tracking.
 
+### [Markdown Viewer](./md-viewer/README.md)
+Drop a `.md` file and view it rendered — your files never leave your tab.
+- **Rich rendering:** GFM tables, task lists, syntax-highlighted code (highlight.js), KaTeX math, and Mermaid diagrams.
+- **One-click export:** Print / Save as PDF, download as portable HTML, or copy rendered HTML to clipboard.
+- **Local-only:** marked + DOMPurify + KaTeX + Mermaid loaded from CDN; nothing is uploaded or persisted.
+
 ---
 
 *More tools coming soon...*

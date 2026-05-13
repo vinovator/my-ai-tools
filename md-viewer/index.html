@@ -611,7 +611,7 @@
         <header class="header">
             <div class="header-text">
                 <h1>Markdown Viewer</h1>
-                <p>Drop a Markdown file and view it rendered — code, math, diagrams. Print, download, or copy.</p>
+                <p>Drop a Markdown file and view it rendered with code, math, and diagrams. Print, download, or copy.</p>
             </div>
         </header>
 
@@ -634,7 +634,7 @@
                     </span>
                     <span class="dz-text">
                         <span class="dz-title">Drop a Markdown file or click to browse</span>
-                        <span class="dz-sub">.md, .markdown, .txt — up to 5 MB</span>
+                        <span class="dz-sub">.md, .markdown, .txt (up to 5 MB)</span>
                     </span>
                     <input type="file" id="file-input" accept=".md,.markdown,.txt,text/markdown,text/plain">
                 </label>
@@ -788,7 +788,7 @@
             const clean = DOMPurify.sanitize(html, PURIFY_CONFIG);
             preview.innerHTML = clean;
 
-            // Syntax highlighting pass — skip mermaid blocks (handled separately below)
+            // Syntax highlighting pass; skip mermaid blocks (handled separately below)
             preview.querySelectorAll('pre > code').forEach((codeEl) => {
                 const cls = codeEl.className || '';
                 if (/language-mermaid\b/.test(cls)) return;
@@ -817,7 +817,7 @@
                 console.warn('KaTeX render error:', err);
             }
 
-            // Mermaid pass — replace each <pre><code class="language-mermaid"> with rendered SVG
+            // Mermaid pass: replace each <pre><code class="language-mermaid"> with rendered SVG
             const mermaidBlocks = preview.querySelectorAll('pre > code.language-mermaid');
             for (let i = 0; i < mermaidBlocks.length; i++) {
                 const codeEl = mermaidBlocks[i];

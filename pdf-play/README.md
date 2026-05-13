@@ -2,7 +2,7 @@
 
 **Live Demo**: [https://vinovator.github.io/my-ai-tools/pdf-play/index.html](https://vinovator.github.io/my-ai-tools/pdf-play/index.html)
 
-A single-page browser tool to combine multiple PDFs into one, or split a PDF into several documents at chosen page numbers. Everything runs locally in your browser — your files are never uploaded.
+A single-page browser tool to combine multiple PDFs into one, or split a PDF into several documents at chosen page numbers. Everything runs locally in your browser, so your files are never uploaded.
 
 ## 🌟 Features
 
@@ -16,7 +16,7 @@ A single-page browser tool to combine multiple PDFs into one, or split a PDF int
 
 ## 🚀 Usage
 
-Open `index.html` in any modern browser, or visit the live demo above. Pick a tab — Merge or Split — and follow the flow.
+Open `index.html` in any modern browser, or visit the live demo above. Pick a tab (Merge or Split) and follow the flow.
 
 ### Merge
 
@@ -28,7 +28,7 @@ Open `index.html` in any modern browser, or visit the live demo above. Pick a ta
 ### Split
 
 1.  Drag a single PDF into the left dropzone, or click to browse.
-2.  Enter **split points** as comma-separated page numbers — each one marks where a new output file *starts*.
+2.  Enter **split points** as comma-separated page numbers; each one marks where a new output file *starts*.
     *   Example: a 10-page PDF with split points `4, 8` produces 3 outputs: pages `1–3`, `4–7`, `8–10`.
 3.  The right pane previews the resulting parts in real time.
 4.  Optionally adjust the filename prefix (default: original name without `.pdf`).
@@ -36,7 +36,7 @@ Open `index.html` in any modern browser, or visit the live demo above. Pick a ta
 
 ## 🔒 Privacy & File Handling
 
-Your PDFs never leave the browser tab. There is no server upload, no analytics, no telemetry, and no persistence — `localStorage` / `IndexedDB` / cookies are not touched, so a refresh wipes the slate.
+Your PDFs never leave the browser tab. There is no server upload, no analytics, no telemetry, and no persistence. `localStorage` / `IndexedDB` / cookies are not touched, so a refresh wipes the slate.
 
 To verify, open your browser's DevTools → Network tab before using the tool. Once the page loads, the only requests you should see are the initial CDN script loads (pdf-lib and JSZip). No requests fire when you add files, merge, or split.
 
@@ -44,10 +44,10 @@ Inputs are validated by both MIME type and the `%PDF-` magic-byte signature. Enc
 
 ## 📚 Built With
 
-*   [pdf-lib](https://pdf-lib.js.org/) — reading, writing, and page-copy operations.
-*   [JSZip](https://stuk.github.io/jszip/) — bundling split outputs into one download.
-*   Vanilla HTML / CSS / JavaScript — no build step.
+*   [pdf-lib](https://pdf-lib.js.org/) for reading, writing, and page-copy operations.
+*   [JSZip](https://stuk.github.io/jszip/) for bundling split outputs into one download.
+*   Vanilla HTML / CSS / JavaScript. No build step.
 
 ## 📄 License
 
-This project is licensed under the MIT License — see the [LICENSE](../LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](../LICENSE) file for details.

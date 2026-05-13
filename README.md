@@ -43,19 +43,19 @@ Interactive signal processing and AI playground.
 - **AI Classification:** Train a neural network in-browser to recognize instrument timbres from their harmonic fingerprints.
 
 ### [PDF Merge & Split](./pdf-play/README.md)
-A privacy-first browser tool for everyday PDF wrangling — files never leave your tab.
+A privacy-first browser tool for everyday PDF wrangling. Files never leave your tab.
 - **Merge:** Combine 1+ PDFs into one output, in the order you arrange them.
 - **Split:** Partition a PDF into 2+ documents at chosen page numbers, with a live preview of the resulting parts.
 - **Local-only:** No upload, no analytics, no persistence. Runs entirely in-browser using pdf-lib and JSZip.
 
 ### [MCP Unpack](./mcp-unpack/README.md)
-Paste any remote MCP server URL and render a clean, shareable reference of every tool, resource, and prompt it exposes — "the npm package page, but for an MCP server."
+Paste any remote MCP server URL and render a clean, shareable reference of every tool, resource, and prompt it exposes: "the npm package page, but for an MCP server."
 - **Read-only inspector:** Function-signature view per tool, expandable schema tree, per-section search.
 - **Copy as Markdown:** Export the full spec to your clipboard for READMEs, Notion pages, or Slack.
 - **Browser-only:** Hand-rolled JSON-RPC client over the Streamable HTTP transport. No build step, no backend, no tracking.
 
 ### [Markdown Viewer](./md-viewer/README.md)
-Drop a `.md` file and view it rendered — your files never leave your tab.
+Drop a `.md` file and view it rendered. Your files never leave your tab.
 - **Rich rendering:** GFM tables, task lists, syntax-highlighted code (highlight.js), KaTeX math, and Mermaid diagrams.
 - **One-click export:** Print / Save as PDF, download as portable HTML, or copy rendered HTML to clipboard.
 - **Local-only:** marked + DOMPurify + KaTeX + Mermaid loaded from CDN; nothing is uploaded or persisted.

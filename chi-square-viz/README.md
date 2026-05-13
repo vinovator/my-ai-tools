@@ -73,4 +73,4 @@ This application was generated using the following design prompt:
 > *   Smooth transitions and hover effects
 > *   Mobile-responsive
 >
-> **Goal:** Make hypothesis testing feel like an interactive textbook chapter—intuitive, engaging, and educational.
+> **Goal:** Make hypothesis testing feel like an interactive textbook chapter that is intuitive, engaging, and educational.

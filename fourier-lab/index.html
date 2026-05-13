@@ -259,7 +259,7 @@
                 // Label
                 ctx.fillStyle = C.text;
                 ctx.font = `10px ${FONT}`;
-                ctx.fillText("TIME DOMAIN — Waveform", 8, 14);
+                ctx.fillText("TIME DOMAIN: Waveform", 8, 14);
             }, [harmonics, baseFreq]);
 
             return <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: "block", borderRadius: 8 }} />;
@@ -325,7 +325,7 @@
                 ctx.fillStyle = C.text;
                 ctx.font = `10px ${FONT}`;
                 ctx.textAlign = "left";
-                ctx.fillText("FREQUENCY DOMAIN — Fourier Spectrum", 8, 14);
+                ctx.fillText("FREQUENCY DOMAIN: Fourier Spectrum", 8, 14);
             }, [harmonics, baseFreq]);
 
             return <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: "block", borderRadius: 8 }} />;
@@ -486,7 +486,7 @@
                 setIsPlaying(false);
             }, []);
 
-            // Update running oscillators (gains AND frequencies — base freq must
+            // Update running oscillators (gains AND frequencies; base freq must
             // re-key the harmonic series live, otherwise the slider only takes
             // effect after Stop/Play).
             useEffect(() => {
@@ -585,7 +585,7 @@
                     {/* Presets */}
                     <div style={{ padding: "12px 16px 0" }}>
                         <div style={{ fontSize: 10, color: C.text, marginBottom: 6, letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                            Instrument Presets — Each has a unique harmonic fingerprint
+                            Instrument Presets: Each has a unique harmonic fingerprint
                         </div>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                             {PRESET_NAMES.map((name) => (
@@ -615,7 +615,7 @@
                     <div style={{ padding: "12px 16px 0" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                             <span style={{ fontSize: 10, color: C.text, letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                                Harmonic Amplitudes — Drag to reshape the sound
+                                Harmonic Amplitudes: Drag to reshape the sound
                             </span>
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -740,7 +740,7 @@
                                 ({(Math.max(...predictions) * 100).toFixed(1)}% confidence)
                                 {activePreset && (
                                     <span style={{ color: predictions.indexOf(Math.max(...predictions)) === PRESET_NAMES.indexOf(activePreset) ? C.success : C.danger }}>
-                                        {" "}— {predictions.indexOf(Math.max(...predictions)) === PRESET_NAMES.indexOf(activePreset) ? "✓ Correct!" : "✗ Misclassified"}
+                                        {": "}{predictions.indexOf(Math.max(...predictions)) === PRESET_NAMES.indexOf(activePreset) ? "✓ Correct!" : "✗ Misclassified"}
                                     </span>
                                 )}
                             </div>
@@ -759,11 +759,11 @@
                             How This Connects Trig → Fourier → AI
                         </div>
                         <div style={{ fontSize: 11, color: C.text, lineHeight: 1.7 }}>
-                            <strong style={{ color: C.accent1 }}>1. Trig:</strong> Each harmonic is a sine wave — sin(n·2π·f·t). The sliders control amplitude.
+                            <strong style={{ color: C.accent1 }}>1. Trig:</strong> Each harmonic is a sine wave, sin(n·2π·f·t). The sliders control amplitude.
                             <br />
                             <strong style={{ color: C.accent2 }}>2. Fourier:</strong> Any sound = sum of sine waves. The FFT bars show this decomposition. Different "instruments" have different harmonic recipes.
                             <br />
-                            <strong style={{ color: C.accent3 }}>3. AI:</strong> The neural net takes 8 harmonic amplitudes as input features and learns to map each pattern to an instrument. It's doing the same thing your ear does — recognizing timbral fingerprints.
+                            <strong style={{ color: C.accent3 }}>3. AI:</strong> The neural net takes 8 harmonic amplitudes as input features and learns to map each pattern to an instrument. It's doing the same thing your ear does: recognizing timbral fingerprints.
                         </div>
                     </div>
                 </div>

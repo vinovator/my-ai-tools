@@ -208,7 +208,7 @@
             box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
         }
 
-        /* Drop zone — refined to feel like a quiet input, not a banner */
+        /* Drop zone: refined to feel like a quiet input, not a banner */
         .dropzone {
             display: flex;
             align-items: center;
@@ -733,7 +733,7 @@
 
     <script>
     /* ============================================================
-       PDF Merge & Split — pdf-play
+       PDF Merge & Split (pdf-play)
        Single-file, browser-only utility. Files never leave the tab.
        ============================================================ */
 
@@ -1270,7 +1270,7 @@
             }
             // Soft warnings
             if (ready && file.size > SOFT_WARN_BYTES) {
-                alerts.push({ kind: 'warn', title: 'Large file.', message: `${Utils.formatBytes(file.size)} — splitting may use significant memory.` });
+                alerts.push({ kind: 'warn', title: 'Large file.', message: `${Utils.formatBytes(file.size)}; splitting may use significant memory.` });
             }
             // Parse errors
             if (parsed.errors.length > 0) {
@@ -1340,7 +1340,7 @@
             document.addEventListener('keydown', (e) => {
                 if (e.key !== 'Enter') return;
                 const tag = (e.target && e.target.tagName) || '';
-                // Allow Enter inside inputs to fire too — it's a single-line action
+                // Allow Enter inside inputs to fire too; it's a single-line action
                 if (tag === 'TEXTAREA') return;
                 const btn = State.mode === 'merge' ? Dom.$('merge-btn') : Dom.$('split-btn');
                 if (btn && !btn.disabled) {

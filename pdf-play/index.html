@@ -51,7 +51,7 @@
             background-color: var(--bg-body);
             color: var(--text-main);
             min-height: 100vh;
-            padding: 20px;
+            padding: 96px 20px 20px;
             line-height: 1.5;
         }
 
@@ -66,29 +66,100 @@
             flex-direction: column;
         }
 
-        .header {
+        /* ====================== Top ribbon (branded header) ====================== */
+        .top-ribbon {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 76px;
             background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            color: white;
-            padding: 36px 40px;
+            color: #ffffff;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 24px;
-            flex-wrap: wrap;
+            gap: 16px;
+            padding: 0 24px;
+            z-index: 100;
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06), 0 4px 18px rgba(249, 115, 22, 0.22);
         }
 
-        .header-text h1 {
-            font-size: 2rem;
+        .ribbon-brand {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+            line-height: 1.15;
+        }
+
+        .ribbon-name {
+            font-size: 1.4rem;
             font-weight: 700;
-            margin-bottom: 4px;
-            letter-spacing: -0.02em;
+            letter-spacing: -0.018em;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .header-text p {
-            font-size: 1rem;
-            opacity: 0.9;
-            font-weight: 300;
+        .ribbon-tag {
+            font-size: 0.78rem;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.85);
+            letter-spacing: 0.005em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
+
+        .ribbon-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            letter-spacing: 0.005em;
+            color: rgba(255, 255, 255, 0.88);
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.32);
+            background: rgba(255, 255, 255, 0.08);
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+        }
+
+        .ribbon-back:hover {
+            background: rgba(255, 255, 255, 0.18);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+        }
+
+        .ribbon-back:focus-visible {
+            outline: 2px solid #ffffff;
+            outline-offset: 2px;
+        }
+
+        .ribbon-back svg {
+            flex-shrink: 0;
+            transition: transform 0.15s;
+        }
+
+        .ribbon-back:hover svg {
+            transform: translateX(-2px);
+        }
+
+        @media (max-width: 560px) {
+            body { padding: 92px 16px 20px; }
+            .top-ribbon { padding: 0 16px; gap: 12px; }
+            .ribbon-name { font-size: 1.2rem; }
+            .ribbon-tag { font-size: 0.72rem; }
+            .ribbon-back span { display: none; }
+            .ribbon-back { padding: 7px 9px; }
+        }
+
 
 
         .main-content {
@@ -609,14 +680,21 @@
 </head>
 
 <body>
-    <div class="container">
-        <header class="header">
-            <div class="header-text">
-                <h1>PDF Merge &amp; Split</h1>
-                <p>Combine PDFs into one, or split a PDF at chosen page numbers.</p>
-            </div>
-        </header>
+    <header class="top-ribbon" role="banner">
+        <div class="ribbon-brand">
+            <span class="ribbon-name">PDF Merge &amp; Split</span>
+            <span class="ribbon-tag">Combine PDFs into one, or split a PDF at chosen page numbers.</span>
+        </div>
+        <a href="../index.html" class="ribbon-back" title="Back to Vinoth's AI Tools">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="19" y1="12" x2="5" y2="12"/>
+                <polyline points="12 19 5 12 12 5"/>
+            </svg>
+            <span>Toolshelf</span>
+        </a>
+    </header>
 
+    <div class="container">
         <div class="main-content">
             <aside class="sidebar">
                 <div style="padding: 12px 14px; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; margin-bottom: 20px; font-size: 0.85rem; color: #1E3A8A; line-height: 1.4;">

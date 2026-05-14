@@ -6,13 +6,16 @@ A single-page browser tool to view rendered Markdown. Drop a `.md` file and see 
 
 ## 🌟 Features
 
-*   **Drag & drop**: Drop a `.md`, `.markdown`, or `.txt` file (or click to browse). Up to 5 MB.
+*   **Reader-first layout**: No persistent sidebar. The empty page IS the drop zone. Once loaded, content sits in a centered ~760 px reading column with a slim sticky top bar of icon actions.
+*   **Drag & drop anywhere**: Drop a `.md`, `.markdown`, or `.txt` file anywhere on the page (or click the drop target to browse). Up to 5 MB.
 *   **GitHub-Flavored Markdown**: Tables, task lists, strikethrough, fenced code blocks.
 *   **Syntax highlighting**: Fenced code blocks are highlighted by [highlight.js](https://highlightjs.org/) with language auto-detection.
 *   **Math**: Inline `$...$` and display `$$...$$` rendered with [KaTeX](https://katex.org/).
 *   **Diagrams**: Mermaid code blocks rendered as inline SVGs ([mermaid.js](https://mermaid.js.org/)).
+*   **Auto TOC + heading anchors**: Documents with 3 or more headings get a floating outline (or a drawer on narrow viewports) with scroll-spy. Hover any heading to copy a deep link.
+*   **Dark mode**: Auto-detects your OS preference at load; toggle in the top bar. In-memory only, never persisted.
 *   **Export**:
-    *   **Print / Save as PDF**: print stylesheet hides the sidebar so only the document prints.
+    *   **Print / Save as PDF**: forces light theme and hides chrome so only the document prints.
     *   **Download HTML**: portable `.html` file with inline styles; KaTeX/Mermaid output is embedded; KaTeX and highlight.js themes are CDN-linked for compactness.
     *   **Copy HTML**: copy the rendered HTML markup to your clipboard.
 *   **Sanitization by default**: Output is passed through [DOMPurify](https://github.com/cure53/DOMPurify) before rendering, so `<script>` and event-handler attributes in the source markdown can never execute.
@@ -22,13 +25,15 @@ A single-page browser tool to view rendered Markdown. Drop a `.md` file and see 
 
 Open `index.html` in any modern browser, or visit the live demo above.
 
-1.  Drop a Markdown file onto the dropzone in the sidebar, or click it to browse.
-2.  The rendered document appears on the right.
-3.  Use the sidebar buttons:
+1.  Drop a Markdown file anywhere on the page, or click the drop target to browse.
+2.  The rendered document fills the reading column; a slim top bar holds the file name and action buttons.
+3.  Use the top-bar icon buttons:
+    *   **☰** opens the outline drawer on narrow viewports (on wide ones the outline is always visible).
     *   **Print / Save as PDF**: opens your browser's print dialog.
     *   **Download HTML**: saves a portable `.html` file you can share.
     *   **Copy HTML**: copies the rendered HTML to the clipboard.
-    *   **Clear**: resets the viewer.
+    *   **✕** clears the current file and returns to the empty drop state.
+    *   **☾ / ☀** toggles dark mode.
 
 A `sample.md` fixture is included that exercises every feature (tables, task lists, three highlighted code languages, inline + display math, two Mermaid diagram types, plus an XSS attempt that should appear inert).
 

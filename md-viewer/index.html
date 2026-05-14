@@ -167,7 +167,6 @@
         }
 
         /* Push fixed/sticky elements down by the ribbon's height */
-        .top-bar { top: 76px; }
         .empty-page { padding-top: 108px; }
 
         @media (max-width: 560px) {
@@ -256,8 +255,10 @@
 
         /* ====================== Top bar ====================== */
         .top-bar {
-            position: sticky;
-            top: 0;
+            position: fixed;
+            top: 76px;
+            left: 0;
+            right: 0;
             z-index: 20;
             display: flex;
             align-items: center;
@@ -346,7 +347,7 @@
         /* ====================== Article (reading column) ====================== */
         #preview {
             max-width: 760px;
-            margin: 0 auto;
+            margin: 128px auto 0;
             padding: 40px 24px 96px;
         }
 
@@ -510,7 +511,7 @@
             font-weight: 700;
             line-height: 1.25;
             letter-spacing: -0.01em;
-            scroll-margin-top: 116px;
+            scroll-margin-top: 144px;
         }
 
         .markdown-body h1 {
@@ -689,7 +690,7 @@
             }
             body { background: white; color: #1F2328; }
             .top-bar, .toc, .toc-overlay, .toast, .empty-page, .drop-overlay, #btn-toc { display: none !important; }
-            #preview { max-width: none; padding: 0; }
+            #preview { max-width: none; margin: 0; padding: 0; }
             .markdown-body {
                 font-size: 11pt;
                 line-height: 1.5;
@@ -744,7 +745,7 @@
         </label>
         <p class="empty-privacy">
             <span aria-hidden="true">&#128274;</span>
-            Files never leave your browser. Nothing is uploaded.
+            Files never leave your browser. No upload, no tracking, no trace.
         </p>
     </main>
 
@@ -1139,7 +1140,7 @@
                 if (!visible.length) return;
                 const id = visible[0].id;
                 links.forEach((a) => a.classList.toggle('active', a === linkById[id]));
-            }, { rootMargin: '-116px 0px -65% 0px', threshold: 0 });
+            }, { rootMargin: '-144px 0px -65% 0px', threshold: 0 });
             currentHeadings.forEach((h) => scrollObserver.observe(h));
         }
 

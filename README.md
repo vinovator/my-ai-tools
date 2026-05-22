@@ -7,6 +7,13 @@ A collection of AI-powered tools, experiments, and visualizations.
 
 ## Projects
 
+### [Compound Investment Calculator](./compound-viz/README.md)
+A calm, single-page what-if for your savings — drag the sliders and watch the pot grow.
+- **Six sliders:** lump sum, monthly contribution, return, inflation, current age, retirement age.
+- **Two readings at all times:** the nominal pot and the same pot in today's money (after inflation).
+- **Live canvas chart:** nominal line, today's-money line, and total contributed area, all redrawn on drag.
+- **Calm financial design:** dark green and cream, serif headings, branded top ribbon with a Toolshelf back-link.
+
 ### [Markdown Viewer](./md-viewer/README.md)
 Drop a `.md` file and view it rendered. Your files never leave your tab.
 - **Rich rendering:** GFM tables, task lists, syntax-highlighted code (highlight.js), KaTeX math, and Mermaid diagrams.

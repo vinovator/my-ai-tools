@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compound Calculator — a calm, slightly British view of your future pot</title>
+<meta name="description" content="Interactive compound-investment calculator. Drag the sliders, watch the pot grow, read the deadpan headlines.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#f5efe0;
+  --cream-soft:#ece4d0;
+  --paper:#fbf7eb;
+  --ink:#1f3a2e;
+  --ink-soft:#2d4a3d;
+  --green:#2d5a3d;
+  --green-soft:#4a8064;
+  --green-pale:#a4bfa9;
+  --sand:#8a6f3c;
+  --sand-pale:#c4ab7a;
+  --muted:#6b7a6e;
+  --rule:rgba(31,58,46,0.10);
+  --rule-strong:rgba(31,58,46,0.22);
+  --shadow:0 1px 2px rgba(31,58,46,0.04),0 6px 18px rgba(31,58,46,0.06);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Inter',system-ui,-apple-system,Segoe UI,sans-serif;
+  background:var(--cream);
+  background-image:
+    radial-gradient(ellipse 60% 40% at 18% 0%, rgba(74,128,100,0.06), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 90% 100%, rgba(138,111,60,0.05), transparent 60%);
+  color:var(--ink);
+  line-height:1.5;
+  font-variant-numeric:tabular-nums;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  min-height:100vh;
+}
+.container{
+  max-width:1080px;
+  margin:0 auto;
+  padding:calc(64px + 2.75rem) 1.5rem 2rem;
+}
+.layout{
+  display:grid;
+  grid-template-columns:300px 1fr;
+  gap:1.75rem;
+  align-items:start;
+}
+@media (max-width:860px){
+  .layout{grid-template-columns:1fr}
+  .container{padding:calc(56px + 1.5rem) 1rem 1.5rem}
+}
+/* ====================== Top ribbon (branded header) ====================== */
+.top-ribbon{
+  position:fixed;
+  top:0;left:0;right:0;
+  height:64px;
+  background:linear-gradient(135deg,var(--ink) 0%,var(--green) 100%);
+  color:#fbf7eb;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:0 1.75rem;
+  z-index:100;
+  box-shadow:0 1px 0 rgba(0,0,0,0.04),0 4px 16px rgba(31,58,46,0.18);
+}
+.ribbon-brand{
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+  min-width:0;
+  line-height:1.2;
+}
+.ribbon-name{
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:1.25rem;
+  font-weight:500;
+  font-style:italic;
+  color:#fbf7eb;
+  letter-spacing:.005em;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.ribbon-tag{
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:.75rem;
+  font-style:italic;
+  font-weight:400;
+  color:rgba(251,247,235,0.78);
+  letter-spacing:.005em;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.ribbon-back{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-family:'Inter',sans-serif;
+  font-size:.7rem;
+  font-weight:600;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:rgba(251,247,235,0.88);
+  text-decoration:none;
+  padding:7px 14px;
+  border-radius:999px;
+  border:1px solid rgba(251,247,235,0.32);
+  background:rgba(251,247,235,0.06);
+  white-space:nowrap;
+  flex-shrink:0;
+  transition:background-color .15s, color .15s, border-color .15s;
+}
+.ribbon-back:hover{
+  background:rgba(251,247,235,0.16);
+  color:#ffffff;
+  border-color:rgba(251,247,235,0.5);
+}
+.ribbon-back:focus-visible{
+  outline:2px solid #fbf7eb;
+  outline-offset:2px;
+}
+.ribbon-back svg{
+  flex-shrink:0;
+  transition:transform .15s;
+}
+.ribbon-back:hover svg{transform:translateX(-2px)}
+@media (max-width:560px){
+  .top-ribbon{height:56px;padding:0 1rem;gap:12px}
+  .ribbon-name{font-size:1.05rem}
+  .ribbon-tag{font-size:.7rem}
+  .ribbon-back span{display:none}
+  .ribbon-back{padding:7px 9px}
+}
+@media print{
+  .top-ribbon{display:none !important}
+  .container{padding-top:1.5rem !important}
+}
+.panel{
+  background:var(--paper);
+  border:1px solid var(--rule);
+  border-radius:6px;
+  box-shadow:var(--shadow);
+}
+.sidebar{padding:.25rem 1.25rem}
+.slider-row{
+  padding:.95rem .35rem;
+  border-bottom:1px solid var(--rule);
+  border-radius:3px;
+  transition:background .18s ease;
+  margin:0 -.35rem;
+}
+.slider-row:last-child{border-bottom:0}
+.slider-row:hover{background:rgba(45,90,61,0.03)}
+.slider-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  margin-bottom:.6rem;
+  gap:.5rem;
+}
+.slider-label{
+  font-size:.78rem;
+  color:var(--muted);
+  letter-spacing:.03em;
+  font-weight:500;
+}
+.slider-value{
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:1.06rem;
+  color:var(--ink);
+  font-feature-settings:"tnum";
+  font-weight:500;
+}
+input[type="range"]{
+  -webkit-appearance:none;
+  appearance:none;
+  width:100%;
+  height:4px;
+  border-radius:3px;
+  outline:none;
+  margin:0;
+  background:linear-gradient(to right,
+    var(--green) 0%,
+    var(--green) var(--p,50%),
+    var(--rule-strong) var(--p,50%),
+    var(--rule-strong) 100%);
+}
+input[type="range"]::-webkit-slider-runnable-track{height:4px;border-radius:3px;background:transparent}
+input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  appearance:none;
+  width:18px;height:18px;
+  border-radius:50%;
+  background:var(--paper);
+  cursor:pointer;
+  border:2px solid var(--green);
+  margin-top:-7px;
+  box-shadow:0 1px 3px rgba(31,58,46,0.18);
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+input[type="range"]::-webkit-slider-thumb:hover{
+  transform:scale(1.12);
+  box-shadow:0 0 0 5px rgba(45,90,61,0.10),0 1px 3px rgba(31,58,46,0.2);
+}
+input[type="range"]::-moz-range-track{height:4px;border-radius:3px;background:var(--rule-strong)}
+input[type="range"]::-moz-range-progress{background:var(--green);height:4px;border-radius:3px}
+input[type="range"]::-moz-range-thumb{
+  width:18px;height:18px;
+  border-radius:50%;
+  background:var(--paper);
+  cursor:pointer;
+  border:2px solid var(--green);
+  box-shadow:0 1px 3px rgba(31,58,46,0.18);
+}
+input[type="range"]:focus{outline:none}
+input[type="range"]:focus::-webkit-slider-thumb{
+  box-shadow:0 0 0 5px rgba(45,90,61,0.15),0 1px 3px rgba(31,58,46,0.2);
+}
+@media (max-width:860px){
+  input[type="range"]{height:6px}
+  input[type="range"]::-webkit-slider-thumb{width:22px;height:22px;margin-top:-8px}
+  input[type="range"]::-moz-range-thumb{width:22px;height:22px}
+}
+.mode-block{
+  padding:.95rem .35rem 1.05rem;
+  border-bottom:1px solid var(--rule);
+  margin:0 -.35rem;
+}
+.mode-label{
+  font-size:.78rem;
+  color:var(--muted);
+  letter-spacing:.03em;
+  font-weight:500;
+  margin-bottom:.55rem;
+}
+.mode-toggle{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:4px;
+  padding:3px;
+  background:rgba(31,58,46,0.06);
+  border-radius:999px;
+}
+.mode-pill{
+  border:0;
+  background:transparent;
+  font-family:'Inter',sans-serif;
+  font-size:.8rem;
+  font-weight:600;
+  letter-spacing:.02em;
+  color:var(--muted);
+  padding:6px 10px;
+  border-radius:999px;
+  cursor:pointer;
+  transition:background-color .15s, color .15s, box-shadow .15s;
+}
+.mode-pill:hover{color:var(--ink-soft)}
+.mode-pill.is-active{
+  background:var(--green);
+  color:#fbf7eb;
+  box-shadow:0 1px 2px rgba(31,58,46,0.18);
+}
+.mode-pill:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.target-block{
+  margin-top:.85rem;
+  display:flex;
+  flex-direction:column;
+  gap:.6rem;
+}
+.target-block[hidden]{display:none}
+.target-label{
+  font-size:.78rem;
+  color:var(--muted);
+  letter-spacing:.03em;
+  font-weight:500;
+}
+.target-input-wrap{
+  position:relative;
+  display:flex;
+  align-items:center;
+  background:var(--paper);
+  border:1px solid var(--rule-strong);
+  border-radius:6px;
+  padding:0 .65rem;
+  transition:border-color .15s, box-shadow .15s;
+}
+.target-input-wrap:focus-within{
+  border-color:var(--green);
+  box-shadow:0 0 0 3px rgba(45,90,61,0.12);
+}
+.target-prefix{
+  font-family:'Playfair Display',Georgia,serif;
+  color:var(--muted);
+  font-size:1.05rem;
+  padding-right:.4rem;
+}
+#target{
+  flex:1;
+  min-width:0;
+  border:0;
+  outline:0;
+  background:transparent;
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:1.05rem;
+  color:var(--ink);
+  font-feature-settings:"tnum";
+  padding:.5rem 0;
+  width:100%;
+}
+.target-basis{
+  display:flex;
+  gap:.5rem;
+  flex-wrap:wrap;
+}
+.basis-opt{
+  display:inline-flex;
+  align-items:center;
+  gap:.4rem;
+  font-size:.74rem;
+  color:var(--ink-soft);
+  cursor:pointer;
+  padding:.35rem .6rem;
+  border-radius:999px;
+  border:1px solid var(--rule);
+  background:transparent;
+  transition:background-color .15s, border-color .15s, color .15s;
+  user-select:none;
+}
+.basis-opt:hover{background:rgba(45,90,61,0.04)}
+.basis-opt input{
+  appearance:none;
+  -webkit-appearance:none;
+  width:10px;height:10px;
+  border-radius:50%;
+  border:1.5px solid var(--muted);
+  margin:0;
+  position:relative;
+  flex-shrink:0;
+  transition:border-color .15s, background-color .15s;
+}
+.basis-opt input:checked{
+  border-color:var(--green);
+  background:var(--green);
+  box-shadow:inset 0 0 0 2px var(--paper);
+}
+.basis-opt:has(input:checked){
+  background:rgba(45,90,61,0.08);
+  border-color:rgba(45,90,61,0.4);
+  color:var(--ink);
+}
+.target-note{
+  font-family:'Playfair Display',Georgia,serif;
+  font-style:italic;
+  font-size:.78rem;
+  color:var(--sand);
+  margin:.1rem 0 0;
+  line-height:1.45;
+}
+.slider-row.is-disabled{opacity:.7}
+.slider-row.is-disabled input[type="range"]{
+  cursor:not-allowed;
+  background:linear-gradient(to right,
+    rgba(45,90,61,0.45) 0%,
+    rgba(45,90,61,0.45) var(--p,50%),
+    var(--rule-strong) var(--p,50%),
+    var(--rule-strong) 100%);
+}
+.slider-row.is-disabled input[type="range"]::-webkit-slider-thumb{
+  background:rgba(251,247,235,0.85);
+  border-color:rgba(45,90,61,0.6);
+  cursor:not-allowed;
+}
+.slider-row.is-disabled input[type="range"]::-moz-range-thumb{
+  background:rgba(251,247,235,0.85);
+  border-color:rgba(45,90,61,0.6);
+  cursor:not-allowed;
+}
+.row-suffix{
+  font-style:italic;
+  font-size:.74rem;
+  color:var(--sand);
+  font-weight:400;
+  letter-spacing:.01em;
+  margin-left:.1rem;
+}
+.main{display:flex;flex-direction:column;gap:1.25rem}
+.numbers-panel{
+  padding:1.6rem 1.75rem;
+  display:grid;
+  grid-template-columns:1fr 1px 1fr;
+  gap:1.6rem;
+  align-items:center;
+}
+.numbers-panel .divider{background:var(--rule);align-self:stretch;width:1px}
+@media (max-width:520px){
+  .numbers-panel{grid-template-columns:1fr;gap:1.25rem;padding:1.4rem 1.4rem}
+  .numbers-panel .divider{width:auto;height:1px;align-self:auto}
+}
+.num-cell{display:flex;flex-direction:column;gap:.4rem}
+.num-caption{
+  font-size:.66rem;
+  color:var(--muted);
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  font-weight:600;
+}
+.num-value{
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:clamp(1.85rem,4.4vw,2.6rem);
+  color:var(--ink);
+  font-feature-settings:"tnum";
+  line-height:1.05;
+  font-weight:500;
+  word-break:break-all;
+}
+.num-sub{
+  font-size:.78rem;
+  color:var(--muted);
+  font-style:italic;
+  font-family:'Playfair Display',Georgia,serif;
+}
+.chart-panel{padding:1.25rem 1.5rem 1.5rem}
+.chart-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  margin-bottom:.85rem;
+  gap:1rem;
+  flex-wrap:wrap;
+}
+.chart-heading{
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:.98rem;
+  font-style:italic;
+  color:var(--ink-soft);
+  margin:0;
+  font-weight:500;
+}
+.legend{
+  display:flex;
+  gap:1.1rem;
+  font-size:.74rem;
+  color:var(--muted);
+  flex-wrap:wrap;
+}
+.legend span{display:inline-flex;align-items:center;gap:.45rem}
+.swatch-solid{width:18px;height:2px;background:var(--green);border-radius:1px}
+.swatch-dashed{width:18px;height:2px;background:repeating-linear-gradient(to right,var(--sand) 0 4px,transparent 4px 7px)}
+.swatch-fill{width:14px;height:10px;background:rgba(74,128,100,0.18);border:1px solid rgba(74,128,100,0.4);border-radius:2px}
+canvas{width:100%;height:340px;display:block}
+@media (max-width:600px){canvas{height:260px}}
+.stat-row{
+  padding:1.2rem 1.75rem;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:1rem;
+}
+@media (max-width:600px){.stat-row{grid-template-columns:1fr;gap:.9rem;padding:1.1rem 1.4rem}}
+.stat-label{
+  font-size:.65rem;
+  text-transform:uppercase;
+  letter-spacing:.16em;
+  color:var(--muted);
+  margin-bottom:.32rem;
+  font-weight:600;
+}
+.stat-value{
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:1.3rem;
+  color:var(--ink);
+  font-feature-settings:"tnum";
+  font-weight:500;
+}
+footer{
+  margin-top:3rem;
+  padding-top:1.4rem;
+  border-top:1px solid var(--rule);
+  font-size:.8rem;
+  color:var(--muted);
+  font-style:italic;
+  font-family:'Playfair Display',Georgia,serif;
+  line-height:1.6;
+  display:flex;
+  align-items:flex-start;
+  gap:.85rem;
+}
+footer::before{
+  content:"";
+  display:inline-block;
+  width:18px;
+  height:1px;
+  background:var(--sand);
+  margin-top:.65rem;
+  flex-shrink:0;
+}
+footer > span{
+  flex:1;
+}
+</style>
+</head>
+<body>
+
+<header class="top-ribbon" role="banner">
+  <div class="ribbon-brand">
+    <span class="ribbon-name">Compound Calculator</span>
+    <span class="ribbon-tag">Compounding: the only magic that's legal.</span>
+  </div>
+  <a href="../index.html" class="ribbon-back" title="Back to Vinoth's AI Tools">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <line x1="19" y1="12" x2="5" y2="12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    <span>Toolshelf</span>
+  </a>
+</header>
+
+<div class="container">
+
+<div class="layout">
+
+  <aside class="panel sidebar" aria-label="Inputs">
+    <div class="mode-block">
+      <div class="mode-label">Mode</div>
+      <div class="mode-toggle" role="tablist" aria-label="Calculator mode">
+        <button class="mode-pill is-active" data-mode="forward" type="button" role="tab" aria-selected="true">Forward</button>
+        <button class="mode-pill" data-mode="goal" type="button" role="tab" aria-selected="false">Goal-seek</button>
+      </div>
+      <div class="target-block" id="targetBlock" hidden>
+        <label class="target-label" for="target">Target final pot</label>
+        <div class="target-input-wrap">
+          <span class="target-prefix" aria-hidden="true">£</span>
+          <input type="text" id="target" inputmode="numeric" autocomplete="off" value="500,000" aria-label="Target final pot">
+        </div>
+        <div class="target-basis" role="radiogroup" aria-label="Target basis">
+          <label class="basis-opt"><input type="radio" name="basis" value="nominal" checked><span>Nominal</span></label>
+          <label class="basis-opt"><input type="radio" name="basis" value="real"><span>In today's money</span></label>
+        </div>
+        <p class="target-note" id="targetNote" hidden></p>
+      </div>
+    </div>
+    <div class="slider-row">
+      <div class="slider-head">
+        <span class="slider-label">Starting lump sum</span>
+        <span class="slider-value" id="lumpVal">£5,000</span>
+      </div>
+      <input type="range" id="lump" min="0" max="500000" step="500" value="5000" aria-label="Starting lump sum">
+    </div>
+    <div class="slider-row" id="monthlyRow">
+      <div class="slider-head">
+        <span class="slider-label">Monthly contribution<span class="row-suffix" id="monthlySuffix" hidden> · required</span></span>
+        <span class="slider-value" id="monthlyVal">£300 /mo</span>
+      </div>
+      <input type="range" id="monthly" min="0" max="2000" step="10" value="300" aria-label="Monthly contribution">
+    </div>
+    <div class="slider-row">
+      <div class="slider-head">
+        <span class="slider-label">Annual return</span>
+        <span class="slider-value" id="retVal">6.0%</span>
+      </div>
+      <input type="range" id="ret" min="0" max="12" step="0.1" value="6" aria-label="Annual return">
+    </div>
+    <div class="slider-row">
+      <div class="slider-head">
+        <span class="slider-label">Inflation</span>
+        <span class="slider-value" id="inflVal">2.5%</span>
+      </div>
+      <input type="range" id="infl" min="0" max="6" step="0.1" value="2.5" aria-label="Inflation">
+    </div>
+    <div class="slider-row">
+      <div class="slider-head">
+        <span class="slider-label">Current age</span>
+        <span class="slider-value" id="currentAgeVal">30</span>
+      </div>
+      <input type="range" id="currentAge" min="0" max="80" step="1" value="30" aria-label="Current age">
+    </div>
+    <div class="slider-row">
+      <div class="slider-head">
+        <span class="slider-label">Retirement age</span>
+        <span class="slider-value" id="retirementAgeVal">65</span>
+      </div>
+      <input type="range" id="retirementAge" min="0" max="100" step="1" value="65" aria-label="Retirement age">
+    </div>
+  </aside>
+
+  <section class="main">
+
+    <div class="panel numbers-panel">
+      <div class="num-cell">
+        <div class="num-caption">On paper · nominal</div>
+        <div class="num-value" id="nominal">£0</div>
+        <div class="num-sub">at retirement</div>
+      </div>
+      <div class="divider" aria-hidden="true"></div>
+      <div class="num-cell">
+        <div class="num-caption">In today's money</div>
+        <div class="num-value" id="real">£0</div>
+        <div class="num-sub">after inflation</div>
+      </div>
+    </div>
+
+    <div class="panel chart-panel">
+      <div class="chart-head">
+        <h2 class="chart-heading">Pot over time</h2>
+        <div class="legend">
+          <span><span class="swatch-solid"></span> Nominal</span>
+          <span><span class="swatch-dashed"></span> Today's money</span>
+          <span><span class="swatch-fill"></span> Contributed</span>
+        </div>
+      </div>
+      <canvas id="chart" aria-label="Projection chart"></canvas>
+    </div>
+
+    <div class="panel stat-row">
+      <div>
+        <div class="stat-label">Total contributed</div>
+        <div class="stat-value" id="contributed">£0</div>
+      </div>
+      <div>
+        <div class="stat-label">Growth</div>
+        <div class="stat-value" id="growth">£0</div>
+      </div>
+      <div>
+        <div class="stat-label">Multiple</div>
+        <div class="stat-value" id="multiple">1.00×</div>
+      </div>
+    </div>
+
+  </section>
+</div>
+
+<footer>
+  <span>
+    Illustrative maths, not financial advice. Returns and inflation are assumed constant — a polite fiction. Past performance, as they say, is no guarantee of future results.
+  </span>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+
+  const inputs = {
+    lump: $('lump'),
+    monthly: $('monthly'),
+    ret: $('ret'),
+    infl: $('infl'),
+    currentAge: $('currentAge'),
+    retirementAge: $('retirementAge'),
+  };
+
+  const out = {
+    lumpVal: $('lumpVal'),
+    monthlyVal: $('monthlyVal'),
+    retVal: $('retVal'),
+    inflVal: $('inflVal'),
+    currentAgeVal: $('currentAgeVal'),
+    retirementAgeVal: $('retirementAgeVal'),
+    nominal: $('nominal'),
+    real: $('real'),
+    contributed: $('contributed'),
+    growth: $('growth'),
+    multiple: $('multiple'),
+  };
+
+  const targetInput = $('target');
+  const targetNote = $('targetNote');
+  const targetBlock = $('targetBlock');
+  const monthlyRow = $('monthlyRow');
+  const monthlySuffix = $('monthlySuffix');
+  const modePills = document.querySelectorAll('.mode-pill');
+  const basisRadios = document.querySelectorAll('input[name="basis"]');
+
+  let mode = 'forward';
+
+  const canvas = $('chart');
+  const ctx = canvas.getContext('2d');
+
+  const fmtGBP = (n) => '£' + Math.round(n).toLocaleString('en-GB');
+  const fmtCompact = (n) => {
+    const abs = Math.abs(n);
+    if (abs >= 1e9) return '£' + (n/1e9).toFixed(abs >= 1e10 ? 0 : 1) + 'B';
+    if (abs >= 1e6) return '£' + (n/1e6).toFixed(abs >= 1e7 ? 0 : 1) + 'M';
+    if (abs >= 1e3) return '£' + (n/1e3).toFixed(abs >= 1e5 ? 0 : 1) + 'k';
+    return '£' + Math.round(n);
+  };
+
+  function updateSliderFill(el){
+    const min = +el.min, max = +el.max, val = +el.value;
+    const p = max === min ? 0 : ((val - min) / (max - min)) * 100;
+    el.style.setProperty('--p', p + '%');
+  }
+
+  function project(lump, monthly, retDec, inflDec, years){
+    const months = Math.max(0, Math.round(years * 12));
+    const r = retDec / 12;
+    let pot = lump;
+    let contributed = lump;
+    const series = [{ year: 0, nominal: pot, real: pot, contributed }];
+    for (let m = 1; m <= months; m++){
+      pot = pot * (1 + r) + monthly;
+      contributed += monthly;
+      if (m % 12 === 0){
+        const year = m / 12;
+        series.push({
+          year,
+          nominal: pot,
+          real: pot / Math.pow(1 + inflDec, year),
+          contributed,
+        });
+      }
+    }
+    return series;
+  }
+
+  function parseTarget(){
+    const raw = (targetInput.value || '').replace(/[^\d.]/g, '');
+    const n = parseFloat(raw);
+    return isFinite(n) && n >= 0 ? n : 0;
+  }
+
+  function formatTargetInput(){
+    const n = parseTarget();
+    targetInput.value = Math.round(n).toLocaleString('en-GB');
+  }
+
+  function solveMonthly(lump, retDec, inflDec, years, target, basis){
+    if (years <= 0){
+      return { monthly: 0, note: 'Set retirement age above current age to solve.' };
+    }
+    const targetNominal = basis === 'real' ? target * Math.pow(1 + inflDec, years) : target;
+    const N = years * 12;
+    const r = retDec / 12;
+    let raw;
+    if (r === 0){
+      raw = (targetNominal - lump) / N;
+    } else {
+      const grown = lump * Math.pow(1 + r, N);
+      raw = (targetNominal - grown) * r / (Math.pow(1 + r, N) - 1);
+    }
+    if (!isFinite(raw)) return { monthly: 0, note: null };
+    if (raw <= 0){
+      return { monthly: 0, note: 'Your lump sum already reaches this — no contribution needed.' };
+    }
+    if (raw > 2000){
+      return { monthly: 2000, note: 'Target needs ' + fmtCompact(raw) + '/mo — above the £2,000/mo slider range.' };
+    }
+    return { monthly: Math.round(raw), note: null };
+  }
+
+  function setMode(newMode){
+    mode = newMode;
+    modePills.forEach(p => {
+      const active = p.dataset.mode === newMode;
+      p.classList.toggle('is-active', active);
+      p.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    const isGoal = newMode === 'goal';
+    targetBlock.hidden = !isGoal;
+    monthlyRow.classList.toggle('is-disabled', isGoal);
+    inputs.monthly.disabled = isGoal;
+    monthlySuffix.hidden = !isGoal;
+    if (!isGoal){
+      targetNote.hidden = true;
+      targetNote.textContent = '';
+    }
+  }
+
+  function niceNum(range){
+    if (range <= 0) return 1;
+    const exp = Math.floor(Math.log10(range));
+    const f = range / Math.pow(10, exp);
+    let nf;
+    if (f < 1.5) nf = 1;
+    else if (f < 3) nf = 2;
+    else if (f < 7) nf = 5;
+    else nf = 10;
+    return nf * Math.pow(10, exp);
+  }
+
+  function niceTicks(min, max, count){
+    const step = niceNum((max - min) / Math.max(1, count - 1));
+    const ticks = [];
+    const start = Math.floor(min / step) * step;
+    for (let v = start; v <= max + step/2; v += step) ticks.push(v);
+    return ticks;
+  }
+
+  function drawChart(series){
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const cssW = Math.max(1, rect.width);
+    const cssH = Math.max(1, rect.height);
+    canvas.width = Math.floor(cssW * dpr);
+    canvas.height = Math.floor(cssH * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    const padL = 58, padR = 16, padT = 12, padB = 34;
+    const w = cssW - padL - padR;
+    const h = cssH - padT - padB;
+    if (w <= 0 || h <= 0) return;
+
+    const last = series[series.length - 1];
+    const xMax = Math.max(1, last.year);
+    const yMax = Math.max(last.nominal * 1.05, last.contributed * 1.05, 100);
+
+    const xAt = (yr) => padL + (yr / xMax) * w;
+    const yAt = (v) => padT + h - (v / yMax) * h;
+
+    // Y gridlines + labels
+    ctx.font = "11px 'Inter', system-ui, sans-serif";
+    ctx.lineWidth = 1;
+    const yTicks = niceTicks(0, yMax, 5);
+    for (const v of yTicks){
+      if (v < 0) continue;
+      const y = yAt(v);
+      if (y < padT - 1 || y > padT + h + 1) continue;
+      ctx.strokeStyle = 'rgba(31,58,46,0.07)';
+      ctx.beginPath();
+      ctx.moveTo(padL, y);
+      ctx.lineTo(padL + w, y);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(31,58,46,0.5)';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(fmtCompact(v), padL - 9, y);
+    }
+
+    // X labels
+    ctx.fillStyle = 'rgba(31,58,46,0.5)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    const xStep = xMax <= 10 ? 1 : xMax <= 25 ? 5 : xMax <= 50 ? 10 : 20;
+    const drawn = new Set();
+    for (let yr = 0; yr <= xMax; yr += xStep){
+      ctx.fillText(yr.toString(), xAt(yr), padT + h + 8);
+      drawn.add(yr);
+    }
+    if (!drawn.has(xMax) && xMax > 0){
+      ctx.fillText(xMax.toString(), xAt(xMax), padT + h + 8);
+    }
+
+    // bottom axis line
+    ctx.strokeStyle = 'rgba(31,58,46,0.22)';
+    ctx.beginPath();
+    ctx.moveTo(padL, padT + h);
+    ctx.lineTo(padL + w, padT + h);
+    ctx.stroke();
+
+    // Nominal area (faint gradient under the nominal line)
+    if (series.length >= 2){
+      const grad = ctx.createLinearGradient(0, padT, 0, padT + h);
+      grad.addColorStop(0, 'rgba(45,90,61,0.20)');
+      grad.addColorStop(1, 'rgba(45,90,61,0.00)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(xAt(series[0].year), yAt(0));
+      for (const p of series) ctx.lineTo(xAt(p.year), yAt(p.nominal));
+      ctx.lineTo(xAt(last.year), yAt(0));
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Contributions area (sits on top of nominal area; smaller, more opaque)
+    if (series.length >= 2){
+      ctx.fillStyle = 'rgba(74,128,100,0.20)';
+      ctx.beginPath();
+      ctx.moveTo(xAt(series[0].year), yAt(0));
+      for (const p of series) ctx.lineTo(xAt(p.year), yAt(p.contributed));
+      ctx.lineTo(xAt(last.year), yAt(0));
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Real line (dashed sand)
+    ctx.strokeStyle = '#8a6f3c';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 4]);
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    series.forEach((p, i) => {
+      const x = xAt(p.year), y = yAt(p.real);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Nominal line (solid green)
+    ctx.strokeStyle = '#2d5a3d';
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    series.forEach((p, i) => {
+      const x = xAt(p.year), y = yAt(p.nominal);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Endpoint markers
+    if (xMax > 0){
+      // Real endpoint (subtle)
+      ctx.fillStyle = '#8a6f3c';
+      ctx.strokeStyle = '#fbf7eb';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(xAt(last.year), yAt(last.real), 3.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      // Nominal endpoint (bolder)
+      ctx.fillStyle = '#2d5a3d';
+      ctx.beginPath();
+      ctx.arc(xAt(last.year), yAt(last.nominal), 4.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    // X axis caption
+    ctx.fillStyle = 'rgba(31,58,46,0.5)';
+    ctx.font = "italic 11px 'Playfair Display', Georgia, serif";
+    ctx.textAlign = 'center';
+    ctx.fillText('years from now', padL + w/2, padT + h + 22);
+  }
+
+  let scheduled = false;
+  function scheduleRecompute(){
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(() => { scheduled = false; recompute(); });
+  }
+
+  function recompute(){
+    let cur = +inputs.currentAge.value;
+    let retAge = +inputs.retirementAge.value;
+    if (retAge < cur){
+      retAge = cur;
+      inputs.retirementAge.value = cur;
+    }
+
+    const lump = +inputs.lump.value;
+    const retPct = +inputs.ret.value;
+    const inflPct = +inputs.infl.value;
+    const years = retAge - cur;
+
+    if (mode === 'goal'){
+      const basis = document.querySelector('input[name="basis"]:checked').value;
+      const target = parseTarget();
+      const { monthly: solved, note } = solveMonthly(lump, retPct/100, inflPct/100, years, target, basis);
+      inputs.monthly.value = solved;
+      if (note){
+        targetNote.textContent = note;
+        targetNote.hidden = false;
+      } else {
+        targetNote.hidden = true;
+        targetNote.textContent = '';
+      }
+    }
+
+    const monthly = +inputs.monthly.value;
+
+    out.lumpVal.textContent = fmtGBP(lump);
+    out.monthlyVal.textContent = fmtGBP(monthly) + ' /mo';
+    out.retVal.textContent = retPct.toFixed(1) + '%';
+    out.inflVal.textContent = inflPct.toFixed(1) + '%';
+    out.currentAgeVal.textContent = cur;
+    out.retirementAgeVal.textContent = retAge;
+
+    Object.values(inputs).forEach(updateSliderFill);
+
+    const series = project(lump, monthly, retPct/100, inflPct/100, years);
+    const last = series[series.length - 1];
+
+    out.nominal.textContent = fmtGBP(last.nominal);
+    out.real.textContent = fmtGBP(last.real);
+    out.contributed.textContent = fmtGBP(last.contributed);
+    const growth = last.nominal - last.contributed;
+    out.growth.textContent = (growth < 0 ? '−' : '') + fmtGBP(Math.abs(growth));
+    const mult = last.contributed > 0 ? last.nominal / last.contributed : 1;
+    out.multiple.textContent = mult.toFixed(2) + '×';
+
+    drawChart(series);
+  }
+
+  Object.values(inputs).forEach(el => el.addEventListener('input', scheduleRecompute));
+  window.addEventListener('resize', scheduleRecompute);
+
+  modePills.forEach(p => p.addEventListener('click', () => {
+    setMode(p.dataset.mode);
+    if (mode === 'goal' && (!targetInput.value || parseTarget() === 0)){
+      targetInput.value = out.nominal.textContent.replace(/[^\d]/g, '') || '500000';
+      formatTargetInput();
+    }
+    scheduleRecompute();
+  }));
+
+  targetInput.addEventListener('input', scheduleRecompute);
+  targetInput.addEventListener('blur', formatTargetInput);
+  basisRadios.forEach(r => r.addEventListener('change', scheduleRecompute));
+
+  requestAnimationFrame(recompute);
+})();
+</script>
+</body>
+</html>

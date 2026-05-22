@@ -56,3 +56,6 @@ wheels/
 
 # Jupyter Notebooks
 .ipynb_checkpoints
+
+# Claude Code (per-machine settings & permissions)
+.claude/

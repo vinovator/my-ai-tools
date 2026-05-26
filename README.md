@@ -7,6 +7,14 @@ A collection of AI-powered tools, experiments, and visualizations.
 
 ## Projects
 
+### [Protocol Lab](./protocol-lab/README.md)
+An interactive, animated explainer for foundational internet protocols. Pick a scenario, press play, watch packets fly.
+- **Five scenarios:** DNS lookup, TCP handshake & teardown, HTTP request/response, TLS 1.3 handshake, and a composite "Open https://example.com" that chains all four end-to-end.
+- **Inspectable payloads:** pretty-printed protocol fields for DNS/TCP/TLS; raw colored HTTP bytes with `\r\n` markers exposed for HTTP.
+- **Transport bar:** play / pause / step / scrub / speed; click the canvas to pause; toggle scenario parameters (cache hit, drop the first SYN) and re-watch.
+- **Layer stack panel** *(composite scenario)*: five-layer TCP/IP stack lights up at each step; click any layer for an in-context explanation. A phase indicator above the canvas lets you jump between the DNS / TCP / TLS / HTTP phases.
+- **Glossary with inline tooltips:** 25 terms, hover any underlined word in the narration for a definition.
+
 ### [Compound Investment Calculator](./compound-viz/README.md)
 A calm, single-page what-if for your savings — drag the sliders and watch the pot grow.
 - **Six sliders:** lump sum, monthly contribution, return, inflation, current age, retirement age.

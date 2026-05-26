@@ -53,6 +53,7 @@ Uses Plotly.js 2.27.0, SheetJS (xlsx 0.18.5) for CSV/Excel import, and jStat 1.9
 
 | Directory | Description | Key Libraries |
 |-----------|-------------|---------------|
+| `protocol-lab/` | Interactive animated explainer for DNS/TCP/HTTP/TLS — data-driven scenarios, packet animation, layered stack viz | React 18, Canvas API |
 | `trig-viz/` | Interactive unit circle / sine wave explorer | React 18, Canvas API |
 | `fourier-lab/` | Additive synthesis + Fourier viz + in-browser AI training | React 18, Canvas API, custom TinyNet |
 | `tariff-viz/` | Supply/demand tariff economics simulator | Chart.js 4.4 + Annotation plugin |
@@ -67,6 +68,8 @@ Uses Plotly.js 2.27.0, SheetJS (xlsx 0.18.5) for CSV/Excel import, and jStat 1.9
 - Educational tools follow a consistent UX pattern: tutorial/guided mode, interactive scenarios, glossary with tooltips, quiz mode, and a "What does this mean?" interpretation panel.
 - Two-column layout is standard: sidebar with controls on the left, main visualization on the right.
 - Fonts are loaded from Google Fonts: Inter (UI), JetBrains Mono / IBM Plex Mono (code/data display).
+- **Latest-tool-first ordering:** the root `index.html` portal lists tools with the most recently added tool at the top. When adding a new tool, insert its card/link at the start of the tool list — do not append.
+- **Toolshelf back-button:** every tool's `index.html` must include a "⬅ Toolshelf" button (or equivalently styled link) in its top-left corner that navigates back to the root `index.html`. The link target is typically `../index.html` since tools live one directory below the root. Style it consistently with the rest of the tool's palette using the existing CSS custom properties.
 
 ## Deployment
 

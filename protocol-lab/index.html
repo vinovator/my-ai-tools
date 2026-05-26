@@ -1,0 +1,2372 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Protocol Lab — Interactive Internet Protocols</title>
+
+    <meta name="description"
+        content="Watch foundational internet protocols — DNS, TCP, HTTP, TLS — animate step by step with synced narration and inspectable packet payloads." />
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet" />
+
+    <style>
+        :root {
+            --bg: #0a0e17;
+            --bg-2: #0d1322;
+            --panel: #111827;
+            --panel-2: #161f33;
+            --panel-3: #1a2540;
+            --border: #1e2a44;
+            --border-bright: #2a3a5c;
+            --text: #e6edf3;
+            --text-dim: #b4becc;
+            --muted: #7a8699;
+            --muted-2: #5b6577;
+            --accent: #38bdf8;
+            --accent-2: #7c3aed;
+            --accent-soft: rgba(56, 189, 248, 0.12);
+            --packet: #fbbf24;
+            --packet-glow: rgba(251, 191, 36, 0.45);
+            --node-fill: #1c2742;
+            --node-stroke: #3a4a6e;
+            --node-active-stroke: #38bdf8;
+            --link: #2a3a5c;
+            --link-active: #4b6695;
+            --ok: #10b981;
+            --warn: #f59e0b;
+            --err: #ef4444;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ===== Top ribbon / Toolshelf back ===== */
+        .top-ribbon {
+            position: sticky;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            height: 56px;
+            background: linear-gradient(135deg, #0d1322 0%, #1a2540 100%);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.25rem;
+            gap: 16px;
+        }
+
+        .ribbon-brand {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .ribbon-name {
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: 0.01em;
+            color: var(--text);
+        }
+
+        .ribbon-name .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            margin-right: 8px;
+            vertical-align: middle;
+            box-shadow: 0 0 12px var(--accent);
+        }
+
+        .ribbon-tag {
+            font-size: 0.78rem;
+            color: var(--muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ribbon-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            text-decoration: none;
+            padding: 7px 14px;
+            border-radius: 999px;
+            border: 1px solid var(--border-bright);
+            background: rgba(255, 255, 255, 0.03);
+            white-space: nowrap;
+            transition: all 0.15s ease;
+        }
+
+        .ribbon-back:hover {
+            color: var(--text);
+            border-color: var(--accent);
+            background: var(--accent-soft);
+        }
+
+        .ribbon-back svg {
+            transition: transform 0.15s;
+        }
+
+        .ribbon-back:hover svg {
+            transform: translateX(-2px);
+        }
+
+        @media (max-width: 560px) {
+            .ribbon-tag {
+                display: none;
+            }
+
+            .ribbon-back span {
+                display: none;
+            }
+
+            .ribbon-back {
+                padding: 7px 9px;
+            }
+        }
+
+        /* ===== Layout ===== */
+        .app {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 1.25rem;
+            padding: 1.25rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 980px) {
+            .app {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            min-width: 0;
+        }
+
+        .main {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            min-width: 0;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem 1.1rem;
+            box-shadow: var(--shadow);
+        }
+
+        .panel h3 {
+            margin: 0 0 0.6rem 0;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        /* ===== Scenario picker ===== */
+        .scn-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .scn-item {
+            text-align: left;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            padding: 0.65rem 0.8rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font: inherit;
+            transition: all 0.15s;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .scn-item:hover {
+            border-color: var(--border-bright);
+            color: var(--text);
+            background: var(--panel-2);
+        }
+
+        .scn-item.active {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+            color: var(--text);
+        }
+
+        .scn-item .scn-title {
+            font-weight: 600;
+            font-size: 0.92rem;
+        }
+
+        .scn-item .scn-sub {
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+
+        .scn-item.active .scn-sub {
+            color: var(--text-dim);
+        }
+
+        /* ===== Summary ===== */
+        .summary-title {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text);
+            margin-bottom: 0.3rem;
+        }
+
+        .summary-text {
+            color: var(--text-dim);
+            font-size: 0.88rem;
+        }
+
+        /* ===== Params ===== */
+        .param-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 6px 0;
+        }
+
+        .param-label {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            flex: 1;
+        }
+
+        .switch {
+            position: relative;
+            width: 38px;
+            height: 22px;
+            background: var(--panel-3);
+            border-radius: 999px;
+            border: 1px solid var(--border-bright);
+            cursor: pointer;
+            transition: background 0.15s;
+            flex-shrink: 0;
+        }
+
+        .switch.on {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .switch::after {
+            content: "";
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            background: var(--text);
+            border-radius: 50%;
+            transition: transform 0.15s;
+        }
+
+        .switch.on::after {
+            transform: translateX(16px);
+            background: #0a0e17;
+        }
+
+        /* ===== Glossary ===== */
+        .glossary-search {
+            width: 100%;
+            background: var(--panel-2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            padding: 7px 10px;
+            font: inherit;
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .glossary-search:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .glossary-list {
+            max-height: 260px;
+            overflow-y: auto;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .glossary-item {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .glossary-item:last-child {
+            border-bottom: none;
+        }
+
+        .glossary-term {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--accent);
+            margin-bottom: 2px;
+        }
+
+        .glossary-def {
+            font-size: 0.82rem;
+            color: var(--text-dim);
+        }
+
+        .glossary-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .glossary-list::-webkit-scrollbar-track {
+            background: var(--panel-2);
+        }
+
+        .glossary-list::-webkit-scrollbar-thumb {
+            background: var(--border-bright);
+            border-radius: 4px;
+        }
+
+        /* ===== Takeaway ===== */
+        .takeaway {
+            border-left: 3px solid var(--accent);
+            background: var(--accent-soft);
+            padding: 0.7rem 0.9rem;
+            border-radius: 0 6px 6px 0;
+            font-size: 0.86rem;
+            color: var(--text-dim);
+        }
+
+        /* ===== Canvas area ===== */
+        .canvas-wrap {
+            position: relative;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .canvas-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.55rem 1rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--panel-2);
+            font-size: 0.78rem;
+            color: var(--muted);
+        }
+
+        .canvas-header strong {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .step-counter {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            background: var(--panel-3);
+            padding: 3px 8px;
+            border-radius: 999px;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 420px;
+            cursor: pointer;
+        }
+
+        /* ===== Narration + payload ===== */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 1fr;
+            gap: 1rem;
+        }
+
+        @media (max-width: 760px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .narration {
+            font-size: 0.96rem;
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100px;
+        }
+
+        .narration .glossary-term-inline {
+            color: var(--accent);
+            border-bottom: 1px dashed var(--accent);
+            cursor: help;
+            position: relative;
+        }
+
+        .narration .glossary-term-inline:hover {
+            color: #6cc7f5;
+        }
+
+        .tooltip {
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0a0e17;
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            padding: 8px 12px;
+            width: 260px;
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            line-height: 1.4;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            z-index: 50;
+            pointer-events: none;
+            white-space: normal;
+        }
+
+        .tooltip::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: var(--accent);
+        }
+
+        .tooltip-term {
+            color: var(--accent);
+            font-weight: 600;
+            margin-bottom: 4px;
+            text-transform: none;
+        }
+
+        .step-label {
+            font-size: 0.74rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .payload {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            background: var(--bg-2);
+            border-radius: 8px;
+            padding: 0.85rem 1rem;
+            border: 1px solid var(--border);
+            min-height: 100px;
+            overflow-x: auto;
+        }
+
+        .payload .kv {
+            display: flex;
+            gap: 10px;
+            padding: 2px 0;
+        }
+
+        .payload .k {
+            color: var(--muted);
+            min-width: 70px;
+            flex-shrink: 0;
+        }
+
+        .payload .v {
+            color: var(--text);
+            word-break: break-word;
+        }
+
+        .payload .v.string {
+            color: #a5e8a1;
+        }
+
+        .payload .v.number {
+            color: #f59e0b;
+        }
+
+        .payload .v.label {
+            color: var(--accent);
+        }
+
+        .payload-nested {
+            border-left: 2px solid var(--border-bright);
+            margin-left: 8px;
+            padding-left: 10px;
+            margin-top: 4px;
+        }
+
+        .payload-empty {
+            color: var(--muted);
+            font-style: italic;
+        }
+
+        /* Raw HTTP text rendering inside the payload inspector */
+        .raw-http {
+            margin: 8px 0 4px 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            background: #060912;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px 12px;
+            color: var(--text);
+            white-space: pre;
+            overflow-x: auto;
+            line-height: 1.55;
+        }
+
+        .raw-line {
+            display: flex;
+            align-items: baseline;
+            min-height: 1.2em;
+        }
+
+        .raw-content {
+            white-space: pre;
+        }
+
+        .raw-crlf {
+            margin-left: 6px;
+            color: #3b4862;
+            font-size: 0.66rem;
+            user-select: none;
+        }
+
+        .raw-line.request-line .raw-content {
+            color: #fbbf24;
+            font-weight: 600;
+        }
+
+        .raw-line.status-line .raw-content {
+            color: #10b981;
+            font-weight: 600;
+        }
+
+        .raw-line.header-line .raw-content {
+            color: #b4becc;
+        }
+
+        .raw-line.header-line .raw-header-name {
+            color: #38bdf8;
+        }
+
+        .raw-line.blank-line {
+            border-top: 1px dashed #2a3a5c;
+            margin: 4px 0;
+            min-height: 0;
+        }
+
+        .raw-line.body-line .raw-content {
+            color: #a5e8a1;
+        }
+
+        /* ===== Transport bar ===== */
+        .transport {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+        }
+
+        .btn {
+            background: var(--panel-3);
+            color: var(--text);
+            border: 1px solid var(--border-bright);
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font: inherit;
+            font-size: 0.85rem;
+            transition: all 0.12s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn:disabled:hover {
+            border-color: var(--border-bright);
+            color: var(--text);
+        }
+
+        .btn.primary {
+            background: var(--accent);
+            color: #061018;
+            border-color: var(--accent);
+            font-weight: 600;
+        }
+
+        .btn.primary:hover {
+            background: #6cc7f5;
+            color: #061018;
+        }
+
+        .btn-icon {
+            width: 14px;
+            height: 14px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .scrub {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .scrub input[type="range"] {
+            flex: 1;
+            min-width: 0;
+            accent-color: var(--accent);
+            height: 4px;
+        }
+
+        .speed-select {
+            background: var(--panel-3);
+            color: var(--text);
+            border: 1px solid var(--border-bright);
+            border-radius: 6px;
+            padding: 6px 8px;
+            font: inherit;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .speed-select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* ===== Phase indicator ===== */
+        .phase-bar {
+            display: flex;
+            gap: 6px;
+            padding: 0.55rem 1rem;
+            background: var(--panel-2);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .phase-chip {
+            flex: 1;
+            text-align: center;
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid var(--border-bright);
+            border-radius: 6px;
+            padding: 6px 8px;
+            cursor: pointer;
+            font: inherit;
+            font-size: 0.74rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            transition: all 0.15s;
+            min-width: 0;
+        }
+
+        .phase-chip:hover {
+            color: var(--text);
+            border-color: var(--text-dim);
+        }
+
+        .phase-chip.active {
+            color: #061018;
+            font-weight: 700;
+            border-color: transparent;
+        }
+
+        .phase-chip.dns { --pc: #38bdf8; }
+        .phase-chip.tcp { --pc: #10b981; }
+        .phase-chip.tls { --pc: #a78bfa; }
+        .phase-chip.http { --pc: #fbbf24; }
+        .phase-chip.active { background: var(--pc); }
+
+        /* ===== Layering panel ===== */
+        .canvas-with-layers {
+            display: flex;
+            min-height: 0;
+        }
+
+        .canvas-with-layers > canvas {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .layer-panel {
+            width: 190px;
+            flex-shrink: 0;
+            border-left: 1px solid var(--border);
+            background: var(--bg-2);
+            padding: 10px 10px 8px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        @media (max-width: 760px) {
+            .canvas-with-layers {
+                flex-direction: column;
+            }
+
+            .layer-panel {
+                width: 100%;
+                border-left: none;
+                border-top: 1px solid var(--border);
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+
+            .layer-row {
+                flex: 1 1 30% !important;
+            }
+        }
+
+        .layer-panel-label {
+            font-size: 0.66rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--muted);
+            margin-bottom: 2px;
+            font-weight: 600;
+        }
+
+        .layer-row {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            padding: 7px 10px;
+            background: var(--panel-2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+            min-height: 44px;
+            justify-content: center;
+        }
+
+        .layer-row .layer-name {
+            font-size: 0.74rem;
+            font-weight: 600;
+            color: var(--muted);
+            letter-spacing: 0.02em;
+        }
+
+        .layer-row .layer-protocol {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--muted-2);
+        }
+
+        .layer-row.active {
+            background: var(--panel-3);
+            border-color: var(--lc, var(--accent));
+            box-shadow: 0 0 0 1px var(--lc, var(--accent)), inset 0 0 18px rgba(56, 189, 248, 0.08);
+        }
+
+        .layer-row.active .layer-name {
+            color: var(--text);
+        }
+
+        .layer-row.active .layer-protocol {
+            color: var(--lc, var(--accent));
+        }
+
+        .layer-row:hover {
+            border-color: var(--text-dim);
+        }
+
+        .layer-row.selected {
+            outline: 2px solid var(--accent);
+            outline-offset: -1px;
+        }
+
+        .layer-row[data-layer="app"]      { --lc: #fbbf24; }
+        .layer-row[data-layer="tls"]      { --lc: #a78bfa; }
+        .layer-row[data-layer="transport"]{ --lc: #10b981; }
+        .layer-row[data-layer="network"]  { --lc: #38bdf8; }
+        .layer-row[data-layer="link"]     { --lc: #94a3b8; }
+
+        .narration-layer {
+            background: var(--accent-soft);
+            border-left: 3px solid var(--accent);
+            padding: 0.6rem 0.85rem;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .narration-layer .layer-back {
+            display: inline-block;
+            font-size: 0.7rem;
+            color: var(--accent);
+            background: transparent;
+            border: 1px solid var(--accent);
+            border-radius: 999px;
+            padding: 3px 9px;
+            cursor: pointer;
+            margin-top: 8px;
+            font: inherit;
+            font-weight: 600;
+        }
+
+        .narration-layer .layer-back:hover {
+            background: var(--accent-soft);
+        }
+
+        /* ===== Hero header ===== */
+        .hero {
+            padding: 0.25rem 0 0.5rem 0;
+        }
+
+        .hero h1 {
+            margin: 0 0 4px 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #38bdf8, #7c3aed);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.88rem;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="top-ribbon" role="banner">
+        <div class="ribbon-brand">
+            <span class="ribbon-name"><span class="dot"></span>Protocol Lab</span>
+            <span class="ribbon-tag">Watch the internet's protocols, one packet at a time.</span>
+        </div>
+        <a href="../index.html" class="ribbon-back" title="Back to Vinoth's AI Tools">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+            </svg>
+            <span>Toolshelf</span>
+        </a>
+    </header>
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo, useCallback, Fragment } = React;
+
+        /* ============================================================
+           GLOSSARY — shared definitions used by tooltip & sidebar panel
+           ============================================================ */
+
+        const GLOSSARY = {
+            "DNS": "Domain Name System — the phonebook that turns human names like example.com into numeric IP addresses computers can actually route to.",
+            "A record": "A DNS record type that maps a name to an IPv4 address. The 'A' is just short for 'address'.",
+            "recursive resolver": "A DNS server (often your ISP's, or a public one like 1.1.1.1) that does the legwork of asking other servers on your behalf until it has an answer.",
+            "authoritative server": "A DNS server that holds the actual records for a zone. The truth about example.com lives on its authoritative server.",
+            "root server": "One of 13 logical servers at the top of the DNS hierarchy. They don't know individual names — they only know which TLD server to talk to next.",
+            "TLD": "Top-Level Domain — the rightmost part of a name, like .com, .org, or .uk. Each TLD has its own set of servers.",
+            "TTL": "Time To Live. How many seconds a DNS answer may be cached before a fresh lookup is required.",
+            "cache": "A local copy of recent answers. Resolvers cache DNS responses so they don't repeat the whole walk for every request.",
+            "NXDOMAIN": "A DNS error code meaning 'this name does not exist anywhere in DNS'.",
+            "SYN": "A TCP flag used to start a connection. The sender picks an initial sequence number and shares it with this packet.",
+            "ACK": "A TCP flag meaning 'I've received your data up through this sequence number — send me the next byte from there.'",
+            "FIN": "A TCP flag meaning 'I'm done sending — closing my half of the connection.'",
+            "sequence number": "Every byte sent in a TCP connection has a number. Each segment header carries the number of the first byte it contains and the next byte the receiver expects.",
+            "three-way handshake": "TCP's connection setup: SYN → SYN+ACK → ACK. Each side picks an initial sequence number and confirms it has seen the other side's.",
+            "MSS": "Maximum Segment Size — the largest chunk of TCP payload a side is willing to receive in one segment. Negotiated during the handshake.",
+            "HTTP": "HyperText Transfer Protocol — a plain-text request/response protocol that runs on top of TCP (or QUIC, for HTTP/3). The language browsers and web servers speak.",
+            "status code": "A three-digit number a server returns to indicate how the request went. 2xx = success, 3xx = redirect, 4xx = client error, 5xx = server error.",
+            "request headers": "Key-value lines sent by the client to describe the request and the client itself — Host, User-Agent, Accept, Cookie, and so on.",
+            "response headers": "Key-value lines sent by the server to describe the response — Content-Type, Content-Length, Cache-Control, Set-Cookie, and so on.",
+            "Content-Type": "A response header telling the client what kind of data is in the body (e.g. text/html, application/json, image/png), and optionally its character encoding.",
+            "User-Agent": "A request header identifying the client software — typically browser name, version, and operating system.",
+            "Host header": "A request header naming the host the request is for. Required in HTTP/1.1 because one IP often serves many websites — the server uses Host to pick the right one.",
+            "TLS": "Transport Layer Security — the protocol that wraps another protocol (most often HTTP) in encryption and authentication. The 'S' in HTTPS. TLS 1.3 is the current version; older endpoints still negotiate TLS 1.2.",
+            "cipher suite": "A bundle of cryptographic algorithms — symmetric cipher, hash function, and (in older TLS) key-exchange — that both sides agree to use. In TLS 1.3, the suite name covers just the symmetric cipher + hash (e.g. TLS_AES_128_GCM_SHA256).",
+            "certificate": "A signed document that binds a public key to one or more domain names. Issued by a certificate authority. The server sends its certificate during the handshake so the client can verify it's really example.com.",
+            "certificate authority": "An organization the client already trusts (preinstalled as a root certificate in your OS/browser). When a CA signs a certificate, it vouches that the public key really belongs to the named owner.",
+            "key exchange": "How both sides arrive at the same secret key without ever transmitting it. TLS 1.3 uses ephemeral (Elliptic Curve) Diffie-Hellman — each side sends a 'key share' public value and combines it with its own private value to derive an identical shared secret.",
+            "ClientHello": "The first TLS message. The client lists the TLS versions, cipher suites, and key shares it supports, plus a random nonce. The whole handshake builds from this.",
+            "ServerHello": "The server's response to ClientHello. It picks one cipher suite and one key share from the client's offers, contributes its own key share, and (in TLS 1.3) starts encrypting everything from this point on.",
+            "encrypted application data": "Once the handshake completes, all subsequent application bytes (your HTTP request and response, say) are encrypted with symmetric keys derived from the handshake. To anyone watching the wire, it's an opaque blob."
+        };
+
+        // Canonical lookup map (lowercase keys, alias-friendly)
+        const GLOSSARY_LOOKUP = (() => {
+            const map = {};
+            for (const [k, v] of Object.entries(GLOSSARY)) {
+                map[k.toLowerCase()] = { term: k, def: v };
+            }
+            return map;
+        })();
+
+        /* ============================================================
+           LAYERS & PHASES — used by the composite scenario
+           ============================================================ */
+
+        const LAYERS = [
+            { id: "app", name: "Application", description: "Where your data lives — HTTP requests, DNS queries, JSON payloads, gRPC calls. Speaks human-readable protocols (or schemas) that mean something to your code. In this step it's carrying whatever is shown in the payload inspector." },
+            { id: "tls", name: "TLS", description: "Wraps the application layer in encryption and authentication, then hands ciphertext down to transport. Only present for TLS-protected protocols (HTTPS, DoH, gRPC, etc.). On the wire, nobody else can read the application data." },
+            { id: "transport", name: "Transport", description: "Delivers data between processes on two hosts. TCP gives a reliable, ordered byte stream with retransmission and congestion control. UDP is a thin best-effort datagram layer with no guarantees — fast, but the application has to handle loss itself." },
+            { id: "network", name: "Network (IP)", description: "Moves packets across networks using IP addresses. Routers forward each packet hop-by-hop toward its destination, with no concept of connections or order. Packets may be reordered, duplicated, or dropped." },
+            { id: "link", name: "Link", description: "Moves frames across a single physical link — your laptop to the Wi-Fi access point, the AP to the modem, the modem to the ISP, and so on. Uses MAC addresses, not IP addresses. Each hop in the path is a new link-layer journey." }
+        ];
+
+        const PHASES = [
+            { id: "DNS", label: "1. DNS", className: "dns" },
+            { id: "TCP", label: "2. TCP", className: "tcp" },
+            { id: "TLS", label: "3. TLS", className: "tls" },
+            { id: "HTTP", label: "4. HTTP", className: "http" }
+        ];
+
+        /* ============================================================
+           SCENARIOS — each is a plain data object the engine renders
+           ============================================================ */
+
+        const SCENARIOS = [
+            {
+                id: "dns-lookup",
+                title: "DNS Lookup",
+                subtitle: "Name → IP",
+                summary: "Watch how a name like example.com becomes an IP address — the recursive walk from your browser through resolver, root, TLD, and authoritative servers.",
+                nodes: [
+                    { id: "client", label: "Your Browser", sublabel: "stub resolver", x: 70, y: 210 },
+                    { id: "resolver", label: "Recursive Resolver", sublabel: "e.g. 1.1.1.1", x: 280, y: 210 },
+                    { id: "root", label: "Root Server", sublabel: "“.”", x: 500, y: 70 },
+                    { id: "tld", label: ".com TLD Server", sublabel: "gtld-servers.net", x: 660, y: 170 },
+                    { id: "authoritative", label: "Authoritative", sublabel: "ns.example.com", x: 560, y: 330 }
+                ],
+                params: [
+                    { id: "cacheHit", label: "Resolver already has it cached", type: "toggle", default: false }
+                ],
+                steps: (p) => p.cacheHit ? [
+                    {
+                        from: "client", to: "resolver",
+                        label: "Query: example.com A?",
+                        payload: { type: "DNS Query", qname: "example.com", qtype: "A", id: "0x4e72", flags: "RD (recursion desired)" },
+                        narration: "Your browser asks its configured [[recursive resolver]] for example.com. The query travels over UDP on port 53."
+                    },
+                    {
+                        from: "resolver", to: "client",
+                        label: "Answer: 93.184.216.34 (cached)",
+                        payload: { type: "DNS Answer", qname: "example.com", source: "cache", answer: [{ type: "A", value: "93.184.216.34", ttl_remaining_seconds: 187 }] },
+                        narration: "The resolver already has a fresh entry in its [[cache]] from a recent lookup. It returns the IP immediately, along with the remaining [[TTL]] — no walk required."
+                    }
+                ] : [
+                    {
+                        from: "client", to: "resolver",
+                        label: "Query: example.com A?",
+                        payload: { type: "DNS Query", qname: "example.com", qtype: "A", id: "0x4e72", flags: "RD (recursion desired)" },
+                        narration: "Your browser doesn't know the IP for example.com. It asks the [[recursive resolver]] it's configured to use — usually your ISP's, or something like 1.1.1.1."
+                    },
+                    {
+                        from: "resolver", to: "root",
+                        label: "Where is .com?",
+                        payload: { type: "DNS Query", qname: "example.com", qtype: "A", asking: "root server" },
+                        narration: "The resolver's [[cache]] is empty for this name. It starts at the top, asking a [[root server]] where to find .com."
+                    },
+                    {
+                        from: "root", to: "resolver",
+                        label: "Ask the .com TLD server",
+                        payload: { type: "DNS Referral", qname: "example.com", authority: [{ name: ".com", type: "NS", value: "a.gtld-servers.net" }] },
+                        narration: "The root doesn't know about example.com — it only knows which servers handle each [[TLD]]. It returns the address of the .com TLD server."
+                    },
+                    {
+                        from: "resolver", to: "tld",
+                        label: "Where is example.com?",
+                        payload: { type: "DNS Query", qname: "example.com", qtype: "A", asking: ".com TLD" },
+                        narration: "Now the resolver asks the .com TLD server about example.com."
+                    },
+                    {
+                        from: "tld", to: "resolver",
+                        label: "Ask example.com's authoritative server",
+                        payload: { type: "DNS Referral", qname: "example.com", authority: [{ name: "example.com", type: "NS", value: "a.iana-servers.net" }] },
+                        narration: "The TLD server doesn't have the answer either, but it knows which [[authoritative server]] holds the records for example.com, and returns that address."
+                    },
+                    {
+                        from: "resolver", to: "authoritative",
+                        label: "Give me the A record",
+                        payload: { type: "DNS Query", qname: "example.com", qtype: "A", asking: "authoritative" },
+                        narration: "Finally, the resolver asks the authoritative server for an [[A record]] for example.com."
+                    },
+                    {
+                        from: "authoritative", to: "resolver",
+                        label: "93.184.216.34, TTL 300",
+                        payload: { type: "DNS Answer", qname: "example.com", answer: [{ type: "A", value: "93.184.216.34", ttl_seconds: 300 }] },
+                        narration: "The authoritative server is the source of truth. It returns the IPv4 address along with a [[TTL]] of 300 seconds — how long the answer can be cached."
+                    },
+                    {
+                        from: "resolver", to: "client",
+                        label: "Answer: 93.184.216.34",
+                        payload: { type: "DNS Answer", qname: "example.com", answer: [{ type: "A", value: "93.184.216.34", ttl_seconds: 300 }], note: "now cached at the resolver" },
+                        narration: "The resolver caches the answer for the next 300 seconds and hands the IP back to your browser. The whole walk usually happens in tens of milliseconds."
+                    }
+                ],
+                takeaway: "DNS is a hierarchical, cached lookup. The hierarchy means no single server has to know everything; the cache means popular names skip the full walk on most requests. The trade-off: changes propagate only as fast as TTLs expire."
+            },
+            {
+                id: "tcp-handshake",
+                title: "TCP Handshake & Teardown",
+                subtitle: "Reliable connection setup",
+                summary: "TCP doesn't just send data — it opens a connection with a three-way handshake, exchanges segments with sequence numbers and acknowledgments, then tears the connection down cleanly. Optionally drop the first SYN to see how TCP recovers from loss.",
+                nodes: [
+                    { id: "client", label: "Client", sublabel: "203.0.113.42", x: 180, y: 200 },
+                    { id: "server", label: "Server", sublabel: "93.184.216.34:80", x: 580, y: 200 }
+                ],
+                params: [
+                    { id: "dropSyn", label: "Drop the first SYN (force retransmit)", type: "toggle", default: false }
+                ],
+                steps: (p) => {
+                    const baseClientSeq = 1000;
+                    const baseServerSeq = 5000;
+                    const dropStep = p.dropSyn ? [
+                        {
+                            from: "client", to: "server",
+                            label: "SYN (lost)",
+                            outcome: "dropped",
+                            payload: { type: "TCP Segment", flags: "SYN", seq: baseClientSeq, ack: 0, window: 65535, options: { MSS: 1460 }, note: "this segment is dropped in transit" },
+                            narration: "The client sends its first [[SYN]], but the segment is lost somewhere on the path. The client doesn't know yet — it just waits for a SYN+ACK that never arrives."
+                        },
+                        {
+                            from: "client", to: "server",
+                            label: "SYN (retransmit)",
+                            payload: { type: "TCP Segment", flags: "SYN", seq: baseClientSeq, ack: 0, window: 65535, options: { MSS: 1460 }, note: "retransmitted after the retransmission timeout (RTO) fires" },
+                            narration: "After the retransmission timeout (RTO) fires — typically a few hundred milliseconds — the client resends the same [[SYN]]. The [[sequence number]] is unchanged. This time it gets through."
+                        }
+                    ] : [
+                        {
+                            from: "client", to: "server",
+                            label: "SYN",
+                            payload: { type: "TCP Segment", flags: "SYN", seq: baseClientSeq, ack: 0, window: 65535, options: { MSS: 1460 } },
+                            narration: "The client opens the [[three-way handshake]] with a [[SYN]] segment. It picks an initial [[sequence number]] (1000) and announces its [[MSS]] in the options."
+                        }
+                    ];
+
+                    return [
+                        ...dropStep,
+                        {
+                            from: "server", to: "client",
+                            label: "SYN + ACK",
+                            payload: { type: "TCP Segment", flags: "SYN, ACK", seq: baseServerSeq, ack: baseClientSeq + 1, window: 65535, options: { MSS: 1460 } },
+                            narration: "The server replies with [[SYN]]+[[ACK]]: it picks its own initial [[sequence number]] (5000) and acknowledges the client's SYN by setting ack = 1001 (the next byte it expects)."
+                        },
+                        {
+                            from: "client", to: "server",
+                            label: "ACK",
+                            payload: { type: "TCP Segment", flags: "ACK", seq: baseClientSeq + 1, ack: baseServerSeq + 1, window: 65535 },
+                            narration: "The client acknowledges the server's SYN. The [[three-way handshake]] is complete — both sides have confirmed they can talk."
+                        },
+                        {
+                            from: "client", to: "server",
+                            label: "DATA seq=1001, 200B",
+                            payload: { type: "TCP Segment", flags: "PSH, ACK", seq: baseClientSeq + 1, ack: baseServerSeq + 1, length: 200, payload_preview: "GET / HTTP/1.1\\r\\nHost: example.com\\r\\n..." },
+                            narration: "Now real data flows. The client sends 200 bytes starting at [[sequence number]] 1001. The PSH flag asks the receiver to deliver this to the application without waiting."
+                        },
+                        {
+                            from: "server", to: "client",
+                            label: "ACK ack=1201",
+                            payload: { type: "TCP Segment", flags: "ACK", seq: baseServerSeq + 1, ack: baseClientSeq + 201, window: 65535 },
+                            narration: "The server [[ACK]]s the 200 bytes it received — ack = 1201 means 'next byte I want is 1201'."
+                        },
+                        {
+                            from: "server", to: "client",
+                            label: "DATA seq=5001, 500B",
+                            payload: { type: "TCP Segment", flags: "PSH, ACK", seq: baseServerSeq + 1, ack: baseClientSeq + 201, length: 500, payload_preview: "HTTP/1.1 200 OK\\r\\nContent-Type: text/html\\r\\n..." },
+                            narration: "The server sends back 500 bytes of response data, piggybacking another [[ACK]] for the client's previous segment."
+                        },
+                        {
+                            from: "client", to: "server",
+                            label: "ACK ack=5501",
+                            payload: { type: "TCP Segment", flags: "ACK", seq: baseClientSeq + 201, ack: baseServerSeq + 501, window: 65535 },
+                            narration: "Client acknowledges the response. Notice each side maintains its own [[sequence number]] space, independent of the other."
+                        },
+                        {
+                            from: "client", to: "server",
+                            label: "FIN",
+                            payload: { type: "TCP Segment", flags: "FIN, ACK", seq: baseClientSeq + 201, ack: baseServerSeq + 501 },
+                            narration: "The client is done sending. It sends a [[FIN]] — 'I won't send any more data.' But the server can still send if it wants to."
+                        },
+                        {
+                            from: "server", to: "client",
+                            label: "ACK",
+                            payload: { type: "TCP Segment", flags: "ACK", seq: baseServerSeq + 501, ack: baseClientSeq + 202 },
+                            narration: "The server acknowledges the client's [[FIN]]. The connection is now half-closed: client→server is shut, server→client is still open."
+                        },
+                        {
+                            from: "server", to: "client",
+                            label: "FIN",
+                            payload: { type: "TCP Segment", flags: "FIN, ACK", seq: baseServerSeq + 501, ack: baseClientSeq + 202 },
+                            narration: "When the server has nothing more to send, it sends its own [[FIN]]."
+                        },
+                        {
+                            from: "client", to: "server",
+                            label: "ACK (final)",
+                            payload: { type: "TCP Segment", flags: "ACK", seq: baseClientSeq + 202, ack: baseServerSeq + 502 },
+                            narration: "The client acknowledges. Both halves are now closed. The connection is gone — though the client may linger in TIME_WAIT for a couple of minutes to catch any straggling segments."
+                        }
+                    ];
+                },
+                takeaway: "TCP turns an unreliable packet network into an ordered, reliable byte stream. The three-way handshake establishes sequence numbers both sides agree on; every byte sent is acknowledged; lost packets are retransmitted after a timeout; and a symmetric four-segment teardown lets either side close its half independently."
+            },
+            {
+                id: "http-request",
+                title: "HTTP Request / Response",
+                subtitle: "Plain-text over an open TCP connection",
+                summary: "Assuming TCP is already connected, watch the literal bytes of an HTTP request and response cross the wire. The payload inspector shows the actual text — request line, headers, blank line, body — exactly as it would appear on the network.",
+                nodes: [
+                    { id: "browser", label: "Browser", sublabel: "Mozilla/5.0", x: 180, y: 200 },
+                    { id: "webserver", label: "Web Server", sublabel: "nginx @ 93.184.216.34", x: 580, y: 200 }
+                ],
+                params: [],
+                steps: () => [
+                    {
+                        from: "browser", to: "webserver",
+                        label: "GET / HTTP/1.1",
+                        payload: {
+                            type: "HTTP Request",
+                            method: "GET",
+                            target: "https://example.com/",
+                            raw: "GET / HTTP/1.1\r\nHost: example.com\r\nUser-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9\r\nAccept-Language: en-US,en;q=0.9\r\nAccept-Encoding: gzip, deflate, br\r\nConnection: keep-alive\r\n\r\n"
+                        },
+                        narration: "The browser sends an [[HTTP]] request over the open TCP connection. The first line — the request line — gives the method, path, and version. After it come [[request headers]], then a blank line marking the end of the head section. This request has no body, just a head."
+                    },
+                    {
+                        from: "webserver", to: "browser",
+                        label: "200 OK + headers + body",
+                        payload: {
+                            type: "HTTP Response",
+                            status: 200,
+                            phrase: "OK",
+                            raw: "HTTP/1.1 200 OK\r\nDate: Tue, 26 May 2026 14:08:21 GMT\r\nServer: nginx/1.24.0\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Length: 138\r\nCache-Control: max-age=3600\r\nConnection: keep-alive\r\n\r\n<!doctype html>\n<html>\n  <head><title>Example Domain</title></head>\n  <body><h1>Example Domain</h1></body>\n</html>"
+                        },
+                        narration: "The server looks up the resource and responds. The first line is the status line — version, [[status code]], reason phrase. Then come [[response headers]] including [[Content-Type]] and Content-Length, a blank line, then the body bytes (here, a small HTML document)."
+                    }
+                ],
+                takeaway: "HTTP is a plain-text request/response protocol. Every message has the same shape: a start line, header lines (key: value), a blank line, then an optional body. That's it. Browsers, curl, and your code all speak this same simple format — TLS encrypts it on the wire, but the structure inside is identical."
+            },
+            {
+                id: "tls-handshake",
+                title: "TLS 1.3 Handshake",
+                subtitle: "Identity + key agreement",
+                summary: "How HTTPS gets its 'S'. TLS 1.3 combines server authentication (via a certificate chain) with key agreement (via ephemeral Diffie-Hellman) in just one round trip — after which every byte that follows is encrypted.",
+                nodes: [
+                    { id: "client", label: "Client", sublabel: "browser", x: 180, y: 200 },
+                    { id: "server", label: "Server", sublabel: "example.com:443", x: 580, y: 200 }
+                ],
+                params: [],
+                steps: () => [
+                    {
+                        from: "client", to: "server",
+                        label: "ClientHello",
+                        payload: {
+                            type: "TLS Record",
+                            content_type: "Handshake",
+                            handshake: "ClientHello",
+                            legacy_version: "TLS 1.2",
+                            random: "32 bytes (a3 7f 11 c4 …)",
+                            cipher_suites: ["TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256"],
+                            extensions: {
+                                supported_versions: ["TLS 1.3"],
+                                supported_groups: ["x25519", "secp256r1"],
+                                key_share: [{ group: "x25519", public_key: "0xa1b2 c3d4 e5f6 … (32 bytes)" }],
+                                server_name: "example.com",
+                                signature_algorithms: ["ecdsa_secp256r1_sha256", "rsa_pss_rsae_sha256"]
+                            }
+                        },
+                        narration: "The client opens the [[TLS]] handshake with [[ClientHello]]. It lists every [[cipher suite]] it can speak, every TLS version it supports, a random nonce, and — critically — a [[key exchange]] 'key share': the public half of an ephemeral Diffie-Hellman key. The server_name extension tells the server which site we want (one IP often hosts many)."
+                    },
+                    {
+                        from: "server", to: "client",
+                        label: "ServerHello + Cert + Finished",
+                        payload: {
+                            type: "TLS Flight (one network message, five handshake messages)",
+                            messages: [
+                                {
+                                    handshake: "ServerHello",
+                                    cipher_chosen: "TLS_AES_128_GCM_SHA256",
+                                    random: "32 bytes (9f 8e 7d 6c …)",
+                                    key_share: { group: "x25519", public_key: "0x9f8e 7d6c 5b4a … (32 bytes)" },
+                                    note: "everything below is encrypted with freshly-derived handshake keys"
+                                },
+                                { handshake: "EncryptedExtensions", note: "any extensions that don't belong in ServerHello" },
+                                {
+                                    handshake: "Certificate",
+                                    chain: [
+                                        {
+                                            subject: "CN=example.com, O=Internet Assigned Numbers Authority",
+                                            issuer: "CN=DigiCert TLS RSA SHA256 2020 CA1",
+                                            not_before: "2026-01-15",
+                                            not_after: "2027-01-15",
+                                            san: ["example.com", "www.example.com"],
+                                            public_key: "RSA 2048-bit (modulus 0xc1d2 …)"
+                                        },
+                                        {
+                                            subject: "CN=DigiCert TLS RSA SHA256 2020 CA1",
+                                            issuer: "CN=DigiCert Global Root CA",
+                                            note: "intermediate — chains up to a root the client already trusts"
+                                        }
+                                    ]
+                                },
+                                { handshake: "CertificateVerify", signature: "0x3045 0220 … (server signs the handshake transcript with its private key)" },
+                                { handshake: "Finished", verify_data: "0x7d4f … (HMAC over the full handshake so far, with handshake keys)" }
+                            ]
+                        },
+                        narration: "The server picks one [[cipher suite]] (TLS_AES_128_GCM_SHA256), sends its own [[key exchange]] share, then — already encrypted with the handshake keys both sides can now derive — its [[certificate]] chain, a signature proving it holds the matching private key, and a Finished message hashing the whole transcript. Five handshake messages, one round trip."
+                    },
+                    {
+                        from: "client", to: "server",
+                        label: "Finished",
+                        payload: {
+                            type: "TLS Handshake",
+                            handshake: "Finished",
+                            verify_data: "0xb2a8 c193 … (HMAC over the handshake transcript)",
+                            client_checks: [
+                                "Certificate chain is signed up to a trusted certificate authority",
+                                "Certificate SAN includes the requested server_name",
+                                "Certificate is within its validity window",
+                                "CertificateVerify signature is valid"
+                            ]
+                        },
+                        narration: "The client validates the [[certificate]] chain against its trusted [[certificate authority|certificate authorities]], checks the CertificateVerify signature, derives the same shared secret via [[key exchange]], and sends its own Finished. The handshake is done — total cost: a single round trip."
+                    },
+                    {
+                        from: "client", to: "server",
+                        label: "Application Data (encrypted)",
+                        payload: {
+                            type: "TLS Record",
+                            content_type: "Application Data",
+                            length_bytes: 286,
+                            ciphertext: "0xc3f1 8a92 4d56 7b03 e8a1 1f44 … (opaque AEAD ciphertext + 16-byte auth tag)",
+                            note: "this record actually wraps an HTTP GET request, but to anyone on the wire it's just bytes"
+                        },
+                        narration: "Now any application bytes — like an HTTP GET — are wrapped in [[encrypted application data]] records. On the wire it's an opaque AEAD blob; only client and server hold the symmetric keys to decrypt it. A network observer sees the timing and size, but not the URL, headers, or body."
+                    }
+                ],
+                takeaway: "TLS 1.3 combines authentication (the certificate chain) with key agreement (ephemeral Diffie-Hellman) in a single round trip. After that, everything is encrypted with keys nobody else can derive — even someone recording the whole conversation today can't decrypt it tomorrow if they later steal the server's private key (this property is called forward secrecy)."
+            },
+            {
+                id: "https-end-to-end",
+                title: "Open https://example.com",
+                subtitle: "DNS → TCP → TLS → HTTP",
+                summary: "The full picture: what actually happens between typing a URL and seeing a page. DNS resolves the name, TCP opens a connection, TLS encrypts it, HTTP carries the request. Watch all four phases and the layer stack light up as the messages cross the wire.",
+                showLayers: true,
+                nodes: [
+                    { id: "browser", label: "Browser", sublabel: "your laptop", x: 70, y: 240 },
+                    { id: "resolver", label: "Resolver", sublabel: "1.1.1.1", x: 250, y: 110 },
+                    { id: "ns", label: "DNS Hierarchy", sublabel: "root → .com → ns.example.com", x: 470, y: 60 },
+                    { id: "server", label: "example.com", sublabel: "93.184.216.34:443", x: 660, y: 240 }
+                ],
+                params: [],
+                steps: () => {
+                    const wifi = "Wi-Fi";
+                    const ipv4 = "IPv4";
+                    return [
+                        // ===== DNS PHASE =====
+                        {
+                            phase: "DNS",
+                            from: "browser", to: "resolver",
+                            label: "DNS Query: example.com A?",
+                            payload: { type: "DNS Query", qname: "example.com", qtype: "A" },
+                            narration: "Before we can connect to anything, we need an IP address. The browser asks its [[recursive resolver]] for example.com — a [[DNS]] query, sent over UDP on port 53.",
+                            layers: { app: "DNS", transport: "UDP :53", network: ipv4, link: wifi }
+                        },
+                        {
+                            phase: "DNS",
+                            from: "resolver", to: "ns",
+                            label: "Recursive walk: root → .com → ns",
+                            payload: { type: "DNS Resolution Walk", steps: [
+                                "Ask a root server — referred to the .com TLD server",
+                                "Ask the .com TLD server — referred to ns.example.com",
+                                "Ask ns.example.com — gets the A record"
+                            ], note: "shown as one arrow here; see the standalone DNS scenario for the full step-by-step" },
+                            narration: "The resolver's cache is empty for this name, so it does the full hierarchical walk — [[root server|root]], [[TLD]], [[authoritative server|authoritative]] — to find the answer. Each query is its own UDP round trip; we've compressed them here.",
+                            layers: { app: "DNS", transport: "UDP :53", network: ipv4, link: wifi }
+                        },
+                        {
+                            phase: "DNS",
+                            from: "ns", to: "resolver",
+                            label: "A: 93.184.216.34, TTL 300",
+                            payload: { type: "DNS Answer", qname: "example.com", answer: [{ type: "A", value: "93.184.216.34", ttl_seconds: 300 }] },
+                            narration: "The authoritative server returns the [[A record]] with a [[TTL]] of 300 seconds.",
+                            layers: { app: "DNS", transport: "UDP :53", network: ipv4, link: wifi }
+                        },
+                        {
+                            phase: "DNS",
+                            from: "resolver", to: "browser",
+                            label: "93.184.216.34",
+                            payload: { type: "DNS Answer", source: "resolver (cached for 300s)", answer: [{ type: "A", value: "93.184.216.34" }] },
+                            narration: "The resolver caches the answer for the next 300 seconds and hands the IP back. The browser now knows where to connect.",
+                            layers: { app: "DNS", transport: "UDP :53", network: ipv4, link: wifi }
+                        },
+
+                        // ===== TCP PHASE =====
+                        {
+                            phase: "TCP",
+                            from: "browser", to: "server",
+                            label: "SYN",
+                            payload: { type: "TCP Segment", flags: "SYN", seq: 1000, ack: 0, dst_port: 443, options: { MSS: 1460 } },
+                            narration: "Now the browser opens a [[three-way handshake]] to port 443 on the IP it just learned. It sends a [[SYN]] with its initial [[sequence number]].",
+                            layers: { transport: "TCP :443", network: ipv4, link: wifi }
+                        },
+                        {
+                            phase: "TCP",
+                            from: "server", to: "browser",
+                            label: "SYN + ACK",
+                            payload: { type: "TCP Segment", flags: "SYN, ACK", seq: 5000, ack: 1001, src_port: 443 },
+                            narration: "The server replies with [[SYN]]+[[ACK]] — picking its own initial sequence number and acknowledging the client's.",
+                            layers: { transport: "TCP :443", network: ipv4, link: wifi }
+                        },
+                        {
+                            phase: "TCP",
+                            from: "browser", to: "server",
+                            label: "ACK (connected)",
+                            payload: { type: "TCP Segment", flags: "ACK", seq: 1001, ack: 5001 },
+                            narration: "Client acks the server's SYN. The TCP connection is open — but no application data has flowed yet.",
+                            layers: { transport: "TCP :443", network: ipv4, link: wifi }
+                        },
+
+                        // ===== TLS PHASE =====
+                        {
+                            phase: "TLS",
+                            from: "browser", to: "server",
+                            label: "TLS ClientHello",
+                            payload: { type: "TLS Handshake", handshake: "ClientHello", cipher_suites: ["TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384"], key_share: { group: "x25519", public_key: "0xa1b2 c3d4 …" }, server_name: "example.com" },
+                            narration: "The browser sends a [[ClientHello]]: cipher suites it can speak, a [[key exchange]] share, and the server_name we want.",
+                            layers: { tls: "TLS 1.3 handshake", transport: "TCP :443", network: ipv4, link: wifi }
+                        },
+                        {
+                            phase: "TLS",
+                            from: "server", to: "browser",
+                            label: "ServerHello + Cert + Finished",
+                            payload: { type: "TLS Flight", messages: ["ServerHello (chose TLS_AES_128_GCM_SHA256, sent x25519 share)", "EncryptedExtensions", "Certificate (CN=example.com, issued by DigiCert)", "CertificateVerify (signature over transcript)", "Finished (HMAC over handshake)"] },
+                            narration: "Server picks one [[cipher suite]], sends its [[key exchange]] share, then — already encrypted with the derived handshake keys — its [[certificate]] chain and a Finished message. One round trip.",
+                            layers: { tls: "TLS 1.3 handshake", transport: "TCP :443", network: ipv4, link: wifi }
+                        },
+                        {
+                            phase: "TLS",
+                            from: "browser", to: "server",
+                            label: "TLS Finished",
+                            payload: { type: "TLS Handshake", handshake: "Finished", verify_data: "0xb2a8 c193 …", note: "client verified the certificate chain and derived the same shared secret" },
+                            narration: "The browser validates the [[certificate]], derives the shared secret, and sends Finished. From this point on, every byte is [[encrypted application data]].",
+                            layers: { tls: "TLS 1.3 handshake", transport: "TCP :443", network: ipv4, link: wifi }
+                        },
+
+                        // ===== HTTP PHASE =====
+                        {
+                            phase: "HTTP",
+                            from: "browser", to: "server",
+                            label: "GET / (encrypted)",
+                            payload: {
+                                type: "HTTP Request inside TLS Application Data",
+                                tls_record: { content_type: "Application Data", length_bytes: 286, ciphertext: "0xc3f1 8a92 4d56 7b03 …" },
+                                raw: "GET / HTTP/1.1\r\nHost: example.com\r\nUser-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9\r\nAccept-Language: en-US,en;q=0.9\r\nAccept-Encoding: gzip, deflate, br\r\nConnection: keep-alive\r\n\r\n"
+                            },
+                            narration: "The browser sends an [[HTTP]] GET request. The bytes shown in 'raw' are what's inside — but on the wire it's wrapped in TLS Application Data ciphertext. The [[Host header]] tells the server which site we want.",
+                            layers: { app: "HTTP/1.1 GET /", tls: "AES-128-GCM", transport: "TCP :443", network: ipv4, link: wifi }
+                        },
+                        {
+                            phase: "HTTP",
+                            from: "server", to: "browser",
+                            label: "200 OK + body (encrypted)",
+                            payload: {
+                                type: "HTTP Response inside TLS Application Data",
+                                tls_record: { content_type: "Application Data", length_bytes: 412, ciphertext: "0xe1d2 c3b4 a596 8770 …" },
+                                raw: "HTTP/1.1 200 OK\r\nDate: Tue, 26 May 2026 14:08:21 GMT\r\nServer: nginx/1.24.0\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Length: 138\r\nCache-Control: max-age=3600\r\nConnection: keep-alive\r\n\r\n<!doctype html>\n<html>\n  <head><title>Example Domain</title></head>\n  <body><h1>Example Domain</h1></body>\n</html>"
+                            },
+                            narration: "The server responds with a 200 [[status code]] and the page body, also wrapped in TLS Application Data. The browser decrypts, parses the HTML, and starts rendering — and that's how a URL becomes a page.",
+                            layers: { app: "HTTP/1.1 200 OK", tls: "AES-128-GCM", transport: "TCP :443", network: ipv4, link: wifi }
+                        }
+                    ];
+                },
+                takeaway: "Every HTTPS request you've ever made follows this exact dance. DNS finds the address, TCP makes the connection reliable, TLS makes it private and authenticated, HTTP carries the actual content. Each layer trusts the one below and provides a stronger guarantee to the one above. Modern protocols (HTTP/3, QUIC) reshuffle this — but the same four jobs still need doing."
+            }
+        ];
+
+        /* ============================================================
+           NARRATION RENDERING with [[term]] glossary hooks
+           ============================================================ */
+
+        function parseNarration(text) {
+            // Split on [[term]] sections, returning an array of {text} or {term, label} tokens.
+            const parts = [];
+            const re = /\[\[([^\]]+)\]\]/g;
+            let last = 0;
+            let m;
+            while ((m = re.exec(text)) !== null) {
+                if (m.index > last) parts.push({ text: text.slice(last, m.index) });
+                const body = m[1];
+                const [term, label] = body.split("|");
+                parts.push({ term: term.trim(), label: (label || term).trim() });
+                last = re.lastIndex;
+            }
+            if (last < text.length) parts.push({ text: text.slice(last) });
+            return parts;
+        }
+
+        function NarrationText({ text }) {
+            const tokens = useMemo(() => parseNarration(text), [text]);
+            const [hovered, setHovered] = useState(null);
+
+            return (
+                <span>
+                    {tokens.map((tok, i) => {
+                        if (tok.text != null) return <Fragment key={i}>{tok.text}</Fragment>;
+                        const entry = GLOSSARY_LOOKUP[tok.term.toLowerCase()];
+                        return (
+                            <span
+                                key={i}
+                                className="glossary-term-inline"
+                                onMouseEnter={() => setHovered(i)}
+                                onMouseLeave={() => setHovered(null)}
+                            >
+                                {tok.label}
+                                {hovered === i && entry && (
+                                    <span className="tooltip" role="tooltip">
+                                        <span className="tooltip-term">{entry.term}</span>
+                                        <div>{entry.def}</div>
+                                    </span>
+                                )}
+                            </span>
+                        );
+                    })}
+                </span>
+            );
+        }
+
+        /* ============================================================
+           PAYLOAD INSPECTOR — pretty-prints any JS object
+           ============================================================ */
+
+        function PayloadValue({ value }) {
+            if (value === null || value === undefined) {
+                return <span className="v payload-empty">∅</span>;
+            }
+            if (Array.isArray(value)) {
+                return (
+                    <span className="v">
+                        <div className="payload-nested">
+                            {value.map((item, i) => (
+                                <div key={i} className="kv">
+                                    <span className="k">[{i}]</span>
+                                    <PayloadValue value={item} />
+                                </div>
+                            ))}
+                        </div>
+                    </span>
+                );
+            }
+            if (typeof value === "object") {
+                return (
+                    <span className="v">
+                        <div className="payload-nested">
+                            {Object.entries(value).map(([k, v]) => (
+                                <div key={k} className="kv">
+                                    <span className="k">{k}</span>
+                                    <PayloadValue value={v} />
+                                </div>
+                            ))}
+                        </div>
+                    </span>
+                );
+            }
+            if (typeof value === "number") {
+                return <span className="v number">{value}</span>;
+            }
+            if (typeof value === "string") {
+                // distinguish "type"-like labels (short, no spaces, all-caps-ish) from regular strings
+                const isLabel = value.length < 24 && /^[A-Z][A-Za-z0-9 _-]*$/.test(value);
+                return <span className={"v " + (isLabel ? "label" : "string")}>{value}</span>;
+            }
+            return <span className="v">{String(value)}</span>;
+        }
+
+        function RawHttpView({ text }) {
+            // Split on \n; remember which lines originally ended with \r (so we know which to mark CRLF vs LF).
+            const lines = text.split("\n").map(l => {
+                const hadCR = l.endsWith("\r");
+                return { text: hadCR ? l.slice(0, -1) : l, hadCR };
+            });
+            // The blank separator is the first empty CRLF-terminated line.
+            const blankIdx = lines.findIndex((l, i) => l.text === "" && l.hadCR && i < lines.length - 1);
+
+            return (
+                <pre className="raw-http">
+                    {lines.map((line, i) => {
+                        const inHead = blankIdx === -1 || i < blankIdx;
+                        const isBlank = i === blankIdx;
+                        const inBody = blankIdx !== -1 && i > blankIdx;
+                        const isStartLine = inHead && i === 0;
+                        const startsLikeRequest = /^[A-Z]+\s+\S+\s+HTTP\//.test(line.text);
+                        const startsLikeStatus = /^HTTP\/\d/.test(line.text);
+
+                        if (isBlank) {
+                            return (
+                                <div key={i} className="raw-line blank-line" aria-hidden="true">
+                                    <span className="raw-crlf" title="CRLF — empty line marks the end of headers">\r\n</span>
+                                </div>
+                            );
+                        }
+
+                        let cls = "raw-line";
+                        let content;
+                        if (isStartLine && startsLikeRequest) {
+                            cls += " request-line";
+                            content = <span className="raw-content">{line.text}</span>;
+                        } else if (isStartLine && startsLikeStatus) {
+                            cls += " status-line";
+                            content = <span className="raw-content">{line.text}</span>;
+                        } else if (inHead && line.text.includes(":")) {
+                            cls += " header-line";
+                            const colon = line.text.indexOf(":");
+                            const name = line.text.slice(0, colon);
+                            const rest = line.text.slice(colon);
+                            content = (
+                                <span className="raw-content">
+                                    <span className="raw-header-name">{name}</span>{rest}
+                                </span>
+                            );
+                        } else if (inBody) {
+                            cls += " body-line";
+                            content = <span className="raw-content">{line.text || " "}</span>;
+                        } else {
+                            content = <span className="raw-content">{line.text}</span>;
+                        }
+
+                        const showCrlf = i < lines.length - 1;
+                        const marker = line.hadCR ? "\\r\\n" : "\\n";
+                        return (
+                            <div key={i} className={cls}>
+                                {content}
+                                {showCrlf && <span className="raw-crlf" title={line.hadCR ? "CRLF line ending" : "LF line ending (body bytes)"}>{marker}</span>}
+                            </div>
+                        );
+                    })}
+                </pre>
+            );
+        }
+
+        function PayloadInspector({ payload }) {
+            if (!payload) {
+                return <div className="payload payload-empty">No payload for this step.</div>;
+            }
+            return (
+                <div className="payload">
+                    {Object.entries(payload).map(([k, v]) => {
+                        if (k === "raw" && typeof v === "string") {
+                            return (
+                                <div key={k}>
+                                    <div className="kv"><span className="k">raw</span><span className="v" style={{ color: "var(--muted)", fontSize: "0.74rem" }}>literal bytes on the wire</span></div>
+                                    <RawHttpView text={v} />
+                                </div>
+                            );
+                        }
+                        return (
+                            <div key={k} className="kv">
+                                <span className="k">{k}</span>
+                                <PayloadValue value={v} />
+                            </div>
+                        );
+                    })}
+                </div>
+            );
+        }
+
+        /* ============================================================
+           CANVAS — renders nodes + animated packet
+           ============================================================ */
+
+        const STEP_SECONDS = 1.6; // base time for a step at 1x speed
+
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        // Smoothstep gives a natural ease-in/out (no jank).
+        function ease(t) { return t * t * (3 - 2 * t); }
+
+        function nodeById(nodes, id) { return nodes.find(n => n.id === id); }
+
+        function ScenarioCanvas({ scenario, steps, stepIdx, progress, onCanvasClick }) {
+            const canvasRef = useRef(null);
+            const [, force] = useState(0);
+
+            // Identify which nodes are referenced anywhere in the current step list
+            const activeNodeIds = useMemo(() => {
+                const s = new Set();
+                steps.forEach(st => { s.add(st.from); s.add(st.to); });
+                return s;
+            }, [steps]);
+
+            useEffect(() => {
+                const handler = () => force(x => x + 1);
+                window.addEventListener("resize", handler);
+                return () => window.removeEventListener("resize", handler);
+            }, []);
+
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const ctx = canvas.getContext("2d");
+                const dpr = window.devicePixelRatio || 1;
+                const cssW = canvas.clientWidth;
+                const cssH = canvas.clientHeight;
+                canvas.width = cssW * dpr;
+                canvas.height = cssH * dpr;
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+                // logical scenario coordinates (used in scenario data)
+                const LOGIC_W = 760;
+                const LOGIC_H = 400;
+                // scale to fit, preserve aspect
+                const scale = Math.min(cssW / LOGIC_W, cssH / LOGIC_H);
+                const offsetX = (cssW - LOGIC_W * scale) / 2;
+                const offsetY = (cssH - LOGIC_H * scale) / 2;
+                const toX = x => offsetX + x * scale;
+                const toY = y => offsetY + y * scale;
+
+                // Background grid
+                ctx.fillStyle = "#0a0e17";
+                ctx.fillRect(0, 0, cssW, cssH);
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.05)";
+                ctx.lineWidth = 1;
+                const grid = 28;
+                for (let x = 0; x < cssW; x += grid) {
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, cssH); ctx.stroke();
+                }
+                for (let y = 0; y < cssH; y += grid) {
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cssW, y); ctx.stroke();
+                }
+
+                const current = steps[stepIdx];
+                const fromNode = current && nodeById(scenario.nodes, current.from);
+                const toNode = current && nodeById(scenario.nodes, current.to);
+
+                // Faint links between every pair of active nodes that appears in any step
+                const pairs = new Set();
+                steps.forEach(st => {
+                    const key = [st.from, st.to].sort().join("|");
+                    pairs.add(key);
+                });
+                ctx.strokeStyle = "rgba(74, 102, 149, 0.25)";
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                pairs.forEach(key => {
+                    const [a, b] = key.split("|");
+                    const na = nodeById(scenario.nodes, a);
+                    const nb = nodeById(scenario.nodes, b);
+                    if (!na || !nb) return;
+                    ctx.beginPath();
+                    ctx.moveTo(toX(na.x), toY(na.y));
+                    ctx.lineTo(toX(nb.x), toY(nb.y));
+                    ctx.stroke();
+                });
+                ctx.setLineDash([]);
+
+                // Highlight the active link
+                if (fromNode && toNode) {
+                    const grad = ctx.createLinearGradient(toX(fromNode.x), toY(fromNode.y), toX(toNode.x), toY(toNode.y));
+                    grad.addColorStop(0, "rgba(56, 189, 248, 0.6)");
+                    grad.addColorStop(1, "rgba(124, 58, 237, 0.6)");
+                    ctx.strokeStyle = grad;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(toX(fromNode.x), toY(fromNode.y));
+                    ctx.lineTo(toX(toNode.x), toY(toNode.y));
+                    ctx.stroke();
+                }
+
+                // Draw nodes
+                scenario.nodes.forEach(node => {
+                    const inUse = activeNodeIds.has(node.id);
+                    const isFrom = current && current.from === node.id;
+                    const isTo = current && current.to === node.id;
+                    const cx = toX(node.x);
+                    const cy = toY(node.y);
+                    const r = 30 * scale;
+
+                    if (isFrom || isTo) {
+                        // glow
+                        const glow = ctx.createRadialGradient(cx, cy, r * 0.6, cx, cy, r * 1.9);
+                        glow.addColorStop(0, "rgba(56, 189, 248, 0.35)");
+                        glow.addColorStop(1, "rgba(56, 189, 248, 0)");
+                        ctx.fillStyle = glow;
+                        ctx.beginPath();
+                        ctx.arc(cx, cy, r * 1.9, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    ctx.fillStyle = inUse ? "#1c2742" : "#141b2e";
+                    ctx.strokeStyle = isFrom ? "#38bdf8"
+                        : isTo ? "#7c3aed"
+                            : inUse ? "#3a4a6e"
+                                : "#2a3553";
+                    ctx.lineWidth = (isFrom || isTo) ? 2.5 : 1.5;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // small dot inside
+                    ctx.fillStyle = inUse ? "#38bdf8" : "#4b5872";
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 4 * scale, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // labels
+                    ctx.fillStyle = inUse ? "#e6edf3" : "#7a8699";
+                    ctx.font = `600 ${12 * scale}px Inter, sans-serif`;
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "top";
+                    ctx.fillText(node.label, cx, cy + r + 6);
+
+                    if (node.sublabel) {
+                        ctx.fillStyle = inUse ? "#7a8699" : "#5b6577";
+                        ctx.font = `400 ${10.5 * scale}px "JetBrains Mono", monospace`;
+                        ctx.fillText(node.sublabel, cx, cy + r + 6 + 16 * scale);
+                    }
+                });
+
+                // Animated packet
+                if (current && fromNode && toNode) {
+                    const dropped = current.outcome === "dropped";
+                    // Dropped packets travel only halfway and fade out toward the end of that half.
+                    const effProgress = dropped ? Math.min(progress, 0.5) : progress;
+                    const t = ease(Math.max(0, Math.min(1, effProgress)));
+                    const px = lerp(toX(fromNode.x), toX(toNode.x), t);
+                    const py = lerp(toY(fromNode.y), toY(toNode.y), t);
+
+                    // After the packet "dies" partway, fade out the body and trail.
+                    let alpha = 1;
+                    if (dropped) {
+                        if (progress > 0.4) {
+                            alpha = Math.max(0, 1 - (progress - 0.4) / 0.2);
+                        }
+                    }
+
+                    ctx.save();
+                    ctx.globalAlpha = alpha;
+
+                    const packetColor = dropped ? "#ef4444" : "#fbbf24";
+                    const packetGlow = dropped ? "rgba(239, 68, 68, " : "rgba(251, 191, 36, ";
+                    const packetStroke = dropped ? "#fecaca" : "#fde68a";
+
+                    // trail
+                    for (let i = 1; i <= 4; i++) {
+                        const tt = ease(Math.max(0, Math.min(1, effProgress - i * 0.04)));
+                        const tx = lerp(toX(fromNode.x), toX(toNode.x), tt);
+                        const ty = lerp(toY(fromNode.y), toY(toNode.y), tt);
+                        ctx.fillStyle = packetGlow + (0.22 - i * 0.05) + ")";
+                        ctx.beginPath();
+                        ctx.arc(tx, ty, 8 * scale, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    // packet glow
+                    const pgrad = ctx.createRadialGradient(px, py, 0, px, py, 28 * scale);
+                    pgrad.addColorStop(0, packetGlow + "0.55)");
+                    pgrad.addColorStop(1, packetGlow + "0)");
+                    ctx.fillStyle = pgrad;
+                    ctx.beginPath();
+                    ctx.arc(px, py, 28 * scale, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // packet body
+                    ctx.fillStyle = packetColor;
+                    ctx.strokeStyle = packetStroke;
+                    ctx.lineWidth = 1.5;
+                    const w = Math.max(60, current.label.length * 6.5) * scale;
+                    const h = 22 * scale;
+                    const rr = 6 * scale;
+                    roundRect(ctx, px - w / 2, py - h / 2, w, h, rr);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.fillStyle = "#1f2937";
+                    ctx.font = `600 ${10.5 * scale}px Inter, sans-serif`;
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.fillText(current.label, px, py);
+
+                    ctx.restore();
+
+                    // For a dropped packet that has fully faded, draw a small ✕ marker at the death point.
+                    if (dropped && progress > 0.55) {
+                        const xMarkAlpha = Math.min(1, (progress - 0.55) / 0.15);
+                        ctx.save();
+                        ctx.globalAlpha = xMarkAlpha;
+                        ctx.strokeStyle = "#ef4444";
+                        ctx.lineWidth = 2.5;
+                        const sz = 10 * scale;
+                        ctx.beginPath();
+                        ctx.moveTo(px - sz, py - sz);
+                        ctx.lineTo(px + sz, py + sz);
+                        ctx.moveTo(px + sz, py - sz);
+                        ctx.lineTo(px - sz, py + sz);
+                        ctx.stroke();
+                        ctx.restore();
+                    }
+                }
+            });
+
+            return (
+                <canvas ref={canvasRef} onClick={onCanvasClick} />
+            );
+        }
+
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+        }
+
+        /* ============================================================
+           TRANSPORT BAR — play/pause/step/scrub/speed
+           ============================================================ */
+
+        function TransportBar({ stepIdx, progress, steps, playing, speed, onPlayToggle, onStepBack, onStepForward, onScrub, onSpeed }) {
+            const total = steps.length;
+            const t = stepIdx + progress;
+            return (
+                <div className="transport">
+                    <button className="btn" onClick={onStepBack} disabled={stepIdx === 0 && progress === 0} title="Step back">
+                        <svg className="btn-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zM9.5 12l8.5 6V6z" /></svg>
+                    </button>
+                    <button className="btn primary" onClick={onPlayToggle} title={playing ? "Pause" : "Play"}>
+                        {playing ? (
+                            <svg className="btn-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z" /></svg>
+                        ) : (
+                            <svg className="btn-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                        )}
+                        <span>{playing ? "Pause" : "Play"}</span>
+                    </button>
+                    <button className="btn" onClick={onStepForward} disabled={stepIdx >= total - 1 && progress >= 1} title="Step forward">
+                        <svg className="btn-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z" /></svg>
+                    </button>
+                    <div className="scrub">
+                        <input
+                            type="range"
+                            min={0}
+                            max={total}
+                            step={0.01}
+                            value={t}
+                            onChange={(e) => onScrub(parseFloat(e.target.value))}
+                            aria-label="Scrub through steps"
+                        />
+                    </div>
+                    <select className="speed-select" value={speed} onChange={(e) => onSpeed(parseFloat(e.target.value))} aria-label="Playback speed">
+                        <option value="0.5">0.5×</option>
+                        <option value="1">1×</option>
+                        <option value="1.5">1.5×</option>
+                        <option value="2">2×</option>
+                    </select>
+                </div>
+            );
+        }
+
+        /* ============================================================
+           PARAMS PANEL
+           ============================================================ */
+
+        function ParamsPanel({ scenario, params, onParamChange }) {
+            if (!scenario.params || scenario.params.length === 0) {
+                return (
+                    <div style={{ color: "var(--muted)", fontSize: "0.85rem", fontStyle: "italic" }}>
+                        No adjustable parameters for this scenario.
+                    </div>
+                );
+            }
+            return (
+                <div>
+                    {scenario.params.map(p => (
+                        <div key={p.id} className="param-row">
+                            <span className="param-label">{p.label}</span>
+                            {p.type === "toggle" && (
+                                <button
+                                    className={"switch " + (params[p.id] ? "on" : "")}
+                                    onClick={() => onParamChange(p.id, !params[p.id])}
+                                    role="switch"
+                                    aria-checked={!!params[p.id]}
+                                    aria-label={p.label}
+                                />
+                            )}
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+
+        /* ============================================================
+           GLOSSARY PANEL (searchable)
+           ============================================================ */
+
+        function GlossaryPanel() {
+            const [q, setQ] = useState("");
+            const entries = useMemo(() => {
+                const items = Object.entries(GLOSSARY);
+                if (!q.trim()) return items;
+                const needle = q.toLowerCase();
+                return items.filter(([term, def]) =>
+                    term.toLowerCase().includes(needle) || def.toLowerCase().includes(needle)
+                );
+            }, [q]);
+
+            return (
+                <div>
+                    <input
+                        type="text"
+                        className="glossary-search"
+                        placeholder="Search glossary…"
+                        value={q}
+                        onChange={(e) => setQ(e.target.value)}
+                    />
+                    <ul className="glossary-list">
+                        {entries.length === 0 && (
+                            <li style={{ color: "var(--muted)", fontSize: "0.82rem", fontStyle: "italic", padding: "8px 0" }}>
+                                No matches.
+                            </li>
+                        )}
+                        {entries.map(([term, def]) => (
+                            <li key={term} className="glossary-item">
+                                <div className="glossary-term">{term}</div>
+                                <div className="glossary-def">{def}</div>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            );
+        }
+
+        /* ============================================================
+           PHASE INDICATOR — chips above the canvas, click to jump
+           ============================================================ */
+
+        function PhaseIndicator({ steps, stepIdx, onJump }) {
+            // Map each phase to the first step index that has that phase.
+            const firstIdxByPhase = useMemo(() => {
+                const m = {};
+                steps.forEach((s, i) => {
+                    if (s.phase && m[s.phase] === undefined) m[s.phase] = i;
+                });
+                return m;
+            }, [steps]);
+
+            const currentPhase = steps[stepIdx] && steps[stepIdx].phase;
+
+            return (
+                <div className="phase-bar">
+                    {PHASES.map(p => {
+                        const exists = firstIdxByPhase[p.id] !== undefined;
+                        const active = p.id === currentPhase;
+                        return (
+                            <button
+                                key={p.id}
+                                className={"phase-chip " + p.className + (active ? " active" : "")}
+                                disabled={!exists}
+                                onClick={() => exists && onJump(firstIdxByPhase[p.id])}
+                                title={"Jump to " + p.id + " phase"}
+                            >
+                                {p.label}
+                            </button>
+                        );
+                    })}
+                </div>
+            );
+        }
+
+        /* ============================================================
+           LAYERING PANEL — stacked layers; click for explanation
+           ============================================================ */
+
+        function LayerPanel({ activeLayers, selectedLayerId, onLayerClick }) {
+            return (
+                <aside className="layer-panel" aria-label="Layer stack">
+                    <div className="layer-panel-label">Layer stack</div>
+                    {LAYERS.map(layer => {
+                        const protocol = activeLayers ? activeLayers[layer.id] : null;
+                        const isActive = !!protocol;
+                        const isSelected = selectedLayerId === layer.id;
+                        return (
+                            <div
+                                key={layer.id}
+                                data-layer={layer.id}
+                                className={"layer-row" + (isActive ? " active" : "") + (isSelected ? " selected" : "")}
+                                onClick={() => onLayerClick(layer.id)}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onLayerClick(layer.id); } }}
+                                title={"Click to read about the " + layer.name + " layer"}
+                            >
+                                <span className="layer-name">{layer.name}</span>
+                                <span className="layer-protocol">{protocol || "—"}</span>
+                            </div>
+                        );
+                    })}
+                </aside>
+            );
+        }
+
+        /* ============================================================
+           APP
+           ============================================================ */
+
+        function initialParams(scenario) {
+            const p = {};
+            (scenario.params || []).forEach(par => { p[par.id] = par.default; });
+            return p;
+        }
+
+        function App() {
+            const [scenarioId, setScenarioId] = useState(SCENARIOS[0].id);
+            const scenario = useMemo(() => SCENARIOS.find(s => s.id === scenarioId), [scenarioId]);
+
+            const [paramsByScenario, setParamsByScenario] = useState(() => {
+                const obj = {};
+                SCENARIOS.forEach(s => { obj[s.id] = initialParams(s); });
+                return obj;
+            });
+            const params = paramsByScenario[scenarioId];
+
+            const steps = useMemo(() => scenario.steps(params), [scenario, params]);
+
+            const [stepIdx, setStepIdx] = useState(0);
+            const [progress, setProgress] = useState(0);
+            const [playing, setPlaying] = useState(false);
+            const [speed, setSpeed] = useState(1);
+            const [selectedLayerId, setSelectedLayerId] = useState(null);
+
+            // Reset playback when scenario or steps change
+            const stepsLen = steps.length;
+            useEffect(() => {
+                setStepIdx(0);
+                setProgress(0);
+                setPlaying(false);
+                setSelectedLayerId(null);
+            }, [scenarioId, stepsLen]);
+
+            // Clear any selected layer when the step itself advances (the description should follow the action).
+            useEffect(() => { setSelectedLayerId(null); }, [stepIdx]);
+
+            // Animation loop
+            const stateRef = useRef({ stepIdx, progress, playing, stepsLen, speed });
+            stateRef.current = { stepIdx, progress, playing, stepsLen, speed };
+
+            useEffect(() => {
+                if (!playing) return;
+                let raf;
+                let last = performance.now();
+                const tick = (now) => {
+                    const dt = (now - last) / 1000;
+                    last = now;
+                    const s = stateRef.current;
+                    const inc = dt / STEP_SECONDS * s.speed;
+                    let np = s.progress + inc;
+                    let nIdx = s.stepIdx;
+                    let stop = false;
+                    while (np >= 1) {
+                        if (nIdx >= s.stepsLen - 1) {
+                            np = 1;
+                            stop = true;
+                            break;
+                        } else {
+                            nIdx += 1;
+                            np -= 1;
+                        }
+                    }
+                    setStepIdx(nIdx);
+                    setProgress(np);
+                    if (stop) {
+                        setPlaying(false);
+                        return;
+                    }
+                    raf = requestAnimationFrame(tick);
+                };
+                raf = requestAnimationFrame(tick);
+                return () => cancelAnimationFrame(raf);
+            }, [playing]);
+
+            const onPlayToggle = useCallback(() => {
+                setPlaying(p => {
+                    if (p) return false;
+                    // If at the end, restart
+                    if (stateRef.current.stepIdx >= stateRef.current.stepsLen - 1 && stateRef.current.progress >= 1) {
+                        setStepIdx(0);
+                        setProgress(0);
+                    }
+                    return true;
+                });
+            }, []);
+
+            // Step semantics:
+            //   forward: if mid-flight, snap packet to destination; otherwise advance to next step (packet at origin).
+            //   back: if mid-flight, snap packet back to origin; otherwise step back (packet at the prior step's destination).
+            const onStepBack = useCallback(() => {
+                setPlaying(false);
+                const s = stateRef.current;
+                if (s.progress > 0.02) {
+                    setProgress(0);
+                    return;
+                }
+                if (s.stepIdx === 0) return;
+                setStepIdx(s.stepIdx - 1);
+                setProgress(1);
+            }, []);
+
+            const onStepForward = useCallback(() => {
+                setPlaying(false);
+                const s = stateRef.current;
+                if (s.progress < 0.98) {
+                    setProgress(1);
+                    return;
+                }
+                if (s.stepIdx >= s.stepsLen - 1) return;
+                setStepIdx(s.stepIdx + 1);
+                setProgress(0);
+            }, []);
+
+            const onScrub = useCallback((t) => {
+                setPlaying(false);
+                const total = stateRef.current.stepsLen;
+                if (t >= total) {
+                    setStepIdx(total - 1);
+                    setProgress(1);
+                    return;
+                }
+                const idx = Math.floor(t);
+                const p = t - idx;
+                setStepIdx(idx);
+                setProgress(p);
+            }, []);
+
+            const onParamChange = useCallback((id, value) => {
+                setParamsByScenario(prev => ({
+                    ...prev,
+                    [scenarioId]: { ...prev[scenarioId], [id]: value }
+                }));
+            }, [scenarioId]);
+
+            const onJumpToStep = useCallback((idx) => {
+                setPlaying(false);
+                setStepIdx(idx);
+                setProgress(0);
+            }, []);
+
+            const onLayerClick = useCallback((layerId) => {
+                setSelectedLayerId(prev => prev === layerId ? null : layerId);
+            }, []);
+
+            const currentStep = steps[stepIdx] || steps[steps.length - 1];
+            const selectedLayer = selectedLayerId ? LAYERS.find(l => l.id === selectedLayerId) : null;
+            const hasPhases = steps.some(s => s.phase);
+            const showLayerPanel = !!scenario.showLayers;
+
+            return (
+                <div className="app">
+                    <aside className="sidebar">
+                        <div className="hero">
+                            <h1>Protocol Lab</h1>
+                            <p>Pick a scenario. Press play. Inspect every packet.</p>
+                        </div>
+
+                        <div className="panel">
+                            <h3>Scenario</h3>
+                            <div className="scn-list">
+                                {SCENARIOS.map(s => (
+                                    <button
+                                        key={s.id}
+                                        className={"scn-item " + (s.id === scenarioId ? "active" : "")}
+                                        onClick={() => setScenarioId(s.id)}
+                                    >
+                                        <span className="scn-title">{s.title}</span>
+                                        <span className="scn-sub">{s.subtitle}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="panel">
+                            <h3>About this scenario</h3>
+                            <div className="summary-title">{scenario.title}</div>
+                            <div className="summary-text">{scenario.summary}</div>
+                        </div>
+
+                        <div className="panel">
+                            <h3>Parameters</h3>
+                            <ParamsPanel scenario={scenario} params={params} onParamChange={onParamChange} />
+                        </div>
+
+                        <div className="panel">
+                            <h3>What does this mean?</h3>
+                            <div className="takeaway">{scenario.takeaway}</div>
+                        </div>
+
+                        <div className="panel">
+                            <h3>Glossary</h3>
+                            <GlossaryPanel />
+                        </div>
+                    </aside>
+
+                    <main className="main">
+                        <div className="canvas-wrap">
+                            <div className="canvas-header">
+                                <span><strong>{scenario.title}</strong> — click the canvas to {playing ? "pause" : "play"}</span>
+                                <span className="step-counter">
+                                    step {Math.min(stepIdx + 1, steps.length)} / {steps.length}
+                                </span>
+                            </div>
+                            {hasPhases && (
+                                <PhaseIndicator steps={steps} stepIdx={stepIdx} onJump={onJumpToStep} />
+                            )}
+                            {showLayerPanel ? (
+                                <div className="canvas-with-layers">
+                                    <ScenarioCanvas
+                                        scenario={scenario}
+                                        steps={steps}
+                                        stepIdx={stepIdx}
+                                        progress={progress}
+                                        onCanvasClick={() => setPlaying(p => !p)}
+                                    />
+                                    <LayerPanel
+                                        activeLayers={currentStep && currentStep.layers}
+                                        selectedLayerId={selectedLayerId}
+                                        onLayerClick={onLayerClick}
+                                    />
+                                </div>
+                            ) : (
+                                <ScenarioCanvas
+                                    scenario={scenario}
+                                    steps={steps}
+                                    stepIdx={stepIdx}
+                                    progress={progress}
+                                    onCanvasClick={() => setPlaying(p => !p)}
+                                />
+                            )}
+                        </div>
+
+                        <div className="info-grid">
+                            <div className="panel">
+                                <div className="step-label">
+                                    {selectedLayer ? "Layer · " + selectedLayer.name : "Narration · step " + (stepIdx + 1)}
+                                </div>
+                                {selectedLayer ? (
+                                    <div className="narration narration-layer">
+                                        {selectedLayer.description}
+                                        <div>
+                                            <button className="layer-back" onClick={() => setSelectedLayerId(null)}>
+                                                ← back to step narration
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="narration">
+                                        {currentStep && <NarrationText text={currentStep.narration} />}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="panel">
+                                <div className="step-label">Payload</div>
+                                <PayloadInspector payload={currentStep && currentStep.payload} />
+                            </div>
+                        </div>
+
+                        <TransportBar
+                            stepIdx={stepIdx}
+                            progress={progress}
+                            steps={steps}
+                            playing={playing}
+                            speed={speed}
+                            onPlayToggle={onPlayToggle}
+                            onStepBack={onStepBack}
+                            onStepForward={onStepForward}
+                            onScrub={onScrub}
+                            onSpeed={setSpeed}
+                        />
+                    </main>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    </script>
+</body>
+
+</html>

@@ -199,7 +199,7 @@ body{
         <button class="btn" id="bLoad">Load from file</button>
         <button class="btn" id="bPrint">Print</button>
         <button class="btn btn-quiet" id="bClear">Clear all</button>
-        <input type="file" id="fPick" accept=".json" style="display:none">
+        <input type="file" id="fPick" accept=".csv,.json,text/csv" style="display:none">
       </div>
     </div>
   </header>
@@ -684,64 +684,152 @@ function stripMeta(o){
   }
   return out;
 }
-function templateObj(){
-  var tHelp={}, pHelp={}, mHelp={};
-  TFIELDS.forEach(function(f){ tHelp[f.k]=f.lab+(f.tip?" — "+f.tip:""); });
-  PCOLS.forEach(function(c){ if(c.k!=="name") pHelp[c.k]=c.lab+" — same definition, unit and date as the company above."; });
-  pHelp.name="Peer name.";
-  pHelp.inc="true to include this peer in the calculation, false to park it without deleting it.";
-  pHelp.rat="Why this company is a fair comparison. Write it down — if you cannot, it probably isn't one.";
-  MULTS.forEach(function(m){ mHelp[m.k]=m.name+" — "+(m.test?"passes":"FAILS")+" the consistency test. "+m.why; });
-
-  var tgt={_help:tHelp};
-  TFIELDS.forEach(function(f){ tgt[f.k]=(f.k==="ccy")?"GBp":(f.k==="pxu"?100:""); });
-
-  var peer=function(){ return {inc:true, name:"", price:"", shares:"", eps:"", feps:"", bvps:"",
-                               rev:"", ebitda:"", ebit:"", debt:"", cash:"", rat:""}; };
-  return {
-    _readme:[
-      "TEMPLATE — Relative valuation (peer multiples)",
-      "",
-      "HOW TO USE THIS FILE",
-      "  1. Open it in any text editor.",
-      "  2. Replace each \"\" with your figure, keeping the quotation marks.",
-      "  3. Add or delete whole peer blocks in the 'peers' list as you need them.",
-      "  4. Save it, then click 'Load from file' in the tool.",
-      "",
-      "CONVENTIONS",
-      "  Totals — revenue, EBITDA, EBIT, debt, cash — are in MILLIONS.",
-      "  Per-share figures — EPS, forward EPS, book value per share — are in the SAME UNIT",
-      "  as the share price. If the price is in pence, these are in pence too.",
-      "  'pxu' reconciles the two: a London price in pence against accounts in £m means 100.",
-      "  Use ONE date for the company and every peer. Mixing periods is the single most",
-      "  detectable error in the whole exercise.",
-      "  Anything you do not have can stay as \"\" — that peer drops out of that multiple only.",
-      "",
-      "Every key starting with an underscore is guidance for you. The tool strips them",
-      "out when it loads the file, so you can leave them in place or delete them."
-    ],
-    _help:{
-      on:"Which multiples to calculate — set a key to true to switch it on. " +
-         "Two of them deliberately fail the consistency test; the tool will say so.",
-      stat:"\"median\" or \"mean\". The median is usually the honest one.",
-      peers:pHelp
-    },
-    _multiples:mHelp,
-    tgt:tgt,
-    on:{pe:true, fpe:false, pb:false, ps:false, evs:false, evebitda:true, evebit:false, pebitda:false},
-    stat:"median",
-    peers:[peer(),peer(),peer(),peer(),peer()]
-  };
+/* ============ CSV ============
+   One format for the template, for saving and for loading. Excel, Numbers and Sheets open
+   it directly and it stays readable in a text editor. The Guidance column is written for
+   the reader and ignored on the way back in, so notes can be edited or deleted freely. */
+function csvCell(v){
+  var s=String(v===undefined||v===null?"":v);
+  return /[",\r\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
 }
-function download(obj,filename){
-  var blob=new Blob([JSON.stringify(obj,null,2)],{type:"application/json"});
+function csvRow(a){ return a.map(csvCell).join(","); }
+function csvText(lines){
+  /* the byte-order mark matters: without it Excel reads the file as Latin-1 and mangles £ */
+  return "﻿"+lines.map(csvRow).join("\r\n")+"\r\n";
+}
+/* RFC 4180 reader — quoted fields, doubled quotes inside them, CRLF, and a leading BOM */
+function parseCSV(text){
+  text=String(text).replace(/^﻿/,"");
+  var rows=[], row=[], cur="", q=false, i, c;
+  for(i=0;i<text.length;i++){
+    c=text.charAt(i);
+    if(q){
+      if(c==='"'){ if(text.charAt(i+1)==='"'){ cur+='"'; i++; } else q=false; }
+      else cur+=c;
+    } else if(c==='"'){ q=true; }
+    else if(c===","){ row.push(cur); cur=""; }
+    else if(c==="\n"){ row.push(cur); rows.push(row); row=[]; cur=""; }
+    else if(c!=="\r"){ cur+=c; }
+  }
+  if(cur!==""||row.length){ row.push(cur); rows.push(row); }
+  return rows;
+}
+/* labels are matched loosely, so re-typing or re-casing a row name still works */
+function norm(s){ return String(s===undefined||s===null?"":s).toLowerCase().replace(/[^a-z0-9]+/g,""); }
+function sections(rows){
+  var out={}, cur=null, i, r, first, m;
+  for(i=0;i<rows.length;i++){
+    r=rows[i]; if(!r.length) continue;
+    first=String(r[0]||"").trim();
+    if(first.charAt(0)==="#") continue;
+    if(!first && r.join("")==="") continue;
+    m=first.match(/^\[(.+)\]$/);
+    if(m){ cur=norm(m[1]); out[cur]=[]; continue; }
+    if(cur) out[cur].push(r);
+  }
+  return out;
+}
+function cellAt(r,i){ return String(r[i]===undefined?"":r[i]).trim(); }
+function yn(v){ return /^(y|yes|true|1|x)$/i.test(String(v===undefined?"":v).trim()); }
+function ynOut(b){ return b?"yes":"no"; }
+
+function toCSV(){
+  var L=[];
+  /* no commas in the # lines, so they stay unquoted and readable in a plain text editor */
+  L.push(["# RELATIVE VALUATION (PEER MULTIPLES) — data file"]);
+  L.push(["# Fill in the Value column and the peer rows. Save. Then use 'Load from file'."]);
+  L.push(["# Totals — revenue EBITDA EBIT debt cash — are in MILLIONS."]);
+  L.push(["# Per-share figures — EPS forward EPS book value — are in the SAME UNIT as the price."]);
+  L.push(["# Use ONE date for the company and every peer. Mixing periods is the classic error."]);
+  L.push(["# Add or delete peer rows freely. Leave anything you do not have blank."]);
+  L.push(["# Guidance is for you only. Lines starting with # are ignored."]);
+  L.push([]);
+  L.push(["[COMPANY]"]);
+  L.push(["Field","Value","Guidance"]);
+  TFIELDS.forEach(function(f){ L.push([f.lab, S.tgt[f.k]===undefined?"":S.tgt[f.k], f.tip||""]); });
+  L.push([]);
+  L.push(["[MULTIPLES]"]);
+  L.push(["Multiple","Use","Consistent","Why"]);
+  MULTS.forEach(function(m){
+    L.push([m.name, ynOut(!!S.on[m.k]), m.test?"yes":"NO", m.why]);
+  });
+  L.push([]);
+  L.push(["[SETTINGS]"]);
+  L.push(["Field","Value","Guidance"]);
+  L.push(["Value on", S.stat, "median or mean. The median is usually the honest one."]);
+  L.push([]);
+  L.push(["[PEERS]"]);
+  L.push(["Include"].concat(PCOLS.map(function(c){ return c.lab; })).concat(["Why in or why out"]));
+  S.peers.forEach(function(p){
+    L.push([ynOut(p.inc!==false)]
+      .concat(PCOLS.map(function(c){ return p[c.k]===undefined?"":p[c.k]; }))
+      .concat([p.rat||""]));
+  });
+  return csvText(L);
+}
+
+function fromCSV(text){
+  var sec=sections(parseCSV(text)), hits=0;
+  var o={tgt:{}, on:{}, stat:"median", peers:[]};
+
+  var tRows=sec[norm("COMPANY")];
+  if(tRows){
+    var tmap={}; TFIELDS.forEach(function(f){ tmap[norm(f.lab)]=f.k; });
+    tRows.forEach(function(r){
+      var k=tmap[norm(r[0])];
+      if(k!==undefined){ o.tgt[k]=cellAt(r,1); hits++; }
+    });
+  }
+  var mRows=sec[norm("MULTIPLES")];
+  if(mRows){
+    var mmap={}; MULTS.forEach(function(m){ mmap[norm(m.name)]=m.k; });
+    mRows.forEach(function(r){
+      var k=mmap[norm(r[0])];
+      if(k!==undefined){ o.on[k]=yn(r[1]); hits++; }
+    });
+  }
+  var sRows=sec[norm("SETTINGS")];
+  if(sRows) sRows.forEach(function(r){
+    if(norm(r[0])===norm("Value on")){ o.stat=(norm(r[1])==="mean")?"mean":"median"; hits++; }
+  });
+
+  var pRows=sec[norm("PEERS")];
+  if(pRows&&pRows.length){
+    /* the first row of the section is the column header; map it so re-ordered or
+       partly-deleted columns still land in the right place */
+    var head=pRows[0], idx={}, j;
+    for(j=0;j<head.length;j++) idx[norm(head[j])]=j;
+    var incAt=idx[norm("Include")], ratAt=idx[norm("Why in or why out")];
+    pRows.slice(1).forEach(function(r){
+      if(!r.join("").trim()) return;
+      var p={id:Math.random().toString(36).slice(2,9),
+             inc:(incAt===undefined)?true:yn(r[incAt]),
+             rat:(ratAt===undefined)?"":cellAt(r,ratAt)};
+      var any=false;
+      PCOLS.forEach(function(c){
+        var at=idx[norm(c.lab)];
+        if(at===undefined) return;
+        p[c.k]=cellAt(r,at);
+        if(p[c.k]!=="") any=true;
+      });
+      if(any||p.name){ o.peers.push(p); hits++; }
+    });
+  }
+  return hits ? o : null;
+}
+function downloadCSV(text,filename){
+  var blob=new Blob([text],{type:"text/csv;charset=utf-8"});
   var a=document.createElement("a"); a.href=URL.createObjectURL(blob);
   a.download=filename; a.click(); URL.revokeObjectURL(a.href);
 }
 
 /* ============ toolbar ============ */
 document.getElementById("bTpl").addEventListener("click",function(){
-  download(templateObj(),"relative-valuation-template.json");
+  var keep=S, i;
+  S={tgt:{ccy:"GBp", pxu:100}, on:{pe:true, evebitda:true}, stat:"median", peers:[]};
+  for(i=0;i<5;i++) S.peers.push(blankPeer());
+  var csv=toCSV(); S=keep;
+  downloadCSV(csv,"relative-valuation-template.csv");
 });
 document.getElementById("bAdd").addEventListener("click",function(){ S.peers.push(blankPeer()); render(); });
 document.getElementById("segStat").addEventListener("click",function(e){
@@ -761,7 +849,7 @@ document.getElementById("bClear").addEventListener("click",function(){
   render();
 });
 document.getElementById("bSave").addEventListener("click",function(){
-  download(S,((S.tgt.name||"relative-valuation").replace(/[^A-Za-z0-9]+/g,"-").toLowerCase())+".json");
+  downloadCSV(toCSV(),((S.tgt.name||"relative-valuation").replace(/[^A-Za-z0-9]+/g,"-").toLowerCase())+".csv");
 });
 document.getElementById("bLoad").addEventListener("click",function(){ document.getElementById("fPick").click(); });
 document.getElementById("fPick").addEventListener("change",function(e){
@@ -770,12 +858,18 @@ document.getElementById("fPick").addEventListener("change",function(e){
   r.onload=function(){
     var prev=S;                                    /* roll back if anything goes wrong */
     try{
-      var o=stripMeta(JSON.parse(r.result));
-      if(!isObj(o)||(!isObj(o.tgt)&&!isArr(o.peers))) throw 0;
+      var txt=String(r.result).replace(/^﻿/,""), o;
+      if(txt.replace(/^\s+/,"").charAt(0)==="{"){   /* files saved before the CSV switch */
+        o=stripMeta(JSON.parse(txt));
+        if(!isObj(o)||(!isObj(o.tgt)&&!isArr(o.peers))) throw 0;
+      } else {
+        o=fromCSV(txt);
+        if(!o) throw 0;
+      }
       S=adopt(o); render();
     }catch(err){
       S=prev; render();
-      alert("That file isn't a saved valuation or a template. Pick a .json this tool wrote.");
+      alert("That file isn't a saved valuation or a template. Pick a .csv this tool wrote — or an older .json, which still works.");
     }
   };
   r.readAsText(f); e.target.value="";

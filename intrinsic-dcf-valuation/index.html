@@ -174,7 +174,7 @@ body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:
         <button class="btn" id="bLoad">Load from file</button>
         <button class="btn" id="bPrint">Print</button>
         <button class="btn btn-quiet" id="bClear">Clear all</button>
-        <input type="file" id="fPick" accept=".json" style="display:none">
+        <input type="file" id="fPick" accept=".csv,.json,text/csv" style="display:none">
       </div>
     </div>
   </header>
@@ -693,60 +693,132 @@ function stripMeta(o){
   }
   return out;
 }
-function helpFrom(defs){
-  var h={}; defs.forEach(function(f){ h[f.k]=f.lab+(f.tip?" — "+f.tip:""); }); return h;
+/* ---------------- CSV ----------------
+   One format for the template, for saving and for loading. Excel, Numbers and Sheets open
+   it directly and it stays readable in a text editor. The Guidance column is written for
+   the reader and ignored on the way back in, so notes can be edited or deleted freely. */
+function csvCell(v){
+  var s=String(v===undefined||v===null?"":v);
+  return /[",\r\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
 }
-function withHelp(defs,preset){
-  var o={_help:helpFrom(defs)};
-  defs.forEach(function(f){ o[f.k]=(preset&&preset[f.k]!==undefined)?preset[f.k]:""; });
-  return o;
+function csvRow(a){ return a.map(csvCell).join(","); }
+function csvText(lines){
+  /* the byte-order mark matters: without it Excel reads the file as Latin-1 and mangles £ */
+  return "﻿"+lines.map(csvRow).join("\r\n")+"\r\n";
 }
-function templateObj(){
-  var aHelp={};
+/* RFC 4180 reader — quoted fields, doubled quotes inside them, CRLF, and a leading BOM */
+function parseCSV(text){
+  text=String(text).replace(/^﻿/,"");
+  var rows=[], row=[], cur="", q=false, i, c;
+  for(i=0;i<text.length;i++){
+    c=text.charAt(i);
+    if(q){
+      if(c==='"'){ if(text.charAt(i+1)==='"'){ cur+='"'; i++; } else q=false; }
+      else cur+=c;
+    } else if(c==='"'){ q=true; }
+    else if(c===","){ row.push(cur); cur=""; }
+    else if(c==="\n"){ row.push(cur); rows.push(row); row=[]; cur=""; }
+    else if(c!=="\r"){ cur+=c; }
+  }
+  if(cur!==""||row.length){ row.push(cur); rows.push(row); }
+  return rows;
+}
+/* labels are matched loosely, so re-typing or re-casing a row name still works */
+function norm(s){ return String(s===undefined||s===null?"":s).toLowerCase().replace(/[^a-z0-9]+/g,""); }
+function sections(rows){
+  var out={}, cur=null, i, r, first, m;
+  for(i=0;i<rows.length;i++){
+    r=rows[i]; if(!r.length) continue;
+    first=String(r[0]||"").trim();
+    if(first.charAt(0)==="#") continue;
+    if(!first && r.join("")==="") continue;
+    m=first.match(/^\[(.+)\]$/);
+    if(m){ cur=norm(m[1]); out[cur]=[]; continue; }
+    if(cur) out[cur].push(r);
+  }
+  return out;
+}
+function cellAt(r,i){ return String(r[i]===undefined?"":r[i]).trim(); }
+
+function toCSV(){
+  var L=[];
+  /* no commas in the # lines, so they stay unquoted and readable in a plain text editor */
+  L.push(["# INTRINSIC VALUATION (DCF) — data file"]);
+  L.push(["# Fill in the Value column. Save. Then use 'Load from file' in the tool."]);
+  L.push(["# Money is in MILLIONS of the reporting currency. 13040 means 13040 million."]);
+  L.push(["# Percentages are plain numbers. 7.5 means 7.5% and not 0.075."]);
+  L.push(["# Leave anything you do not have blank. The tool shows a dash and carries on."]);
+  L.push(["# Guidance is for you only. Lines starting with # are ignored."]);
+  L.push([]);
+  L.push(["[COMPANY]"]);
+  L.push(["Field","Value","Guidance"]);
+  F1.forEach(function(f){ L.push([f.lab, S.tgt[f.k]===undefined?"":S.tgt[f.k], f.tip||""]); });
+  L.push([]);
+  L.push(["[COST OF CAPITAL]"]);
+  L.push(["Field","Value","Guidance"]);
+  F2.forEach(function(f){ L.push([f.lab, S.cc[f.k]===undefined?"":S.cc[f.k], f.tip||""]); });
+  L.push([]);
+  L.push(["[FORECAST]"]);
+  L.push(["Driver","Year 1","Year 10","Guidance"]);
   AROWS.forEach(function(r){
-    aHelp[r.k]=r.lab+" — "+r.tip+" Put year 1 in y1 and year 10 in y10; the tool fades between them in a straight line.";
+    L.push([r.lab, S.a[r.k].y1, S.a[r.k].y10,
+            r.tip+" The tool fades from year 1 to year 10 in a straight line."]);
   });
-  return {
-    _readme:[
-      "TEMPLATE — Intrinsic valuation (discounted cash flow)",
-      "",
-      "HOW TO USE THIS FILE",
-      "  1. Open it in any text editor.",
-      "  2. Replace each \"\" with your figure, keeping the quotation marks.",
-      "  3. Save it, then click 'Load from file' in the tool.",
-      "",
-      "CONVENTIONS",
-      "  Money is in MILLIONS of the reporting currency: 13040 means 13,040 million.",
-      "  Percentages are plain numbers: 7.5 means 7.5%, not 0.075.",
-      "  Share price goes in whatever unit it is quoted in, and 'pxu' reconciles the two.",
-      "  Anything you do not have can stay as \"\" — the tool shows a dash and carries on.",
-      "",
-      "Every key starting with an underscore is guidance for you. The tool strips them",
-      "out when it loads the file, so you can leave them in place or delete them."
-    ],
-    _help:{
-      gT:"Growth after year ten, % — nothing grows faster than the economy for ever. Keep it at or below the risk-free rate.",
-      roicT:"Return on capital after year ten, % — set it equal to the terminal WACC and growth is worth exactly nothing. Leave blank to copy the year-10 figure.",
-      tv:"Terminal method: \"1\" for the plain perpetuity, \"2\" for the reinvestment-consistent version."
-    },
-    tgt:withHelp(F1,{ccy:"GBP",pxu:1}),
-    cc:withHelp(F2),
-    a:{
-      _help:aHelp,
-      g:{y1:"",y10:""}, m:{y1:"",y10:""}, t:{y1:"",y10:""}, roic:{y1:"",y10:""}
-    },
-    gT:"", roicT:"", tv:"1"
-  };
+  L.push([]);
+  L.push(["[TERMINAL]"]);
+  L.push(["Field","Value","Guidance"]);
+  L.push(["Growth after year ten %", S.gT,
+    "Nothing grows faster than the economy for ever. Keep it at or below the risk-free rate."]);
+  L.push(["Return on capital after year ten %", S.roicT,
+    "Set it equal to the terminal WACC and growth is worth exactly nothing. Blank copies the year-10 figure."]);
+  L.push(["Terminal method", S.tv,
+    "1 for the plain perpetuity, 2 for the reinvestment-consistent version."]);
+  return csvText(L);
 }
-function download(obj,filename){
-  var blob=new Blob([JSON.stringify(obj,null,2)],{type:"application/json"});
+
+function fromCSV(text){
+  var sec=sections(parseCSV(text)), hits=0;
+  var o={tgt:{}, cc:{}, a:{g:{},m:{},t:{},roic:{}}, gT:"", roicT:"", tv:"1"};
+  function kv(rows,defs,store){
+    if(!rows) return;
+    var map={}; defs.forEach(function(f){ map[norm(f.lab)]=f.k; });
+    rows.forEach(function(r){
+      var k=map[norm(r[0])];
+      if(k!==undefined){ store[k]=cellAt(r,1); hits++; }
+    });
+  }
+  kv(sec[norm("COMPANY")], F1, o.tgt);
+  kv(sec[norm("COST OF CAPITAL")], F2, o.cc);
+
+  var fr=sec[norm("FORECAST")];
+  if(fr){
+    var amap={}; AROWS.forEach(function(r){ amap[norm(r.lab)]=r.k; });
+    fr.forEach(function(r){
+      var k=amap[norm(r[0])];
+      if(k!==undefined){ o.a[k]={y1:cellAt(r,1), y10:cellAt(r,2)}; hits++; }
+    });
+  }
+  var tm=sec[norm("TERMINAL")];
+  if(tm) tm.forEach(function(r){
+    var n=norm(r[0]), v=cellAt(r,1);
+    if(n===norm("Growth after year ten %")){ o.gT=v; hits++; }
+    else if(n===norm("Return on capital after year ten %")){ o.roicT=v; hits++; }
+    else if(n===norm("Terminal method")){ o.tv=(v==="2")?"2":"1"; hits++; }
+  });
+  return hits ? o : null;
+}
+function downloadCSV(text,filename){
+  var blob=new Blob([text],{type:"text/csv;charset=utf-8"});
   var a=document.createElement("a"); a.href=URL.createObjectURL(blob);
   a.download=filename; a.click(); URL.revokeObjectURL(a.href);
 }
 
 /* ---------------- toolbar ---------------- */
 document.getElementById("bTpl").addEventListener("click",function(){
-  download(templateObj(),"dcf-valuation-template.json");
+  var keep=S;
+  S={tgt:{ccy:"GBP",pxu:1}, cc:{}, a:{g:{y1:"",y10:""},m:{y1:"",y10:""},t:{y1:"",y10:""},roic:{y1:"",y10:""}}, gT:"", roicT:"", tv:"1"};
+  var csv=toCSV(); S=keep;
+  downloadCSV(csv,"dcf-valuation-template.csv");
 });
 document.getElementById("segTV").addEventListener("click",function(e){
   var b=e.target.closest("button"); if(!b) return;
@@ -764,7 +836,7 @@ document.getElementById("bClear").addEventListener("click",function(){
   render();
 });
 document.getElementById("bSave").addEventListener("click",function(){
-  download(S,((S.tgt.name||"dcf-valuation").replace(/[^A-Za-z0-9]+/g,"-").toLowerCase())+".json");
+  downloadCSV(toCSV(),((S.tgt.name||"dcf-valuation").replace(/[^A-Za-z0-9]+/g,"-").toLowerCase())+".csv");
 });
 document.getElementById("bLoad").addEventListener("click",function(){ document.getElementById("fPick").click(); });
 document.getElementById("fPick").addEventListener("change",function(e){
@@ -773,12 +845,18 @@ document.getElementById("fPick").addEventListener("change",function(e){
   r.onload=function(){
     var prev=S;                                    /* roll back if anything goes wrong */
     try{
-      var o=stripMeta(JSON.parse(r.result));
-      if(!isObj(o)||(!isObj(o.tgt)&&!isObj(o.a))) throw 0;
+      var txt=String(r.result).replace(/^﻿/,""), o;
+      if(txt.replace(/^\s+/,"").charAt(0)==="{"){   /* files saved before the CSV switch */
+        o=stripMeta(JSON.parse(txt));
+        if(!isObj(o)||(!isObj(o.tgt)&&!isObj(o.a))) throw 0;
+      } else {
+        o=fromCSV(txt);
+        if(!o) throw 0;
+      }
       S=adopt(o); render();
     }catch(err){
       S=prev; render();
-      alert("That file isn't a saved valuation or a template. Pick a .json this tool wrote.");
+      alert("That file isn't a saved valuation or a template. Pick a .csv this tool wrote — or an older .json, which still works.");
     }
   };
   r.readAsText(f); e.target.value="";

@@ -163,7 +163,7 @@ body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:
         <button class="btn" id="bLoad">Load from file</button>
         <button class="btn" id="bPrint">Print</button>
         <button class="btn btn-quiet" id="bClear">Clear all</button>
-        <input type="file" id="fPick" accept=".json" style="display:none">
+        <input type="file" id="fPick" accept=".csv,.json,text/csv" style="display:none">
       </div>
     </div>
   </header>
@@ -953,54 +953,121 @@ function stripMeta(o){
   }
   return out;
 }
-function withHelp(defs,preset){
-  var o={_help:{}};
-  defs.forEach(function(f){ o._help[f.k]=f.lab+(f.tip?" — "+f.tip:""); });
-  defs.forEach(function(f){ o[f.k]=(preset&&preset[f.k]!==undefined)?preset[f.k]:""; });
-  return o;
+/* ---------------- CSV ----------------
+   One format for the template, for saving and for loading. Excel, Numbers and Sheets open
+   it directly and it stays readable in a text editor. The Guidance column is written for
+   the reader and ignored on the way back in, so notes can be edited or deleted freely. */
+function csvCell(v){
+  var s=String(v===undefined||v===null?"":v);
+  return /[",\r\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
 }
-function templateObj(){
-  var rt=withHelp(F_RT,{fixYears:"2"}), fe=withHelp(F_FEE,{period:"2"});
-  rt.mode="repay";
-  rt._help.mode="\"repay\" for a normal repayment mortgage, \"io\" for interest only.";
-  fe.treat="upfront";
-  fe._help.treat="\"upfront\" if you pay the fee on completion, \"added\" if it is rolled into the loan and accrues interest.";
-  return {
-    _readme:[
-      "TEMPLATE — Mortgage (what the monthly payment hides)",
-      "",
-      "HOW TO USE THIS FILE",
-      "  1. Open it in any text editor.",
-      "  2. Replace each \"\" with your figure, keeping the quotation marks.",
-      "  3. Save it, then click 'Load from file' in the tool.",
-      "",
-      "CONVENTIONS",
-      "  Money is in WHOLE CURRENCY UNITS, not thousands: 250000 means two hundred and fifty",
-      "  thousand.",
-      "  Rates and percentages are plain numbers: 4.5 means 4.5%, not 0.045.",
-      "  Periods are in years except 'lumpMonth', which is a month number — 12 is the end of",
-      "  the first year.",
-      "  Anything you do not have can stay as \"\" — the tool shows a dash and carries on.",
-      "",
-      "THE TWO THINGS MOST CALCULATORS LEAVE OUT",
-      "  'revert' is the rate you drop onto when the fix ends. Leave it blank and the tool",
-      "  assumes your initial rate runs for the whole term, which is the optimistic case.",
-      "  'allowance' is the percentage of the balance you may overpay each year inside the fix",
-      "  without a charge. The tool warns you past it but does not model the charge itself.",
-      "",
-      "Every key starting with an underscore is guidance for you. The tool strips them",
-      "out when it loads the file, so you can leave them in place or delete them."
-    ],
-    _help:{ chartMode:"\"split\" plots interest against principal, \"bal\" plots the balance remaining." },
-    ln:withHelp(F_LN,{ccy:"£", term:"25"}),
-    rt:rt,
-    op:withHelp(F_OP,{allowance:"10"}),
-    fee:fe,
-    chartMode:"split"
-  };
+function csvRow(a){ return a.map(csvCell).join(","); }
+function csvText(lines){
+  /* the byte-order mark matters: without it Excel reads the file as Latin-1 and mangles £ */
+  return "﻿"+lines.map(csvRow).join("\r\n")+"\r\n";
 }
-function download(obj,filename){
-  var blob=new Blob([JSON.stringify(obj,null,2)],{type:"application/json"});
+/* RFC 4180 reader — quoted fields, doubled quotes inside them, CRLF, and a leading BOM */
+function parseCSV(text){
+  text=String(text).replace(/^﻿/,"");
+  var rows=[], row=[], cur="", q=false, i, c;
+  for(i=0;i<text.length;i++){
+    c=text.charAt(i);
+    if(q){
+      if(c==='"'){ if(text.charAt(i+1)==='"'){ cur+='"'; i++; } else q=false; }
+      else cur+=c;
+    } else if(c==='"'){ q=true; }
+    else if(c===","){ row.push(cur); cur=""; }
+    else if(c==="\n"){ row.push(cur); rows.push(row); row=[]; cur=""; }
+    else if(c!=="\r"){ cur+=c; }
+  }
+  if(cur!==""||row.length){ row.push(cur); rows.push(row); }
+  return rows;
+}
+/* labels are matched loosely, so re-typing or re-casing a row name still works */
+function norm(s){ return String(s===undefined||s===null?"":s).toLowerCase().replace(/[^a-z0-9]+/g,""); }
+function sections(rows){
+  var out={}, cur=null, i, r, first, m;
+  for(i=0;i<rows.length;i++){
+    r=rows[i]; if(!r.length) continue;
+    first=String(r[0]||"").trim();
+    if(first.charAt(0)==="#") continue;
+    if(!first && r.join("")==="") continue;
+    m=first.match(/^\[(.+)\]$/);
+    if(m){ cur=norm(m[1]); out[cur]=[]; continue; }
+    if(cur) out[cur].push(r);
+  }
+  return out;
+}
+function cellAt(r,i){ return String(r[i]===undefined?"":r[i]).trim(); }
+
+function toCSV(){
+  var L=[];
+  /* no commas in the # lines, so they stay unquoted and readable in a plain text editor */
+  L.push(["# MORTGAGE (TRUE COST) — data file"]);
+  L.push(["# Fill in the Value column. Save. Then use 'Load from file' in the tool."]);
+  L.push(["# Money is in WHOLE CURRENCY UNITS and not thousands. 250000 means 250000."]);
+  L.push(["# Rates and percentages are plain numbers. 4.5 means 4.5% and not 0.045."]);
+  L.push(["# Periods are in years except 'Lump paid in month' which is a month number."]);
+  L.push(["# Leave anything you do not have blank. The tool shows a dash and carries on."]);
+  L.push(["# Guidance is for you only. Lines starting with # are ignored."]);
+  L.push([]);
+  L.push(["[LOAN]"]);
+  L.push(["Field","Value","Guidance"]);
+  F_LN.forEach(function(f){ L.push([f.lab, S.ln[f.k]===undefined?"":S.ln[f.k], f.tip||""]); });
+  L.push([]);
+  L.push(["[RATE]"]);
+  L.push(["Field","Value","Guidance"]);
+  L.push(["Mortgage type", S.rt.mode, "repay for a normal repayment mortgage. io for interest only."]);
+  F_RT.forEach(function(f){ L.push([f.lab, S.rt[f.k]===undefined?"":S.rt[f.k], f.tip||""]); });
+  L.push([]);
+  L.push(["[OVERPAYMENTS]"]);
+  L.push(["Field","Value","Guidance"]);
+  F_OP.forEach(function(f){ L.push([f.lab, S.op[f.k]===undefined?"":S.op[f.k], f.tip||""]); });
+  L.push([]);
+  L.push(["[FEE COMPARISON]"]);
+  L.push(["Field","Value","Guidance"]);
+  F_FEE.forEach(function(f){ L.push([f.lab, S.fee[f.k]===undefined?"":S.fee[f.k], f.tip||""]); });
+  L.push(["The fee is", S.fee.treat,
+    "upfront if you pay it on completion. added if it is rolled into the loan and accrues interest."]);
+  L.push([]);
+  L.push(["[DISPLAY]"]);
+  L.push(["Field","Value","Guidance"]);
+  L.push(["Chart shows", S.chartMode, "split plots interest against principal. bal plots the balance remaining."]);
+  return csvText(L);
+}
+
+function fromCSV(text){
+  var sec=sections(parseCSV(text)), hits=0;
+  var o={ln:{}, rt:{}, op:{}, fee:{}, chartMode:"split"};
+  function kv(rows,defs,store){
+    if(!rows) return;
+    var map={}; defs.forEach(function(f){ map[norm(f.lab)]=f.k; });
+    rows.forEach(function(r){
+      var k=map[norm(r[0])];
+      if(k!==undefined){ store[k]=cellAt(r,1); hits++; }
+    });
+  }
+  kv(sec[norm("LOAN")], F_LN, o.ln);
+  kv(sec[norm("RATE")], F_RT, o.rt);
+  kv(sec[norm("OVERPAYMENTS")], F_OP, o.op);
+  kv(sec[norm("FEE COMPARISON")], F_FEE, o.fee);
+
+  var rt=sec[norm("RATE")];
+  if(rt) rt.forEach(function(r){
+    if(norm(r[0])===norm("Mortgage type")){ o.rt.mode=(norm(r[1])==="io")?"io":"repay"; hits++; }
+  });
+  var fe=sec[norm("FEE COMPARISON")];
+  if(fe) fe.forEach(function(r){
+    if(norm(r[0])===norm("The fee is")){ o.fee.treat=(norm(r[1])==="added")?"added":"upfront"; hits++; }
+  });
+  var dp2=sec[norm("DISPLAY")];
+  if(dp2) dp2.forEach(function(r){
+    if(norm(r[0])===norm("Chart shows")){ o.chartMode=(norm(r[1])==="bal")?"bal":"split"; hits++; }
+  });
+  return hits ? o : null;
+}
+function downloadCSV(text,filename){
+  var blob=new Blob([text],{type:"text/csv;charset=utf-8"});
   var a=document.createElement("a"); a.href=URL.createObjectURL(blob);
   a.download=filename; a.click(); URL.revokeObjectURL(a.href);
 }
@@ -1035,7 +1102,8 @@ document.getElementById("bClear").addEventListener("click",function(){
 });
 document.getElementById("bPrint").addEventListener("click",function(){ window.print(); });
 document.getElementById("bTpl").addEventListener("click",function(){
-  download(templateObj(),"mortgage-template.json");
+  var keep=S; S=adopt({}); var csv=toCSV(); S=keep;
+  downloadCSV(csv,"mortgage-template.csv");
 });
 
 document.getElementById("segMode").addEventListener("click",function(e){
@@ -1052,7 +1120,7 @@ document.getElementById("segFee").addEventListener("click",function(e){
 });
 
 document.getElementById("bSave").addEventListener("click",function(){
-  download(S,((S.ln.name||"mortgage").replace(/[^A-Za-z0-9]+/g,"-").toLowerCase())+".json");
+  downloadCSV(toCSV(),((S.ln.name||"mortgage").replace(/[^A-Za-z0-9]+/g,"-").toLowerCase())+".csv");
 });
 document.getElementById("bLoad").addEventListener("click",function(){ document.getElementById("fPick").click(); });
 document.getElementById("fPick").addEventListener("change",function(e){
@@ -1061,12 +1129,18 @@ document.getElementById("fPick").addEventListener("change",function(e){
   r.onload=function(){
     var prev=S;                                  /* roll back if anything goes wrong */
     try{
-      var o=stripMeta(JSON.parse(r.result));
-      if(!isObj(o)||(!isObj(o.ln)&&!isObj(o.rt))) throw 0;
+      var txt=String(r.result).replace(/^﻿/,""), o;
+      if(txt.replace(/^\s+/,"").charAt(0)==="{"){   /* files saved before the CSV switch */
+        o=stripMeta(JSON.parse(txt));
+        if(!isObj(o)||(!isObj(o.ln)&&!isObj(o.rt))) throw 0;
+      } else {
+        o=fromCSV(txt);
+        if(!o) throw 0;
+      }
       S=adopt(o); render();
     }catch(err){
       S=prev; render();
-      alert("That file isn't a saved mortgage or a template. Pick a .json this tool wrote.");
+      alert("That file isn't a saved mortgage or a template. Pick a .csv this tool wrote — or an older .json, which still works.");
     }
   };
   r.readAsText(f); e.target.value="";

@@ -190,7 +190,7 @@ body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:
         <button class="btn" id="bLoad">Load from file</button>
         <button class="btn" id="bPrint">Print</button>
         <button class="btn btn-quiet" id="bClear">Clear all</button>
-        <input type="file" id="fPick" accept=".json" style="display:none">
+        <input type="file" id="fPick" accept=".csv,.json,text/csv" style="display:none">
       </div>
     </div>
   </header>
@@ -1109,72 +1109,166 @@ function stripMeta(o){
   }
   return out;
 }
-function withHelp(defs,preset){
-  var o={_help:{}};
-  defs.forEach(function(f){ o._help[f.k]=f.lab+(f.tip?" — "+f.tip:""); });
-  defs.forEach(function(f){ o[f.k]=(preset&&preset[f.k]!==undefined)?preset[f.k]:""; });
-  return o;
+/* ---------------- CSV ----------------
+   One format for the template, for saving and for loading. Excel, Numbers and Sheets open
+   it directly and it stays readable in a text editor. The Guidance column is written for
+   the reader and ignored on the way back in, so notes can be edited or deleted freely. */
+function csvCell(v){
+  var s=String(v===undefined||v===null?"":v);
+  return /[",\r\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
 }
-function templateObj(){
-  var co=withHelp(F_CO,{ccy:"£"}), rd=withHelp(F_RD,{poolFrom:"pre"});
-  rd.poolFrom="pre";
-  rd._help.poolFrom="\"pre\" if the new option pool comes out of the pre-money valuation (the market standard, and you pay for all of it), \"post\" if it is created after the round so everyone shares the dilution.";
-  return {
-    _readme:[
-      "TEMPLATE — Term sheet (exit waterfall)",
-      "",
-      "HOW TO USE THIS FILE",
-      "  1. Open it in any text editor.",
-      "  2. Replace each \"\" with your figure, keeping the quotation marks.",
-      "  3. Add or delete whole blocks in the 'classes' list, one per preference class.",
-      "  4. Save it, then click 'Load from file' in the tool.",
-      "",
-      "CONVENTIONS",
-      "  Money is in WHOLE CURRENCY UNITS, not millions: 6000000 means six million.",
-      "  Shares are whole share counts: 8000000 means eight million shares.",
-      "  Percentages are plain numbers: 10 means 10%, not 0.10.",
-      "",
-      "THE 'classes' LIST",
-      "  Order it NEWEST FIRST. Under stacked seniority the first entry is paid first.",
-      "  Exactly one entry should have \"isNew\": true — that is the round you are being",
-      "  offered, and the tool fills in its investment and shares from the round above.",
-      "  Every other entry is a round that already happened; fill in its own figures.",
-      "",
-      "Every key starting with an underscore is guidance for you. The tool strips them",
-      "out when it loads the file, so you can leave them in place or delete them."
-    ],
-    _help:{
-      seniority:"\"stacked\" pays the newest round in full before earlier ones see anything (the usual arrangement). \"paripassu\" shares any shortfall pro rata across all classes.",
-      exit:"The sale price you want the waterfall run at, in whole currency units.",
-      chartMode:"\"abs\" plots proceeds, \"pct\" plots each holder's share of the exit.",
-      classes:{
-        inc:"true to include this class in the waterfall, false to park it without deleting it.",
-        isNew:"true for the round on the table (its invested amount and shares come from 'rd'). false for a round that already closed.",
-        name:"What the class is called, e.g. \"Series A\" or \"Seed\".",
-        amt:"Money this class invested, in whole currency units. Ignored when isNew is true.",
-        sh:"Shares this class holds, as converted. Ignored when isNew is true.",
-        mult:"Liquidation preference multiple. 1 is market standard; anything above it is not.",
-        part:"true for participating preferred — it takes the preference AND then its percentage of the remainder. false for non-participating, which takes whichever of the two is worth more.",
-        cap:"Only applies when part is true. The ceiling on total receipts, as a multiple of the amount invested, e.g. 3 for a 3x cap. Leave \"\" for uncapped, which is off-market."
-      }
-    },
-    co:co,
-    rd:rd,
-    classes:[
-      {inc:true, isNew:true,  name:"New round", amt:"", sh:"", mult:"1", part:false, cap:""},
-      {inc:true, isNew:false, name:"",          amt:"", sh:"", mult:"1", part:false, cap:""}
-    ],
-    seniority:"stacked",
-    exit:"",
-    chartMode:"abs"
-  };
+function csvRow(a){ return a.map(csvCell).join(","); }
+function csvText(lines){
+  /* the byte-order mark matters: without it Excel reads the file as Latin-1 and mangles £ */
+  return "﻿"+lines.map(csvRow).join("\r\n")+"\r\n";
 }
-function download(obj,filename){
-  var blob=new Blob([JSON.stringify(obj,null,2)],{type:"application/json"});
+/* RFC 4180 reader — quoted fields, doubled quotes inside them, CRLF, and a leading BOM */
+function parseCSV(text){
+  text=String(text).replace(/^﻿/,"");
+  var rows=[], row=[], cur="", q=false, i, c;
+  for(i=0;i<text.length;i++){
+    c=text.charAt(i);
+    if(q){
+      if(c==='"'){ if(text.charAt(i+1)==='"'){ cur+='"'; i++; } else q=false; }
+      else cur+=c;
+    } else if(c==='"'){ q=true; }
+    else if(c===","){ row.push(cur); cur=""; }
+    else if(c==="\n"){ row.push(cur); rows.push(row); row=[]; cur=""; }
+    else if(c!=="\r"){ cur+=c; }
+  }
+  if(cur!==""||row.length){ row.push(cur); rows.push(row); }
+  return rows;
+}
+/* labels are matched loosely, so re-typing or re-casing a row name still works */
+function norm(s){ return String(s===undefined||s===null?"":s).toLowerCase().replace(/[^a-z0-9]+/g,""); }
+function sections(rows){
+  var out={}, cur=null, i, r, first, m;
+  for(i=0;i<rows.length;i++){
+    r=rows[i]; if(!r.length) continue;
+    first=String(r[0]||"").trim();
+    if(first.charAt(0)==="#") continue;
+    if(!first && r.join("")==="") continue;
+    m=first.match(/^\[(.+)\]$/);
+    if(m){ cur=norm(m[1]); out[cur]=[]; continue; }
+    if(cur) out[cur].push(r);
+  }
+  return out;
+}
+function cellAt(r,i){ return String(r[i]===undefined?"":r[i]).trim(); }
+function yn(v){ return /^(y|yes|true|1|x)$/i.test(String(v===undefined?"":v).trim()); }
+function ynOut(b){ return b?"yes":"no"; }
+
+var CLS_COLS=[
+  {k:"name",  lab:"Class",               tip:"What the class is called, e.g. Series A or Seed."},
+  {k:"isNew", lab:"This round",          tip:"yes for the round on the table. Exactly one row should say yes; its invested and shares come from THE ROUND above."},
+  {k:"amt",   lab:"Invested",            tip:"Money this class put in, in whole currency units. Ignored on the row marked This round."},
+  {k:"sh",    lab:"Shares",              tip:"Shares this class holds as converted. Ignored on the row marked This round."},
+  {k:"mult",  lab:"Preference multiple", tip:"1 is market standard. Anything above it is not."},
+  {k:"part",  lab:"Participating",       tip:"yes means it takes the preference AND then its percentage of the remainder. no means it takes whichever of the two is worth more."},
+  {k:"cap",   lab:"Cap (x invested)",    tip:"Only applies when Participating is yes. Ceiling on total receipts as a multiple of the amount invested. Blank means uncapped which is off-market."}
+];
+
+function toCSV(){
+  var L=[];
+  /* no commas in the # lines, so they stay unquoted and readable in a plain text editor */
+  L.push(["# TERM SHEET (EXIT WATERFALL) — data file"]);
+  L.push(["# Fill in the Value column and the preference stack rows. Save. Then 'Load from file'."]);
+  L.push(["# Money is in WHOLE CURRENCY UNITS and not millions. 6000000 means six million."]);
+  L.push(["# Shares are whole share counts. Percentages are plain numbers. 10 means 10%."]);
+  L.push(["# Order the stack NEWEST FIRST. Under stacked seniority the first row is paid first."]);
+  L.push(["# Exactly one row should have 'This round' set to yes."]);
+  L.push(["# Guidance is for you only. Lines starting with # are ignored."]);
+  L.push([]);
+  L.push(["[CAP TABLE]"]);
+  L.push(["Field","Value","Guidance"]);
+  F_CO.forEach(function(f){ L.push([f.lab, S.co[f.k]===undefined?"":S.co[f.k], f.tip||""]); });
+  L.push([]);
+  L.push(["[THE ROUND]"]);
+  L.push(["Field","Value","Guidance"]);
+  F_RD.forEach(function(f){ L.push([f.lab, S.rd[f.k]===undefined?"":S.rd[f.k], f.tip||""]); });
+  L.push(["Option pool comes from", S.rd.poolFrom,
+    "pre if the new pool comes out of the pre-money valuation (market standard and you pay for all of it). post if it is created after the round so everyone shares the dilution."]);
+  L.push([]);
+  L.push(["[PREFERENCE STACK]"]);
+  L.push(["Include"].concat(CLS_COLS.map(function(c){ return c.lab; })));
+  S.classes.forEach(function(c){
+    L.push([ynOut(c.inc!==false)].concat(CLS_COLS.map(function(col){
+      if(col.k==="isNew") return ynOut(!!c.isNew);
+      if(col.k==="part")  return ynOut(!!c.part);
+      return c[col.k]===undefined?"":c[col.k];
+    })));
+  });
+  L.push([]);
+  /* two cells rather than one long line: reads straight in a text editor and lands in
+     its own column in Excel instead of spilling across the sheet */
+  L.push(["# Column guidance for the preference stack"]);
+  CLS_COLS.forEach(function(c){ L.push(["# "+c.lab, c.tip]); });
+  L.push([]);
+  L.push(["[EXIT]"]);
+  L.push(["Field","Value","Guidance"]);
+  L.push([F_EX[0].lab, S.exit, F_EX[0].tip]);
+  L.push(["Seniority", S.seniority,
+    "stacked pays the newest round in full before earlier ones see anything (the usual arrangement). paripassu shares any shortfall pro rata."]);
+  L.push(["Chart shows", S.chartMode, "abs plots proceeds. pct plots each holder's share of the exit."]);
+  return csvText(L);
+}
+
+function fromCSV(text){
+  var sec=sections(parseCSV(text)), hits=0;
+  var o={co:{}, rd:{}, classes:[], seniority:"stacked", exit:"", chartMode:"abs"};
+  function kv(rows,defs,store){
+    if(!rows) return;
+    var map={}; defs.forEach(function(f){ map[norm(f.lab)]=f.k; });
+    rows.forEach(function(r){
+      var k=map[norm(r[0])];
+      if(k!==undefined){ store[k]=cellAt(r,1); hits++; }
+    });
+  }
+  kv(sec[norm("CAP TABLE")], F_CO, o.co);
+  kv(sec[norm("THE ROUND")], F_RD, o.rd);
+
+  var rd=sec[norm("THE ROUND")];
+  if(rd) rd.forEach(function(r){
+    if(norm(r[0])===norm("Option pool comes from")){
+      o.rd.poolFrom=(norm(r[1])==="post")?"post":"pre"; hits++;
+    }
+  });
+
+  var cRows=sec[norm("PREFERENCE STACK")];
+  if(cRows&&cRows.length){
+    /* the first row of the section is the column header; map it so re-ordered or
+       partly-deleted columns still land in the right place */
+    var head=cRows[0], idx={}, j;
+    for(j=0;j<head.length;j++) idx[norm(head[j])]=j;
+    var incAt=idx[norm("Include")];
+    cRows.slice(1).forEach(function(r){
+      if(!r.join("").trim()) return;
+      var c={id:Math.random().toString(36).slice(2,9),
+             inc:(incAt===undefined)?true:yn(r[incAt])};
+      CLS_COLS.forEach(function(col){
+        var at=idx[norm(col.lab)];
+        if(at===undefined){ c[col.k]=(col.k==="isNew"||col.k==="part")?false:""; return; }
+        if(col.k==="isNew"||col.k==="part") c[col.k]=yn(r[at]);
+        else c[col.k]=cellAt(r,at);
+      });
+      o.classes.push(c); hits++;
+    });
+  }
+
+  var ex=sec[norm("EXIT")];
+  if(ex) ex.forEach(function(r){
+    var n=norm(r[0]), v=cellAt(r,1);
+    if(n===norm(F_EX[0].lab)){ o.exit=v; hits++; }
+    else if(n===norm("Seniority")){ o.seniority=(norm(v)==="paripassu")?"paripassu":"stacked"; hits++; }
+    else if(n===norm("Chart shows")){ o.chartMode=(norm(v)==="pct")?"pct":"abs"; hits++; }
+  });
+  return hits ? o : null;
+}
+function downloadCSV(text,filename){
+  var blob=new Blob([text],{type:"text/csv;charset=utf-8"});
   var a=document.createElement("a"); a.href=URL.createObjectURL(blob);
   a.download=filename; a.click(); URL.revokeObjectURL(a.href);
 }
-
 /* ---------------- example, clear, file IO ---------------- */
 function loadExample(){
   S.co={name:"Northgate Labs", ccy:"£", founders:"8000000", common:"400000", pool:"1000000"};
@@ -1221,10 +1315,13 @@ document.getElementById("segChart").addEventListener("click",function(e){
 });
 
 document.getElementById("bTpl").addEventListener("click",function(){
-  download(templateObj(),"term-sheet-template.json");
+  var keep=S;
+  S=adopt({classes:[{isNew:true, name:"New round", mult:"1"}, {isNew:false, mult:"1"}]});
+  var csv=toCSV(); S=keep;
+  downloadCSV(csv,"term-sheet-template.csv");
 });
 document.getElementById("bSave").addEventListener("click",function(){
-  download(S,((S.co.name||"term-sheet").replace(/[^A-Za-z0-9]+/g,"-").toLowerCase())+".json");
+  downloadCSV(toCSV(),((S.co.name||"term-sheet").replace(/[^A-Za-z0-9]+/g,"-").toLowerCase())+".csv");
 });
 document.getElementById("bLoad").addEventListener("click",function(){ document.getElementById("fPick").click(); });
 document.getElementById("fPick").addEventListener("change",function(e){
@@ -1233,12 +1330,18 @@ document.getElementById("fPick").addEventListener("change",function(e){
   r.onload=function(){
     var prev=S;                                    /* roll back if anything goes wrong */
     try{
-      var o=stripMeta(JSON.parse(r.result));
-      if(!isObj(o)||(!isObj(o.co)&&!isObj(o.rd)&&!isArr(o.classes))) throw 0;
+      var txt=String(r.result).replace(/^﻿/,""), o;
+      if(txt.replace(/^\s+/,"").charAt(0)==="{"){   /* files saved before the CSV switch */
+        o=stripMeta(JSON.parse(txt));
+        if(!isObj(o)||(!isObj(o.co)&&!isObj(o.rd)&&!isArr(o.classes))) throw 0;
+      } else {
+        o=fromCSV(txt);
+        if(!o) throw 0;
+      }
       S=adopt(o); render();
     }catch(err){
       S=prev; render();
-      alert("That file isn't a saved term sheet or a template. Pick a .json this tool wrote.");
+      alert("That file isn't a saved term sheet or a template. Pick a .csv this tool wrote — or an older .json, which still works.");
     }
   };
   r.readAsText(f); e.target.value="";

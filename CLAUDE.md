@@ -53,6 +53,7 @@ Uses Plotly.js 2.27.0, SheetJS (xlsx 0.18.5) for CSV/Excel import, and jStat 1.9
 
 | Directory | Description | Key Libraries |
 |-----------|-------------|---------------|
+| `term-sheet/` | VC term-sheet modeller: option-pool shuffle, preference stack, exit waterfall (SVG), founder-proceeds sensitivity grid | Vanilla JS/CSS |
 | `intrinsic-dcf-valuation/` | Guided discounted-cash-flow valuation workbench with 10-year forecast, worked example, save/load, print | Vanilla JS/CSS |
 | `relative-valuation/` | Peer-multiples valuation tool (P/E, EV/EBITDA, P/B…) with fair-value range and sanity checks | Vanilla JS/CSS |
 | `protocol-lab/` | Interactive animated explainer for DNS/TCP/HTTP/TLS — data-driven scenarios, packet animation, layered stack viz | React 18, Canvas API |
@@ -67,9 +68,21 @@ Uses Plotly.js 2.27.0, SheetJS (xlsx 0.18.5) for CSV/Excel import, and jStat 1.9
 ## Shared Conventions
 
 - CSS custom properties (variables) are used for all theming and color palettes — define at `:root` and reference throughout.
-- Educational tools follow a consistent UX pattern: tutorial/guided mode, interactive scenarios, glossary with tooltips, quiz mode, and a "What does this mean?" interpretation panel.
-- Two-column layout is standard: sidebar with controls on the left, main visualization on the right.
-- Fonts are loaded from Google Fonts: Inter (UI), JetBrains Mono / IBM Plex Mono (code/data display).
+
+There are **two distinct design systems** in this repo. Match whichever family the tool belongs to.
+
+**Visualisation tools** (`protocol-lab`, `tariff-viz`, `chi-square-viz`, `trig-viz`, `fourier-lab`, `goodness-of-fit`):
+- Consistent UX pattern: tutorial/guided mode, interactive scenarios, glossary with tooltips, quiz mode, and a "What does this mean?" interpretation panel.
+- Two-column layout: sidebar with controls on the left, main visualization on the right.
+- Fonts loaded from Google Fonts: Inter (UI), JetBrains Mono / IBM Plex Mono (code/data display).
+
+**Finance tools** (`term-sheet`, `intrinsic-dcf-valuation`, `relative-valuation`) — a newer "print broadsheet" system:
+- **Zero dependencies.** No CDN, no Google Fonts, no charting library. System font stacks only (`--sans`/`--mono`/`--serif`), and the three share a byte-identical `:root` palette.
+- Light theme only — no dark mode, no `prefers-color-scheme`.
+- Single scrolling column of numbered `.step` sections; no tabs and no wizard. A fixed `.verdict` bar at the bottom is the footer.
+- No tutorial mode, glossary or quiz. Pedagogy is inline editorial prose: a serif-italic `.step-why` per step, amber `.f-tip` under each field label, and a `.note`/`.warn`/`.stop` severity ladder for conditional warnings.
+- ES5 script style (`var`, `function(){}`, string concatenation), a single global `S` state object, and a two-tier render: `render()` rebuilds inputs, `rest()` recomputes outputs only so focus is never lost mid-typing.
+- Toolbar of worked example / save to file / load from file / print / clear, with state persisted to a `cftr_<toolslug>_v1` localStorage key.
 - **Latest-tool-first ordering:** the root `index.html` portal lists tools with the most recently added tool at the top. When adding a new tool, insert its card/link at the start of the tool list — do not append.
 - **Toolshelf back-button:** every tool's `index.html` must include a "⬅ Toolshelf" button (or equivalently styled link) in its top-left corner that navigates back to the root `index.html`. The link target is typically `../index.html` since tools live one directory below the root. Style it consistently with the rest of the tool's palette using the existing CSS custom properties.
 

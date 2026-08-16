@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mortgage — what the monthly payment hides</title>
+<style>
+:root{
+  --paper:#EFF1F4; --panel:#FFFFFF; --ink:#16202B; --muted:#5C6B7A;
+  --prussian:#1F4E6B; --amber:#9A6614; --verdigris:#2A6259; --oxblood:#8C3A2E;
+  --rule:#C7CFD8; --rule-soft:#DDE3E9;
+  --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;
+  line-height:1.5;padding-bottom:150px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+
+.masthead{border-bottom:2px solid var(--ink);margin-bottom:38px;padding:30px 0 16px}
+.mast-row{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
+.mast-title{font-size:27px;font-weight:600;letter-spacing:-.02em;margin:0}
+.mast-sub{font-family:var(--serif);font-style:italic;color:var(--muted);margin:6px 0 0;font-size:15px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap}
+.toolshelf{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-decoration:none;margin:0 0 14px}
+.toolshelf:hover{color:var(--prussian)}
+
+.btn{font-family:var(--sans);font-size:12px;letter-spacing:.06em;text-transform:uppercase;
+  font-weight:600;padding:8px 13px;border:1px solid var(--rule);background:var(--panel);
+  color:var(--ink);cursor:pointer;border-radius:2px}
+.btn:hover{border-color:var(--prussian);color:var(--prussian)}
+.btn:focus-visible{outline:2px solid var(--prussian);outline-offset:2px}
+.btn-quiet{border-style:dashed;color:var(--muted)}
+
+.step{display:grid;grid-template-columns:52px 1fr;gap:20px;margin-bottom:40px}
+.step-num{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--prussian);
+  padding-top:5px;letter-spacing:.04em;border-top:2px solid var(--prussian)}
+.step-body{border-top:1px solid var(--rule);padding-top:12px;min-width:0}
+.step-head{font-size:12px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;margin:0 0 5px}
+.step-why{font-family:var(--serif);font-size:15px;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.step-why em{color:var(--ink);font-style:italic}
+
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:15px 20px}
+.field{display:flex;flex-direction:column;min-width:0}
+.f-label{font-size:12px;font-weight:600;letter-spacing:.03em;margin-bottom:3px}
+.f-tip{font-size:11.5px;color:var(--amber);line-height:1.35;margin-bottom:5px;font-style:italic}
+.f-in{font-family:var(--mono);font-size:14px;padding:7px 9px;border:1px solid var(--rule);
+  border-radius:2px;background:var(--panel);color:var(--prussian);font-weight:600;width:100%}
+.f-in:focus{outline:none;border-color:var(--prussian);box-shadow:0 0 0 2px rgba(31,78,107,.15)}
+.f-in.txt{font-family:var(--sans);font-weight:500;color:var(--ink)}
+
+/* derived readouts */
+/* the separators are drawn by each cell's 1px ring meeting across the gap, rather than by
+   the container's background showing through — so a part-filled last row stays white */
+.derived{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;
+  background:var(--panel);border:1px solid var(--rule);margin-top:20px;border-radius:2px;overflow:hidden}
+.d-cell{background:var(--panel);padding:11px 13px;box-shadow:0 0 0 1px var(--rule-soft)}
+.d-cap{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.d-val{font-family:var(--mono);font-size:19px;font-weight:700;color:var(--verdigris);margin-top:2px}
+.d-val.warnv{color:var(--oxblood)}
+.d-sub{font-size:11px;color:var(--muted);margin-top:1px}
+
+/* ---------- comparison table ---------- */
+.scroller{overflow-x:auto;border:1px solid var(--rule);background:var(--panel);border-radius:2px}
+.wtab{border-collapse:collapse;width:100%;font-size:12.5px;min-width:600px}
+.wtab th{font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;
+  text-align:right;padding:9px 8px;border-bottom:1px solid var(--rule);color:var(--muted);
+  white-space:nowrap;background:#F7F9FA}
+.wtab th.lft{text-align:left}
+.wtab td{padding:7px 8px;border-bottom:1px solid var(--rule-soft);text-align:right;
+  font-family:var(--mono);font-size:12.5px}
+.wtab td.lft{text-align:left;font-family:var(--sans);font-weight:600;white-space:nowrap}
+.wtab tr.hl td{background:#F2F7F6;font-weight:700;color:var(--verdigris)}
+.wnote{display:block;font-family:var(--serif);font-style:italic;font-weight:400;
+  font-size:12px;color:var(--muted);margin-top:2px;white-space:normal}
+
+/* ---------- amortisation chart (signature) ---------- */
+.chart-card{background:var(--panel);border:1px solid var(--rule);border-radius:2px;padding:22px 24px 16px}
+.chart-cap{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:16px}
+.chart-card svg{display:block;width:100%;height:auto}
+.ax-lab{font-family:var(--mono);font-size:10px;fill:var(--muted)}
+.ax-ttl{font-family:var(--sans);font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;fill:var(--muted)}
+.ax-grid{stroke:var(--rule-soft);stroke-width:1}
+.ax-base{stroke:var(--rule);stroke-width:1}
+.base-line{fill:none;stroke:var(--muted);stroke-width:1.5;stroke-dasharray:4 3}
+.mk-line{stroke:var(--oxblood);stroke-width:1.5;stroke-dasharray:3 3}
+.mk-lab{font-family:var(--mono);font-size:10px;font-weight:700;fill:var(--oxblood)}
+.cv-line{stroke:var(--prussian);stroke-width:1.5;stroke-dasharray:2 3}
+.cv-lab{font-family:var(--mono);font-size:10px;font-weight:700;fill:var(--prussian)}
+.key{display:flex;gap:22px;margin-top:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.key i{display:inline-block;width:11px;height:11px;margin-right:6px;vertical-align:-1px;border-radius:1px}
+
+/* ---------- sensitivity ---------- */
+.grid{border-collapse:collapse;width:100%;font-size:12.5px}
+.grid th{font-family:var(--mono);font-size:11px;font-weight:700;padding:8px;
+  border-bottom:1px solid var(--rule);color:var(--muted);text-align:right}
+.grid th.corner{text-align:left;font-family:var(--sans);font-size:10px;letter-spacing:.07em;text-transform:uppercase}
+.grid td{padding:8px;border-bottom:1px solid var(--rule-soft);text-align:right;font-family:var(--mono)}
+.grid td.rh{font-weight:700;color:var(--muted);text-align:left}
+.grid td.mid{outline:2px solid var(--prussian);outline-offset:-2px;font-weight:700}
+
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:2px;overflow:hidden}
+.seg button{font-family:var(--sans);font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;
+  font-weight:600;padding:7px 14px;border:none;background:var(--panel);color:var(--muted);cursor:pointer}
+.seg button.on{background:var(--prussian);color:#fff}
+.seg button:focus-visible{outline:2px solid var(--prussian);outline-offset:-2px}
+.toggle-row{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.lbl-sm{font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+
+.hint{font-family:var(--serif);font-style:italic;font-size:13.5px;color:var(--muted);margin:12px 0 0}
+.warn{border-left:3px solid var(--oxblood);background:#FBF2F0;padding:10px 14px;font-size:13px;
+  color:var(--oxblood);margin:14px 0 0;border-radius:0 2px 2px 0}
+.note{border-left:3px solid var(--amber);background:#FBF7EF;padding:10px 14px;font-size:13px;
+  color:var(--amber);margin:14px 0 0;border-radius:0 2px 2px 0}
+.stop{border:2px solid var(--oxblood);background:#FBF2F0;padding:16px 18px;margin:16px 0 0;border-radius:2px}
+.stop-h{font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--oxblood);margin-bottom:5px}
+.stop-b{font-size:14px;color:var(--ink)}
+
+.verdict{position:fixed;left:0;right:0;bottom:0;background:var(--ink);color:#fff;
+  border-top:3px solid var(--verdigris);z-index:40}
+.v-inner{max-width:1080px;margin:0 auto;padding:13px 24px;display:flex;align-items:center;gap:26px;flex-wrap:wrap}
+.v-block{display:flex;flex-direction:column;gap:1px}
+.v-cap{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#8FA3B4;font-weight:700}
+.v-num{font-family:var(--mono);font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.v-mid{font-family:var(--mono);font-size:19px;font-weight:600;line-height:1.2}
+.v-tag{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  padding:7px 14px;border-radius:2px;border:1.5px solid currentColor}
+.t-cheap{color:#7FD3C4} .t-costly{color:#8FC7F0} .t-heavy{color:#F0A99B} .t-none{color:#8FA3B4}
+.v-note{font-family:var(--serif);font-style:italic;font-size:13px;color:#A9BAC8;flex:1;min-width:190px}
+
+@media print{
+  body{background:#fff;padding-bottom:0;font-size:11pt}
+  .toolbar,.btn,.toolshelf{display:none!important}
+  .verdict{position:static;border-top:2px solid #000}
+  .step{page-break-inside:avoid}
+  .scroller{overflow:visible}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:640px){
+  .step{grid-template-columns:1fr;gap:7px}
+  .step-num{border-top:none;padding-top:0}
+  .v-num{font-size:23px}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <a href="../index.html" class="toolshelf" title="Back to Vinoth's AI Tools">⬅ Toolshelf</a>
+    <div class="mast-row">
+      <div>
+        <h1 class="mast-title">Mortgage</h1>
+        <p class="mast-sub">The payment is the advertised number. The interest is the real one.</p>
+      </div>
+      <div class="toolbar">
+        <button class="btn" id="bEg">Load a worked example</button>
+        <button class="btn" id="bTpl">Download a template</button>
+        <button class="btn" id="bSave">Save to file</button>
+        <button class="btn" id="bLoad">Load from file</button>
+        <button class="btn" id="bPrint">Print</button>
+        <button class="btn btn-quiet" id="bClear">Clear all</button>
+        <input type="file" id="fPick" accept=".json" style="display:none">
+      </div>
+    </div>
+  </header>
+
+  <!-- STEP 1 -->
+  <section class="step">
+    <div class="step-num">01</div>
+    <div class="step-body">
+      <h2 class="step-head">What you are actually borrowing</h2>
+      <p class="step-why">You are not buying a payment. You are renting money, and the rent is
+        charged on the balance — which is why the early years are almost all interest.
+        <em>The term is the most expensive number on this page:</em> stretching it shrinks the
+        payment and quietly multiplies what you hand over.</p>
+      <div class="fields" id="fLn"></div>
+      <div class="derived" id="dLn"></div>
+      <div id="wLn"></div>
+    </div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section class="step">
+    <div class="step-num">02</div>
+    <div class="step-body">
+      <h2 class="step-head">The rate, and the day it ends</h2>
+      <p class="step-why">Almost every calculator assumes one rate for twenty-five years. That
+        is not the deal you are signing. You are signing a short fix and then a revert, and
+        when the fix ends the lender recalculates what is left over what remains of the term.
+        <em>Budget for the payment after the cliff, not the one before it.</em></p>
+      <div class="toggle-row">
+        <span class="lbl-sm">Mortgage type</span>
+        <div class="seg" id="segMode">
+          <button data-v="repay">Repayment</button>
+          <button data-v="io">Interest only</button>
+        </div>
+      </div>
+      <div class="fields" id="fRt"></div>
+      <div class="derived" id="dRt"></div>
+      <div id="wRt"></div>
+    </div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section class="step">
+    <div class="step-num">03</div>
+    <div class="step-body">
+      <h2 class="step-head">Where the money actually goes</h2>
+      <p class="step-why">Interest is charged on what you still owe, so at the start you owe
+        nearly everything and the payment is nearly all rent. <em>The point where you start
+        paying off more than you are paying for is years away</em> — and on a long term it can
+        be past the halfway mark.</p>
+      <div class="toggle-row">
+        <span class="lbl-sm">Show</span>
+        <div class="seg" id="segChart">
+          <button data-v="split">Interest vs principal</button>
+          <button data-v="bal">Balance remaining</button>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-cap" id="chartCap">Every year of the mortgage</div>
+        <div id="chart"></div>
+        <div class="key" id="chartKey"></div>
+      </div>
+      <div id="wCh"></div>
+    </div>
+  </section>
+
+  <!-- STEP 4 -->
+  <section class="step">
+    <div class="step-num">04</div>
+    <div class="step-body">
+      <h2 class="step-head">Overpaying, and why early beats late</h2>
+      <p class="step-why">An overpayment comes straight off the balance, so every future
+        month's interest is charged on a smaller number. <em>The same money paid in year two is
+        worth far more than in year twenty</em> — not because it is bigger, but because it has
+        longer to stop working against you.</p>
+      <div class="fields" id="fOp"></div>
+      <div class="derived" id="dOp"></div>
+      <div id="wOp"></div>
+      <p class="hint">Overpayments here shorten the term rather than reduce the monthly payment,
+        which is the usual default and the one that saves more.</p>
+    </div>
+  </section>
+
+  <!-- STEP 5 -->
+  <section class="step">
+    <div class="step-num">05</div>
+    <div class="step-body">
+      <h2 class="step-head">Fee against rate</h2>
+      <p class="step-why">A lower rate carrying a fee only beats a fee-free higher rate above a
+        certain loan size, because the fee is flat and the interest saving scales with what you
+        borrow. <em>There is an exact crossover, and it is usually not where people guess.</em></p>
+      <div class="toggle-row">
+        <span class="lbl-sm">The fee is</span>
+        <div class="seg" id="segFee">
+          <button data-v="upfront">Paid upfront</button>
+          <button data-v="added">Added to the loan</button>
+        </div>
+      </div>
+      <div class="fields" id="fFee"></div>
+      <div class="scroller" style="margin-top:20px">
+        <table class="wtab">
+          <thead id="feeHead"></thead>
+          <tbody id="feeBody"></tbody>
+        </table>
+      </div>
+      <div id="wFee"></div>
+    </div>
+  </section>
+
+  <!-- STEP 6 -->
+  <section class="step">
+    <div class="step-num">06</div>
+    <div class="step-body">
+      <h2 class="step-head">What the rate and the term cost you</h2>
+      <p class="step-why">Read across a row to see what half a point of rate is worth, and down
+        a column to see what five more years costs. <em>A longer term is not a cheaper mortgage;
+        it is a smaller payment and a much larger bill.</em></p>
+      <div class="scroller" style="border:none">
+        <table class="grid">
+          <thead id="gHead"></thead>
+          <tbody id="gBody"></tbody>
+        </table>
+      </div>
+      <p class="hint">Total interest over the full term, holding one rate throughout and ignoring
+        overpayments, so the rate and the term are the only things moving. The outlined cell is
+        where you are.</p>
+    </div>
+  </section>
+</div>
+
+<div class="verdict">
+  <div class="v-inner">
+    <div class="v-block">
+      <span class="v-cap">Total interest</span>
+      <span class="v-num" id="vVal">—</span>
+    </div>
+    <div class="v-block">
+      <span class="v-cap">Per unit borrowed</span>
+      <span class="v-mid" id="vGap">—</span>
+    </div>
+    <div class="v-tag t-none" id="vTag">Awaiting inputs</div>
+    <div class="v-note" id="vNote">Fill in step 01 and give the rate a value in step 02.</div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ---------------- state ---------------- */
+var S = {
+  ln:{name:"", ccy:"£", price:"", deposit:"", term:"25"},
+  rt:{mode:"repay", init:"", fixYears:"2", revert:""},
+  op:{monthly:"", lump:"", lumpMonth:"", allowance:"10"},
+  fee:{period:"2", aRate:"", aFee:"", bRate:"", bFee:"", treat:"upfront"},
+  chartMode:"split"
+};
+
+/* ---------------- helpers ---------------- */
+function num(v){ if(v===undefined||v===null||v==="") return null;
+  var n=parseFloat(String(v).replace(/[, ]/g,"")); return isFinite(n)?n:null; }
+function pct(v){ var n=num(v); return n===null?null:n/100; }
+function fmt(x,d){ if(x===null||x===undefined||!isFinite(x)) return "—";
+  return x.toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function fpc(x,d){ return x===null||!isFinite(x)?"—":fmt(x*100,d===undefined?1:d)+"%"; }
+/* The currency prefix is free text and money()/compact() feed both innerHTML and
+   textContent, so escaping at the output sites would show entities in the verdict bar.
+   Strip the markup characters instead — no currency symbol needs them. */
+function ccy(){ return String(S.ln.ccy||"").replace(/[<>&"']/g,""); }
+function money(x,d){ return x===null||!isFinite(x)?"—":ccy()+fmt(x,d===undefined?0:d); }
+function esc(v){ return String(v===undefined||v===null?"":v)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+/* compact money, one decimal unless the figure is close enough to round that it is noise */
+function dp(v){ return Math.abs(v-Math.round(v))<0.05 ? 0 : 1; }
+function compact(x){
+  if(x===null||!isFinite(x)) return "—";
+  var a=Math.abs(x);
+  if(a>=1e9) return ccy()+fmt(x/1e9,dp(x/1e9))+"bn";
+  if(a>=1e6) return ccy()+fmt(x/1e6,dp(x/1e6))+"m";
+  if(a>=1e3) return ccy()+fmt(x/1e3,dp(x/1e3))+"k";
+  return ccy()+fmt(x,0);
+}
+function dur(months){
+  if(months===null||!isFinite(months)||months<0) return "—";
+  var m=Math.round(months), y=Math.floor(m/12), r=m%12;
+  if(y&&r) return y+" yr "+r+" mo";
+  if(y) return y+" yr";
+  return r+" mo";
+}
+function niceNum(r,rnd){
+  if(!(r>0)) return 1;
+  var e=Math.floor(Math.log(r)/Math.LN10), f=r/Math.pow(10,e), nf;
+  if(rnd){ nf = f<1.5?1 : f<3?2 : f<7?5 : 10; }
+  else { nf = f<=1?1 : f<=2?2 : f<=5?5 : 10; }
+  return nf*Math.pow(10,e);
+}
+function ticks(min,max,n){
+  if(!(max>min)) return [min];
+  var step=niceNum(niceNum(max-min,false)/(n-1),true), out=[];
+  for(var v=Math.floor(min/step)*step; v<=max+step*0.5; v+=step){ if(v>=min-1e-9) out.push(v); }
+  return out;
+}
+
+/* ---------------- the loan ---------------- */
+function loanAmt(){
+  var p=num(S.ln.price); if(p===null||p<0) return null;
+  var d=num(S.ln.deposit); if(d===null) d=0;
+  return p-d;
+}
+function termMonths(){
+  var y=num(S.ln.term);
+  return (y===null||y<=0) ? null : Math.round(y*12);
+}
+/* the level payment that clears L at monthly rate r over n months */
+function pmt(L,r,n){
+  if(!(n>0)) return null;
+  if(!(L>0)) return 0;
+  if(!(r>0)) return L/n;
+  return L*r/(1-Math.pow(1+r,-n));
+}
+
+/* ---------------- the engine ----------------
+   One month-by-month simulation that every step reads from, so the chart, the overpayment
+   saving and the fee comparison can never disagree with one another.                     */
+function runSchedule(o){
+  var out={ok:false, rows:[], totalInterest:0, totalPaid:0, totalOver:0, balloon:0,
+           payFix:null, payRevert:null, monthsToClear:null, ercBreach:false};
+  var L=o.loan, n=o.termMonths;
+  if(!(L>0)||!(n>0)||!isFinite(L)||!isFinite(n)) return out;
+
+  var fix=Math.max(0,Math.min(o.fixMonths||0,n));
+  var r1=o.initRate, r2=(o.revertRate===null||o.revertRate===undefined)?r1:o.revertRate;
+  if(!isFinite(r1)||r1<0||!isFinite(r2)||r2<0) return out;
+
+  var io=!!o.interestOnly;
+  var over0=o.overMonthly||0, lump=o.lumpAmt||0, lumpM=o.lumpMonth||0;
+  var allow=o.allowancePct||0;
+
+  var bal=L, pay=io ? L*r1 : pmt(L,r1,n);
+  out.payFix=pay;
+  var yearOver=0, yearStartBal=L;
+
+  for(var m=1;m<=n;m++){
+    var r=(m<=fix)?r1:r2;
+
+    /* the cliff: at revert the lender recalculates the remaining balance over the
+       remaining term, which is what makes the payment jump */
+    if(m===fix+1 && fix>0 && fix<n){
+      pay = io ? bal*r2 : pmt(bal,r2,n-fix);
+      out.payRevert=pay;
+    }
+    if(io) pay=bal*r;                       /* interest-only tracks the balance */
+
+    var interest=bal*r;
+    var principal = io ? 0 : (pay-interest);
+    if(principal<0) principal=0;            /* payment below interest never amortises */
+
+    var over=over0;
+    if(lump>0 && m===lumpM) over+=lump;
+
+    /* the annual overpayment allowance resets every twelve months of the fix */
+    if(m<=fix && allow>0){
+      if((m-1)%12===0){ yearOver=0; yearStartBal=bal; }
+      yearOver+=over;
+      if(yearOver > yearStartBal*allow/100 + 1e-9) out.ercBreach=true;
+    }
+
+    var reduce=principal+over;
+    if(reduce>=bal){                        /* final month: never overshoot */
+      reduce=bal;
+      principal=Math.min(principal,bal);
+      over=reduce-principal;
+    }
+    var newBal=bal-reduce;
+
+    out.rows.push({m:m, rate:r, pay:pay, interest:interest,
+                   principal:principal, over:over, bal:newBal});
+    out.totalInterest+=interest;
+    out.totalPaid+=interest+principal+over;
+    out.totalOver+=over;
+    bal=newBal;
+    if(bal<=1e-7){ out.monthsToClear=m; bal=0; break; }
+  }
+
+  if(out.monthsToClear===null) out.monthsToClear=n;
+  if(out.payRevert===null) out.payRevert=out.payFix;
+  out.balloon=bal;                          /* interest-only leaves the loan outstanding */
+  out.ok=true;
+  return out;
+}
+
+/* build the engine's inputs from state, with optional overrides for comparisons */
+function opts(ov){
+  ov=ov||{};
+  var L=loanAmt(), n=termMonths(), r1=pct(S.rt.init);
+  var fy=num(S.rt.fixYears), rv=pct(S.rt.revert);
+  var o={
+    loan:      ov.loan!==undefined      ? ov.loan      : L,
+    termMonths:ov.termMonths!==undefined? ov.termMonths: n,
+    initRate:  ov.initRate!==undefined  ? ov.initRate  : (r1===null?null:r1/12),
+    fixMonths: ov.fixMonths!==undefined ? ov.fixMonths : (fy===null?0:Math.round(fy*12)),
+    revertRate:ov.revertRate!==undefined? ov.revertRate: (rv===null?null:rv/12),
+    interestOnly: ov.interestOnly!==undefined ? ov.interestOnly : (S.rt.mode==="io"),
+    overMonthly:  ov.overMonthly!==undefined  ? ov.overMonthly  : (num(S.op.monthly)||0),
+    lumpAmt:      ov.lumpAmt!==undefined      ? ov.lumpAmt      : (num(S.op.lump)||0),
+    lumpMonth:    ov.lumpMonth!==undefined    ? ov.lumpMonth    : (num(S.op.lumpMonth)||0),
+    allowancePct: ov.allowancePct!==undefined ? ov.allowancePct : (num(S.op.allowance)||0)
+  };
+  if(o.initRate===null) o.initRate=NaN;
+  return o;
+}
+function sched(){ return runSchedule(opts()); }
+/* the same mortgage without any overpayment, for the saving and the baseline curve */
+function baseSched(){ return runSchedule(opts({overMonthly:0, lumpAmt:0, lumpMonth:0})); }
+
+/* interest paid per unit borrowed over the first "months" months, at a flat annual rate.
+   Amortisation is linear in the loan, so a unit loan gives the exact coefficient. */
+function interestPerUnit(annualPct, months){
+  var n=termMonths(); if(n===null) return null;
+  var r=annualPct/100/12;
+  if(!isFinite(r)||r<0) return null;
+  var s=runSchedule({loan:1, termMonths:n, initRate:r, fixMonths:0, revertRate:r,
+                     interestOnly:(S.rt.mode==="io"), overMonthly:0, allowancePct:0});
+  if(!s.ok) return null;
+  var t=0, lim=Math.min(months,s.rows.length);
+  for(var i=0;i<lim;i++) t+=s.rows[i].interest;
+  return t;
+}
+
+/* ---------------- field definitions ---------------- */
+var F_LN=[
+  {k:"name",    lab:"Reference",       txt:true, tip:"Only used to name the file when you save."},
+  {k:"ccy",     lab:"Currency symbol", txt:true, tip:"Put in front of every figure on the page."},
+  {k:"price",   lab:"Property price",  tip:"The agreed price, in whole units — 250000, not 250."},
+  {k:"deposit", lab:"Deposit",         tip:"What you are putting in yourself. Price less deposit is the loan."},
+  {k:"term",    lab:"Term (years)",    tip:"How long the mortgage runs. This is the number that quietly decides the total."}
+];
+var F_RT=[
+  {k:"init",     lab:"Initial rate %",     tip:"The headline rate on the deal. Enter 4.5 for 4.5%."},
+  {k:"fixYears", lab:"Fix length (years)", tip:"How long that rate is guaranteed. Enter 0 if there is no fixed period."},
+  {k:"revert",   lab:"Revert rate %",      tip:"What you drop onto when the fix ends — the lender's standard variable rate. Leave blank to assume the rate never changes."}
+];
+var F_OP=[
+  {k:"monthly",   lab:"Monthly overpayment",  tip:"Extra paid every month on top of the required payment."},
+  {k:"lump",      lab:"One-off lump sum",     tip:"A single extra payment — a bonus, say. Leave blank for none."},
+  {k:"lumpMonth", lab:"Lump paid in month",   tip:"Which month it lands. 12 is the end of year one."},
+  {k:"allowance", lab:"Annual allowance %",   tip:"Most fixes let you overpay 10% of the balance a year without penalty. This warns you past it; it does not model the charge, which varies by lender."}
+];
+var F_FEE=[
+  {k:"period", lab:"Compare over (years)", tip:"Usually the length of the fix. Both deals are judged over the same window."},
+  {k:"aRate",  lab:"Deal A rate %",        tip:"The lower rate, typically the one carrying a fee."},
+  {k:"aFee",   lab:"Deal A fee",           tip:"Arrangement or product fee. Enter 0 if there is none."},
+  {k:"bRate",  lab:"Deal B rate %",        tip:"The comparison deal, typically fee-free at a higher rate."},
+  {k:"bFee",   lab:"Deal B fee",           tip:"Arrangement or product fee. Enter 0 if there is none."}
+];
+
+/* ---------------- rendering ---------------- */
+function render(){ rLn(); rRt(); rOp(); rFee(); rSeg(); rest(); persist(); }
+
+function buildFields(host,defs,store,after){
+  var h=document.getElementById(host); h.innerHTML="";
+  defs.forEach(function(f){
+    var d=document.createElement("div"); d.className="field";
+    var v=store[f.k]===undefined?"":store[f.k];
+    d.innerHTML='<label class="f-label" for="x_'+f.k+'">'+f.lab+'</label>'+
+      (f.tip?'<span class="f-tip">'+f.tip+'</span>':'')+
+      '<input class="f-in'+(f.txt?" txt":"")+'" id="x_'+f.k+'" value="'+
+      esc(v)+'" '+(f.txt?'type="text"':'inputmode="decimal"')+'>';
+    h.appendChild(d);
+    d.querySelector("input").addEventListener("input",function(e){
+      store[f.k]=e.target.value; after(); persist();
+    });
+  });
+}
+function rLn(){  buildFields("fLn", F_LN,  S.ln,  rest); }
+function rRt(){  buildFields("fRt", F_RT,  S.rt,  rest); }
+function rOp(){  buildFields("fOp", F_OP,  S.op,  rest); }
+function rFee(){ buildFields("fFee",F_FEE, S.fee, rest); }
+
+function segSet(id,val){
+  var bs=document.getElementById(id).querySelectorAll("button");
+  for(var i=0;i<bs.length;i++){ bs[i].className = bs[i].getAttribute("data-v")===val ? "on" : ""; }
+}
+function rSeg(){
+  segSet("segMode", S.rt.mode);
+  segSet("segChart",S.chartMode);
+  segSet("segFee",  S.fee.treat);
+}
+function cells(host,items){
+  document.getElementById(host).innerHTML = items.map(function(i){
+    return '<div class="d-cell"><div class="d-cap">'+i.c+'</div><div class="d-val'+(i.w?" warnv":"")+'">'+i.v+
+           '</div>'+(i.s?'<div class="d-sub">'+i.s+'</div>':'')+'</div>';
+  }).join("");
+}
+/* list items are either a string (amber note) or {t:"…", c:"warn"} for the louder kind */
+function notes(host,list,cls){
+  document.getElementById(host).innerHTML = list.map(function(x){
+    var t=(x&&x.t!==undefined)?x.t:x;
+    var c=(x&&x.c!==undefined)?x.c:(cls||"note");
+    return '<div class="'+c+'">'+t+'</div>';
+  }).join("");
+}
+
+/* ---------------- the chart ---------------- */
+var COL={principal:"#2A6259", over:"#1F4E6B", interest:"#8C3A2E"};
+
+function drawChart(s, base){
+  var host=document.getElementById("chart"), key=document.getElementById("chartKey"),
+      cap=document.getElementById("chartCap");
+  if(!s.ok||!s.rows.length){
+    host.innerHTML='<p class="hint">Fill in the loan and the rate and the shape appears here.</p>';
+    key.innerHTML=""; cap.textContent="Every year of the mortgage";
+    return;
+  }
+
+  /* the top margin is deep enough to hold the marker labels clear of the plot — unlike a
+     line chart, the bars here reach the top edge and would swallow them */
+  var W=900,H=364,mL=64,mR=16,mT=46,mB=44, pw=W-mL-mR, ph=H-mT-mB, i, k, t;
+  var fixM=opts().fixMonths, svg='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Mortgage over time">';
+
+  function marker(x,cls,lab,y){
+    var flip=(x>mL+pw*0.62);
+    return '<line class="'+cls+'-line" x1="'+x.toFixed(2)+'" y1="'+mT+'" x2="'+x.toFixed(2)+'" y2="'+(mT+ph)+'"></line>'+
+           '<text class="'+cls+'-lab" x="'+(flip?x-5:x+5).toFixed(2)+'" y="'+y+'"'+
+           (flip?' text-anchor="end"':'')+'>'+lab+'</text>';
+  }
+
+  if(S.chartMode==="bal"){
+    /* balance remaining, against the same mortgage with no overpayment */
+    var n=s.rows.length, hiX=Math.max(n, base.rows.length), hiY=s.rows[0].bal+s.rows[0].principal+s.rows[0].over;
+    var X=function(m){ return mL+pw*(m/hiX); };
+    var Y=function(v){ return mT+ph-ph*(v/hiY); };
+
+    var yT=ticks(0,hiY,6);
+    for(k=0;k<yT.length;k++){ t=yT[k]; if(t>hiY+1e-9) continue;
+      svg+='<line class="ax-grid" x1="'+mL+'" y1="'+Y(t).toFixed(1)+'" x2="'+(W-mR)+'" y2="'+Y(t).toFixed(1)+'"></line>'+
+           '<text class="ax-lab" x="'+(mL-8)+'" y="'+(Y(t)+3.5).toFixed(1)+'" text-anchor="end">'+compact(t)+'</text>';
+    }
+
+    var pts=[X(0).toFixed(2)+","+Y(hiY).toFixed(2)];
+    for(i=0;i<n;i++) pts.push(X(s.rows[i].m).toFixed(2)+","+Y(s.rows[i].bal).toFixed(2));
+    pts.push(X(s.rows[n-1].m).toFixed(2)+","+Y(0).toFixed(2));
+    pts.push(X(0).toFixed(2)+","+Y(0).toFixed(2));
+    svg+='<polygon points="'+pts.join(" ")+'" fill="'+COL.principal+'" fill-opacity=".82"></polygon>';
+
+    if(base.ok && base.rows.length>n){
+      var bp=[X(0).toFixed(2)+","+Y(hiY).toFixed(2)];
+      for(i=0;i<base.rows.length;i++) bp.push(X(base.rows[i].m).toFixed(2)+","+Y(base.rows[i].bal).toFixed(2));
+      svg+='<polyline class="base-line" points="'+bp.join(" ")+'"></polyline>';
+    }
+
+    var xT=ticks(0,hiX/12,7);
+    for(k=0;k<xT.length;k++){ t=xT[k]; if(t>hiX/12+1e-9) continue;
+      svg+='<text class="ax-lab" x="'+X(t*12).toFixed(1)+'" y="'+(mT+ph+16)+'" text-anchor="middle">Y'+fmt(t,0)+'</text>';
+    }
+    svg+='<line class="ax-base" x1="'+mL+'" y1="'+(mT+ph)+'" x2="'+(W-mR)+'" y2="'+(mT+ph)+'"></line>'+
+         '<text class="ax-ttl" x="'+(mL+pw/2)+'" y="'+(H-6)+'" text-anchor="middle">Year</text>';
+    if(fixM>0&&fixM<hiX) svg+=marker(X(fixM),"mk","fix ends",18);
+    svg+='</svg>';
+    host.innerHTML=svg;
+    cap.textContent="What you still owe, month by month";
+    key.innerHTML='<span><i style="background:'+COL.principal+'"></i>Balance outstanding</span>'+
+      (base.ok&&base.rows.length>n?'<span><i style="background:#5C6B7A"></i>Without the overpayment</span>':"");
+    return;
+  }
+
+  /* interest vs principal, stacked by year */
+  var years=[], y0;
+  for(i=0;i<s.rows.length;i++){
+    y0=Math.floor((s.rows[i].m-1)/12);
+    if(!years[y0]) years[y0]={interest:0, principal:0, over:0};
+    years[y0].interest+=s.rows[i].interest;
+    years[y0].principal+=s.rows[i].principal;
+    years[y0].over+=s.rows[i].over;
+  }
+  var Y0=years.length, maxY=0;
+  for(i=0;i<Y0;i++) maxY=Math.max(maxY, years[i].interest+years[i].principal+years[i].over);
+  if(!(maxY>0)) maxY=1;
+
+  var bw=pw/Y0;
+  var XB=function(i){ return mL+bw*i; };
+  var YB=function(v){ return mT+ph-ph*(v/maxY); };
+
+  var yT2=ticks(0,maxY,6);
+  for(k=0;k<yT2.length;k++){ t=yT2[k]; if(t>maxY+1e-9) continue;
+    svg+='<line class="ax-grid" x1="'+mL+'" y1="'+YB(t).toFixed(1)+'" x2="'+(W-mR)+'" y2="'+YB(t).toFixed(1)+'"></line>'+
+         '<text class="ax-lab" x="'+(mL-8)+'" y="'+(YB(t)+3.5).toFixed(1)+'" text-anchor="end">'+compact(t)+'</text>';
+  }
+
+  var order=[["principal",COL.principal],["over",COL.over],["interest",COL.interest]];
+  var cum=[]; for(i=0;i<Y0;i++) cum[i]=0;
+  for(k=0;k<order.length;k++){
+    var field=order[k][0], col=order[k][1], seg="";
+    for(i=0;i<Y0;i++){
+      var v=years[i][field]; if(!(v>0)) continue;
+      var x=XB(i)+bw*0.08, w=bw*0.84;
+      seg+='<rect x="'+x.toFixed(2)+'" y="'+YB(cum[i]+v).toFixed(2)+'" width="'+w.toFixed(2)+
+           '" height="'+Math.max(0,(YB(cum[i])-YB(cum[i]+v))).toFixed(2)+'" fill="'+col+'" fill-opacity=".85"></rect>';
+      cum[i]+=v;
+    }
+    svg+=seg;
+  }
+
+  var stepY=Math.max(1,Math.ceil(Y0/12));
+  for(i=0;i<Y0;i+=stepY){
+    svg+='<text class="ax-lab" x="'+(XB(i)+bw/2).toFixed(1)+'" y="'+(mT+ph+16)+'" text-anchor="middle">Y'+(i+1)+'</text>';
+  }
+  svg+='<line class="ax-base" x1="'+mL+'" y1="'+(mT+ph)+'" x2="'+(W-mR)+'" y2="'+(mT+ph)+'"></line>'+
+       '<text class="ax-ttl" x="'+(mL+pw/2)+'" y="'+(H-6)+'" text-anchor="middle">Year</text>';
+
+  if(fixM>0&&fixM<s.rows.length) svg+=marker(XB(fixM/12),"mk","fix ends",18);
+
+  /* the year principal first beats interest — the real halfway point */
+  var cross=null;
+  for(i=0;i<Y0;i++){ if(years[i].principal+years[i].over > years[i].interest){ cross=i; break; } }
+  if(cross!==null&&cross>0) svg+=marker(XB(cross),"cv","principal overtakes interest, year "+(cross+1),36);
+
+  svg+='</svg>';
+  host.innerHTML=svg;
+
+  var y1=years[0]?years[0].interest/(years[0].interest+years[0].principal+years[0].over):null;
+  cap.textContent = y1!==null
+    ? "Every year of the mortgage — year one is "+fpc(y1,0)+" interest"
+    : "Every year of the mortgage";
+  key.innerHTML='<span><i style="background:'+COL.principal+'"></i>Principal repaid</span>'+
+    (s.totalOver>0?'<span><i style="background:'+COL.over+'"></i>Overpayment</span>':"")+
+    '<span><i style="background:'+COL.interest+'"></i>Interest</span>';
+}
+
+/* ---------------- the output pass ---------------- */
+function rest(){
+  var L=loanAmt(), n=termMonths(), s=sched(), base=baseSched();
+  var price=num(S.ln.price), ltv=(price>0&&L!==null)?L/price:null;
+
+  /* ---- step 1 ---- */
+  cells("dLn",[
+    {c:"You borrow", v:L===null?"—":compact(L), s:"price less deposit"},
+    {c:"Loan to value", v:ltv===null?"—":fpc(ltv,1), s:"lenders price in bands"},
+    {c:"Monthly payment", v:s.ok?money(s.payFix,2):"—", s:s.ok&&s.payRevert!==s.payFix?"during the fix":"every month"},
+    {c:"Total repaid", v:s.ok?compact(s.totalPaid+s.balloon):"—", s:"over "+dur(s.ok?s.monthsToClear:n)},
+    {c:"Total interest", v:s.ok?compact(s.totalInterest):"—", s:s.ok&&L>0?fmt(s.totalInterest/L,2)+" per unit borrowed":"", w:s.ok&&L>0&&s.totalInterest/L>0.75}
+  ]);
+  var wLn=[];
+  if(L!==null&&L<=0) wLn.push({c:"warn", t:"The deposit covers the whole price, so there is nothing to borrow. Check the two figures."});
+  if(ltv!==null&&ltv>0.95) wLn.push({c:"warn", t:"Above 95% loan to value very few lenders will quote at all, and those that do price it steeply."});
+  else if(ltv!==null&&ltv>0.90) wLn.push("Just above 90% loan to value. Rate bands cluster at 90, 85, 80 and 75 — a slightly larger deposit can cross a band and cut the rate outright.");
+  if(num(S.ln.term)!==null&&num(S.ln.term)>35) wLn.push("A term beyond 35 years buys a smaller payment at a very large price. Step 06 shows what it costs.");
+  notes("wLn",wLn);
+
+  /* ---- step 2 ---- */
+  var jump=(s.ok&&s.payFix>0)?(s.payRevert/s.payFix-1):null;
+  if(s.ok){
+    cells("dRt",[
+      {c:"Payment during the fix", v:money(s.payFix,2), s:dur(opts().fixMonths)+" at "+fpc(pct(S.rt.init),2)},
+      {c:"Payment after it", v:money(s.payRevert,2), s:pct(S.rt.revert)===null?"rate assumed unchanged":"at "+fpc(pct(S.rt.revert),2)},
+      {c:"The jump", v:jump===null?"—":(jump>0?"+":"")+fpc(jump,1), s:jump!==null&&jump>0?"+"+money(s.payRevert-s.payFix,0)+" a month":"no change", w:jump!==null&&jump>0.2},
+      {c:"Cleared in", v:dur(s.monthsToClear), s:S.rt.mode==="io"?"interest only — the loan still stands":"from the first payment"},
+      {c:"Total cost", v:compact(s.totalPaid+s.balloon), s:"payments"+(s.balloon>0?" plus the "+compact(s.balloon)+" still owed":"")}
+    ]);
+  } else {
+    cells("dRt",[{c:"Payment", v:"—", s:"needs a loan, a term and a rate"}]);
+  }
+  var wRt=[];
+  if(jump!==null&&jump>0.2)
+    wRt.push({c:"warn", t:"When the fix ends the payment rises by <strong>"+fpc(jump,1)+"</strong>, from "+
+      money(s.payFix,0)+" to "+money(s.payRevert,0)+" a month. That is the figure to test your budget against, "+
+      "not the one you are quoted today. You may be able to remortgage before it lands — but only if the valuation and your income still support it."});
+  if(pct(S.rt.revert)===null&&num(S.rt.fixYears)>0)
+    wRt.push("No revert rate set, so the initial rate is assumed to run for the whole term. That is the optimistic case, and rarely the real one.");
+  if(S.rt.mode==="io")
+    wRt.push({c:"warn", t:"Interest only: nothing is repaid, so the full "+compact(L)+" falls due at the end of the term. You need a separate plan to clear it."});
+  if(num(S.rt.fixYears)!==null&&n!==null&&num(S.rt.fixYears)*12>n)
+    wRt.push("The fix is longer than the term, so it simply runs to the end and the revert rate never applies.");
+  notes("wRt",wRt);
+
+  /* ---- step 3 ---- */
+  drawChart(s, base);
+  var wCh=[];
+  if(s.ok&&s.rows.length){
+    var firstYear=0, months=Math.min(12,s.rows.length), paid=0;
+    for(var i=0;i<months;i++){ firstYear+=s.rows[i].interest; paid+=s.rows[i].interest+s.rows[i].principal+s.rows[i].over; }
+    if(paid>0&&firstYear/paid>0.5)
+      wCh.push("In the first year "+fpc(firstYear/paid,0)+" of everything you pay is interest — "+
+        compact(firstYear)+" of "+compact(paid)+". You are not buying the house yet; you are paying for the money.");
+  }
+  notes("wCh",wCh);
+
+  /* ---- step 4 ---- */
+  if(s.ok&&base.ok){
+    var saved=base.totalInterest-s.totalInterest, sooner=base.monthsToClear-s.monthsToClear;
+    cells("dOp",[
+      {c:"Interest saved", v:saved>0?compact(saved):"—", s:saved>0?"against no overpayment":"add an overpayment above"},
+      {c:"Cleared earlier by", v:sooner>0?dur(sooner):"—", s:sooner>0?"off the end of the term":""},
+      {c:"Cleared in", v:dur(s.monthsToClear), s:"was "+dur(base.monthsToClear)},
+      {c:"Total overpaid", v:s.totalOver>0?compact(s.totalOver):"—", s:s.totalOver>0&&saved>0?fmt(saved/s.totalOver,2)+" saved per unit":""}
+    ]);
+  } else { cells("dOp",[{c:"Interest saved", v:"—", s:"needs a working mortgage above"}]); }
+  var wOp=[];
+  if(s.ercBreach)
+    wOp.push({c:"warn", t:"That overpayment exceeds the "+fmt(num(S.op.allowance),0)+
+      "% annual allowance while you are still inside the fix, so an early repayment charge would normally apply. "+
+      "The charge varies by lender and is not modelled here — check your offer before overpaying this much."});
+  if(s.ok&&base.ok&&s.totalOver>0&&base.totalInterest>s.totalInterest){
+    var ratio=(base.totalInterest-s.totalInterest)/s.totalOver;
+    if(ratio>0.5) wOp.push("Every unit overpaid is saving "+fmt(ratio,2)+" in interest — because it comes off the balance that all the remaining interest is charged on.");
+  }
+  notes("wOp",wOp);
+
+  /* ---- step 5 ---- */
+  renderFee(L);
+
+  /* ---- step 6 ---- */
+  renderGrid(L);
+
+  renderVerdict(s,L,jump);
+}
+
+/* ---------------- fee against rate ---------------- */
+function renderFee(L){
+  var head=document.getElementById("feeHead"), body=document.getElementById("feeBody");
+  var yrs=num(S.fee.period), aR=num(S.fee.aRate), aF=num(S.fee.aFee),
+      bR=num(S.fee.bRate), bF=num(S.fee.bFee), n=termMonths();
+  if(L===null||L<=0||n===null||yrs===null||yrs<=0||aR===null||bR===null){
+    head.innerHTML=""; body.innerHTML="";
+    document.getElementById("wFee").innerHTML='<p class="hint">Give both deals a rate and a comparison window and the crossover appears here.</p>';
+    return;
+  }
+  aF=aF||0; bF=bF||0;
+  var months=Math.min(Math.round(yrs*12),n), added=(S.fee.treat==="added");
+  var kA=interestPerUnit(aR,months), kB=interestPerUnit(bR,months);
+  if(kA===null||kB===null){ head.innerHTML=""; body.innerHTML=""; return; }
+
+  /* cost over the window = the fee itself plus the interest it and the loan accrue.
+     Equity built is not a cost, so it must stay out of the comparison. */
+  function cost(k,fee,loan){ return fee + k*(loan + (added?fee:0)); }
+  var cA=cost(kA,aF,L), cB=cost(kB,bF,L);
+
+  head.innerHTML='<tr><th class="lft">Deal</th><th>Rate</th><th>Fee</th>'+
+                 '<th>Interest over '+fmt(yrs,0)+' yr</th><th>Total cost</th></tr>';
+  function row(nm,r,f,k,c,win){
+    return '<tr'+(win?' class="hl"':'')+'><td class="lft">'+nm+
+      (win?'<span class="wnote">cheaper over this window</span>':'')+'</td>'+
+      '<td>'+fpc(r/100,2)+'</td><td>'+compact(f)+'</td>'+
+      '<td>'+compact(k*(L+(added?f:0)))+'</td><td>'+compact(c)+'</td></tr>';
+  }
+  body.innerHTML=row("Deal A",aR,aF,kA,cA,cA<cB)+row("Deal B",bR,bF,kB,cB,cB<cA);
+
+  var wFee=[], diff=Math.abs(cA-cB), winner=cA<cB?"A":"B";
+  wFee.push("At "+compact(L)+" borrowed, <strong>deal "+winner+"</strong> is cheaper by "+
+            compact(diff)+" over "+fmt(yrs,0)+" years.");
+
+  /* cost(L) is linear in L, so the crossover is exact rather than searched for */
+  if(Math.abs(kA-kB)>1e-12){
+    var star=(bF*(1+(added?kB:0)) - aF*(1+(added?kA:0)))/(kA-kB);
+    if(isFinite(star)&&star>0){
+      var lo=kA<kB?"A":"B";
+      wFee.push("The two deals cost exactly the same at <strong>"+compact(star)+
+        "</strong> borrowed. Below that, deal "+(lo==="A"?"B":"A")+" wins; above it, deal "+lo+" does. "+
+        "The fee is flat while the interest saving grows with the loan, which is the whole reason a crossover exists.");
+    } else {
+      wFee.push("There is no crossover at a sensible loan size — one deal is cheaper whatever you borrow.");
+    }
+  }
+  if(added) wFee.push("The fee is added to the loan, so you pay interest on it too, and keep paying after the window closes if you do not clear it.");
+  notes("wFee",wFee);
+}
+
+/* ---------------- rate against term ---------------- */
+function renderGrid(L){
+  var head=document.getElementById("gHead"), body=document.getElementById("gBody");
+  var r0=num(S.rt.init), yrs=num(S.ln.term);
+  if(L===null||L<=0||r0===null||r0<0){ head.innerHTML=""; body.innerHTML=""; return; }
+  var terms=[15,20,25,30,35], rates=[-1,-0.5,0,0.5,1];
+
+  head.innerHTML='<tr><th class="corner">Rate ↓ / term →</th>'+
+    terms.map(function(t){ return '<th>'+t+" yr"+'</th>'; }).join("")+'</tr>';
+
+  body.innerHTML=rates.map(function(dr){
+    var r=r0+dr; if(r<0) r=0;
+    var tds=terms.map(function(t){
+      var s=runSchedule({loan:L, termMonths:t*12, initRate:r/100/12, fixMonths:0,
+                         revertRate:r/100/12, interestOnly:(S.rt.mode==="io"),
+                         overMonthly:0, allowancePct:0});
+      var mid=(Math.abs(dr)<1e-9 && yrs!==null && Math.abs(t-yrs)<1e-9)?' class="mid"':'';
+      return '<td'+mid+'>'+(s.ok?compact(s.totalInterest):"—")+'</td>';
+    }).join("");
+    return '<tr><td class="rh">'+fpc(r/100,2)+'</td>'+tds+'</tr>';
+  }).join("");
+}
+
+/* ---------------- verdict ---------------- */
+function renderVerdict(s,L,jump){
+  var vVal=document.getElementById("vVal"), vGap=document.getElementById("vGap"),
+      vTag=document.getElementById("vTag"), vNote=document.getElementById("vNote");
+
+  if(!s.ok||L===null||L<=0){
+    vVal.textContent="—"; vGap.textContent="—";
+    vTag.className="v-tag t-none"; vTag.textContent="Awaiting inputs";
+    vNote.textContent="Fill in step 01 and give the rate a value in step 02.";
+    return;
+  }
+
+  var ratio=s.totalInterest/L;
+  vVal.textContent=compact(s.totalInterest);
+  vGap.textContent=ccy()+fmt(ratio,2);
+
+  var tag,cls,note;
+  if(ratio<0.35){ tag="Cheap money"; cls="t-cheap";
+    note="Interest is a modest share of what you borrowed. A short term or a low rate is doing that — check step 06 to see which."; }
+  else if(ratio<0.75){ tag="Costly"; cls="t-costly";
+    note="You will pay "+ccy()+fmt(ratio,2)+" in interest for every unit borrowed. Step 06 shows what half a point or five years is worth."; }
+  else { tag="You repay nearly twice"; cls="t-heavy";
+    note="Interest comes to "+fpc(ratio,0)+" of the loan itself. Over a long term at this rate you hand over almost the price of the house a second time."; }
+
+  /* late overrides: the more urgent sentence wins, whatever the total says */
+  if(s.totalOver>0){
+    var b=baseSched();
+    if(b.ok&&b.monthsToClear>s.monthsToClear)
+      note=compact(s.totalOver)+" of overpayments clears it "+dur(b.monthsToClear-s.monthsToClear)+
+           " early and saves "+compact(b.totalInterest-s.totalInterest)+" in interest.";
+  }
+  if(jump!==null&&jump>0.2)
+    note="When your fix ends the payment jumps "+fpc(jump,1)+", to "+money(s.payRevert,0)+
+         " a month. Budget for that number, not for today's.";
+
+  vTag.className="v-tag "+cls; vTag.textContent=tag; vNote.textContent=note;
+}
+
+/* ---------------- persistence ---------------- */
+var KEY="cftr_mortgage_v1";
+function persist(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
+function restore(){ try{ var raw=localStorage.getItem(KEY); if(!raw) return;
+  S=adopt(JSON.parse(raw)); }catch(e){} }
+
+/* Anything reaching the model — a restored session, a saved file, a hand-edited template —
+   is coerced into a complete, well-formed state here. Nothing downstream then has to guard
+   against a missing branch, and a half-written file can no longer leave the tool unusable. */
+function isObj(o){ return o!==null && typeof o==="object" && Object.prototype.toString.call(o)!=="[object Array]"; }
+function str(v){ return v===undefined||v===null ? "" : String(v); }
+function adopt(o){
+  o=isObj(o)?o:{};
+  var ln=isObj(o.ln)?o.ln:{}, rt=isObj(o.rt)?o.rt:{},
+      op=isObj(o.op)?o.op:{}, fe=isObj(o.fee)?o.fee:{};
+  return {
+    ln:{ name:str(ln.name), ccy:ln.ccy===undefined?"£":str(ln.ccy),
+         price:str(ln.price), deposit:str(ln.deposit),
+         term:ln.term===undefined?"25":str(ln.term) },
+    rt:{ mode:(rt.mode==="io")?"io":"repay", init:str(rt.init),
+         fixYears:rt.fixYears===undefined?"2":str(rt.fixYears), revert:str(rt.revert) },
+    op:{ monthly:str(op.monthly), lump:str(op.lump), lumpMonth:str(op.lumpMonth),
+         allowance:op.allowance===undefined?"10":str(op.allowance) },
+    fee:{ period:fe.period===undefined?"2":str(fe.period),
+          aRate:str(fe.aRate), aFee:str(fe.aFee), bRate:str(fe.bRate), bFee:str(fe.bFee),
+          treat:(fe.treat==="added")?"added":"upfront" },
+    chartMode:(o.chartMode==="bal")?"bal":"split"
+  };
+}
+
+/* ---------------- blank template ----------------
+   The guidance is generated from the same field definitions that build the form, so the
+   template cannot drift out of step with the tool. Every key beginning with an underscore
+   is a note to the reader; stripMeta removes them again on the way back in.            */
+function stripMeta(o){
+  if(o===null||typeof o!=="object") return o;
+  if(Object.prototype.toString.call(o)==="[object Array]"){
+    var arr=[],i; for(i=0;i<o.length;i++) arr.push(stripMeta(o[i]));
+    return arr;
+  }
+  var out={},k;
+  for(k in o){
+    if(!Object.prototype.hasOwnProperty.call(o,k)) continue;
+    if(k.charAt(0)==="_") continue;
+    out[k]=stripMeta(o[k]);
+  }
+  return out;
+}
+function withHelp(defs,preset){
+  var o={_help:{}};
+  defs.forEach(function(f){ o._help[f.k]=f.lab+(f.tip?" — "+f.tip:""); });
+  defs.forEach(function(f){ o[f.k]=(preset&&preset[f.k]!==undefined)?preset[f.k]:""; });
+  return o;
+}
+function templateObj(){
+  var rt=withHelp(F_RT,{fixYears:"2"}), fe=withHelp(F_FEE,{period:"2"});
+  rt.mode="repay";
+  rt._help.mode="\"repay\" for a normal repayment mortgage, \"io\" for interest only.";
+  fe.treat="upfront";
+  fe._help.treat="\"upfront\" if you pay the fee on completion, \"added\" if it is rolled into the loan and accrues interest.";
+  return {
+    _readme:[
+      "TEMPLATE — Mortgage (what the monthly payment hides)",
+      "",
+      "HOW TO USE THIS FILE",
+      "  1. Open it in any text editor.",
+      "  2. Replace each \"\" with your figure, keeping the quotation marks.",
+      "  3. Save it, then click 'Load from file' in the tool.",
+      "",
+      "CONVENTIONS",
+      "  Money is in WHOLE CURRENCY UNITS, not thousands: 250000 means two hundred and fifty",
+      "  thousand.",
+      "  Rates and percentages are plain numbers: 4.5 means 4.5%, not 0.045.",
+      "  Periods are in years except 'lumpMonth', which is a month number — 12 is the end of",
+      "  the first year.",
+      "  Anything you do not have can stay as \"\" — the tool shows a dash and carries on.",
+      "",
+      "THE TWO THINGS MOST CALCULATORS LEAVE OUT",
+      "  'revert' is the rate you drop onto when the fix ends. Leave it blank and the tool",
+      "  assumes your initial rate runs for the whole term, which is the optimistic case.",
+      "  'allowance' is the percentage of the balance you may overpay each year inside the fix",
+      "  without a charge. The tool warns you past it but does not model the charge itself.",
+      "",
+      "Every key starting with an underscore is guidance for you. The tool strips them",
+      "out when it loads the file, so you can leave them in place or delete them."
+    ],
+    _help:{ chartMode:"\"split\" plots interest against principal, \"bal\" plots the balance remaining." },
+    ln:withHelp(F_LN,{ccy:"£", term:"25"}),
+    rt:rt,
+    op:withHelp(F_OP,{allowance:"10"}),
+    fee:fe,
+    chartMode:"split"
+  };
+}
+function download(obj,filename){
+  var blob=new Blob([JSON.stringify(obj,null,2)],{type:"application/json"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download=filename; a.click(); URL.revokeObjectURL(a.href);
+}
+
+/* ---------------- example, clear, file IO ---------------- */
+function loadExample(){
+  S={
+    ln:{name:"Two-bed terrace", ccy:"£", price:"250000", deposit:"25000", term:"25"},
+    rt:{mode:"repay", init:"4.5", fixYears:"2", revert:"7.5"},
+    op:{monthly:"150", lump:"", lumpMonth:"", allowance:"10"},
+    fee:{period:"2", aRate:"4.5", aFee:"1499", bRate:"4.9", bFee:"0", treat:"upfront"},
+    chartMode:"split"
+  };
+  render();
+}
+function clearAll(){
+  S={
+    ln:{name:"", ccy:"£", price:"", deposit:"", term:"25"},
+    rt:{mode:"repay", init:"", fixYears:"2", revert:""},
+    op:{monthly:"", lump:"", lumpMonth:"", allowance:"10"},
+    fee:{period:"2", aRate:"", aFee:"", bRate:"", bFee:"", treat:"upfront"},
+    chartMode:"split"
+  };
+  render();
+}
+
+document.getElementById("bEg").addEventListener("click",function(){
+  if(confirm("Load the worked example? This replaces what's on screen.")) loadExample();
+});
+document.getElementById("bClear").addEventListener("click",function(){
+  if(confirm("Clear every figure and start again?")) clearAll();
+});
+document.getElementById("bPrint").addEventListener("click",function(){ window.print(); });
+document.getElementById("bTpl").addEventListener("click",function(){
+  download(templateObj(),"mortgage-template.json");
+});
+
+document.getElementById("segMode").addEventListener("click",function(e){
+  var b=e.target.closest("button"); if(!b) return;
+  S.rt.mode=b.getAttribute("data-v"); segSet("segMode",S.rt.mode); rest(); persist();
+});
+document.getElementById("segChart").addEventListener("click",function(e){
+  var b=e.target.closest("button"); if(!b) return;
+  S.chartMode=b.getAttribute("data-v"); segSet("segChart",S.chartMode); rest(); persist();
+});
+document.getElementById("segFee").addEventListener("click",function(e){
+  var b=e.target.closest("button"); if(!b) return;
+  S.fee.treat=b.getAttribute("data-v"); segSet("segFee",S.fee.treat); rest(); persist();
+});
+
+document.getElementById("bSave").addEventListener("click",function(){
+  download(S,((S.ln.name||"mortgage").replace(/[^A-Za-z0-9]+/g,"-").toLowerCase())+".json");
+});
+document.getElementById("bLoad").addEventListener("click",function(){ document.getElementById("fPick").click(); });
+document.getElementById("fPick").addEventListener("change",function(e){
+  var f=e.target.files[0]; if(!f) return;
+  var r=new FileReader();
+  r.onload=function(){
+    var prev=S;                                  /* roll back if anything goes wrong */
+    try{
+      var o=stripMeta(JSON.parse(r.result));
+      if(!isObj(o)||(!isObj(o.ln)&&!isObj(o.rt))) throw 0;
+      S=adopt(o); render();
+    }catch(err){
+      S=prev; render();
+      alert("That file isn't a saved mortgage or a template. Pick a .json this tool wrote.");
+    }
+  };
+  r.readAsText(f); e.target.value="";
+});
+
+restore(); render();
+</script>
+</body>
+</html>

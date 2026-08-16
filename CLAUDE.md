@@ -53,6 +53,7 @@ Uses Plotly.js 2.27.0, SheetJS (xlsx 0.18.5) for CSV/Excel import, and jStat 1.9
 
 | Directory | Description | Key Libraries |
 |-----------|-------------|---------------|
+| `mortgage/` | Mortgage true-cost tool: amortisation split (SVG), fix-expiry payment cliff, overpayment saving, fee-vs-rate crossover | Vanilla JS/CSS |
 | `term-sheet/` | VC term-sheet modeller: option-pool shuffle, preference stack, exit waterfall (SVG), founder-proceeds sensitivity grid | Vanilla JS/CSS |
 | `intrinsic-dcf-valuation/` | Guided discounted-cash-flow valuation workbench with 10-year forecast, worked example, save/load, print | Vanilla JS/CSS |
 | `relative-valuation/` | Peer-multiples valuation tool (P/E, EV/EBITDA, P/B…) with fair-value range and sanity checks | Vanilla JS/CSS |
@@ -76,7 +77,7 @@ There are **two distinct design systems** in this repo. Match whichever family t
 - Two-column layout: sidebar with controls on the left, main visualization on the right.
 - Fonts loaded from Google Fonts: Inter (UI), JetBrains Mono / IBM Plex Mono (code/data display).
 
-**Finance tools** (`term-sheet`, `intrinsic-dcf-valuation`, `relative-valuation`) — a newer "print broadsheet" system:
+**Finance tools** (`mortgage`, `term-sheet`, `intrinsic-dcf-valuation`, `relative-valuation`) — a newer "print broadsheet" system:
 - **Zero dependencies.** No CDN, no Google Fonts, no charting library. System font stacks only (`--sans`/`--mono`/`--serif`), and the three share a byte-identical `:root` palette.
 - Light theme only — no dark mode, no `prefers-color-scheme`.
 - Single scrolling column of numbered `.step` sections; no tabs and no wizard. A fixed `.verdict` bar at the bottom is the footer.

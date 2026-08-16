@@ -11,6 +11,15 @@
     <meta property="og:url" content="https://vinovator.github.io/my-ai-tools/">
     <meta property="og:title" content="Vinoth's AI Tools">
     <meta property="og:description" content="A collection of AI-powered tools, experiments, and visualizations.">
+    <meta name="description"
+        content="A collection of self-contained browser tools for finance, learning and everyday tasks. No installs, no accounts, and nothing leaves your device.">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%238250df'/%3E%3Cpath d='M9 10l7 13 7-13' stroke='white' stroke-width='3.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+    <meta property="og:image" content="https://vinovator.github.io/my-ai-tools/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#f6f8fa" media="(prefers-color-scheme: light)">
     <meta name="color-scheme" content="dark light">
 
     <!-- Resolve the theme before the body paints, so there is no flash of the wrong palette.
@@ -40,7 +49,6 @@
             --accent: #d292ff;
             --accent-hover: #e0b0ff;
             --border: #30363d;
-            --btn-text: #0f1115;
             --card-shadow: rgba(0, 0, 0, 0.5);
             --wordmark-a: #d292ff;
             --wordmark-b: #7e57c2;
@@ -74,7 +82,6 @@
             --accent: #8250df;
             --accent-hover: #6639ba;
             --border: #d1d9e0;
-            --btn-text: #ffffff;
             --card-shadow: rgba(31, 35, 40, 0.15);
             --wordmark-a: #8250df;
             --wordmark-b: #5a32a3;
@@ -128,60 +135,104 @@
             font-size: 1.25rem;
         }
 
+        /* ---------- sections ---------- */
+        .section { margin-bottom: 3.5rem; }
+
+        .section-head {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 0 0 1.5rem;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+
+        .section-head::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background-color: var(--border);
+        }
+
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 2rem;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.25rem;
         }
 
         .card {
+            position: relative;
             background-color: var(--card-bg);
             border: 1px solid var(--border);
             border-top: 3px solid var(--card-accent, var(--border));
             border-radius: 12px;
-            padding: 2rem;
+            padding: 1.5rem;
             transition: transform 0.2s, box-shadow 0.2s, background-color 0.25s, border-color 0.25s;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
             height: 100%;
             box-sizing: border-box;
         }
 
         .card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-4px);
             box-shadow: 0 10px 30px var(--card-shadow);
             border-color: var(--accent);
         }
 
-        .card h2 {
-            margin-top: 0;
-            font-size: 1.5rem;
-            color: var(--text-primary);
+        /* the whole card is one link: the anchor sits on the title and is stretched over the
+           surface, so screen readers get a single target with a sensible name */
+        .card:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent);
         }
+
+        .card h3 {
+            margin: 0 0 0.5rem;
+            font-size: 1.125rem;
+            line-height: 1.35;
+            text-wrap: balance;
+        }
+
+        .card h3 a {
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .card h3 a::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 12px;
+        }
+
+        .card h3 a:focus-visible { outline: none; }
 
         .card p {
             color: var(--text-secondary);
-            margin-bottom: 2rem;
+            font-size: 0.9375rem;
+            margin: 0 0 1.25rem;
             flex-grow: 1;
         }
 
-        .btn {
-            display: inline-block;
-            background-color: var(--accent);
-            color: var(--btn-text);
-            padding: 0.75rem 1.5rem;
-            text-decoration: none;
-            border-radius: 6px;
+        .cue {
+            font-size: 0.8125rem;
             font-weight: 600;
-            text-align: center;
-            transition: background-color 0.2s;
+            letter-spacing: 0.02em;
+            color: var(--accent);
         }
 
-        .btn:hover {
-            background-color: var(--accent-hover);
-            text-decoration: none;
+        .cue i {
+            display: inline-block;
+            font-style: normal;
+            transition: transform 0.2s;
         }
+
+        .card:hover .cue { color: var(--accent-hover); }
+        .card:hover .cue i { transform: translateX(3px); }
 
         /* ---------- theme toggle ---------- */
         .theme-toggle {
@@ -236,6 +287,14 @@
             .theme-toggle svg { width: 16px; height: 16px; }
         }
 
+        /* High Contrast Mode drops the gradient, which would leave the title invisible */
+        @media (forced-colors: active) {
+            h1 {
+                background: none;
+                -webkit-text-fill-color: currentColor;
+            }
+        }
+
         @media (prefers-reduced-motion: reduce) {
             * { transition: none !important; }
         }
@@ -263,124 +322,97 @@
             <p class="subtitle">A collection of AI-powered tools, experiments, and visualizations.</p>
         </header>
 
-        <main class="grid">
-            <div class="card" style="--card-accent: var(--accent-mortgage);">
-                <h2>Mortgage — True Cost</h2>
-                <p>The monthly payment is the advertised number, not the real one. See how much of each
-                    early payment is pure interest, what happens to your budget on the day the fixed rate
-                    ends, what an overpayment actually buys you, and the exact loan size at which a
-                    fee-carrying low rate overtakes a fee-free one. Load a worked example, save your work,
-                    or print.</p>
-                <a href="mortgage/index.html" class="btn" target="_blank">Open Tool</a>
+        <main>
+        <section class="section">
+            <h2 class="section-head">Finance and valuation</h2>
+            <div class="grid">
+                <div class="card" style="--card-accent: var(--accent-mortgage);">
+                    <h3><a href="mortgage/index.html" target="_blank" rel="noopener">Mortgage</a></h3>
+                    <p>See what the monthly payment hides: front loaded interest, the jump when your fixed rate ends, and what overpaying really buys.</p>
+                    <span class="cue">Open <i>&rarr;</i></span>
+                </div>
+                <div class="card" style="--card-accent: var(--accent-term-sheet);">
+                    <h3><a href="term-sheet/index.html" target="_blank" rel="noopener">Term Sheet</a></h3>
+                    <p>Model what a venture round costs you, from the option pool shuffle to the exit waterfall that decides who gets paid first.</p>
+                    <span class="cue">Open <i>&rarr;</i></span>
+                </div>
+                <div class="card" style="--card-accent: var(--accent-intrinsic-dcf);">
+                    <h3><a href="intrinsic-dcf-valuation/index.html" target="_blank" rel="noopener">Intrinsic Valuation (DCF)</a></h3>
+                    <p>Forecast ten years of free cash flow, discount it back, and see what you would have to believe for the market price to hold.</p>
+                    <span class="cue">Open <i>&rarr;</i></span>
+                </div>
+                <div class="card" style="--card-accent: var(--accent-relative-valuation);">
+                    <h3><a href="relative-valuation/index.html" target="_blank" rel="noopener">Relative Valuation</a></h3>
+                    <p>Value a company against its peers on the multiples that actually fit, with sanity checks for the errors that skew the answer.</p>
+                    <span class="cue">Open <i>&rarr;</i></span>
+                </div>
+                <div class="card" style="--card-accent: var(--accent-compound);">
+                    <h3><a href="compound-viz/index.html" target="_blank" rel="noopener">Compound Investment</a></h3>
+                    <p>A calm what if for savings: lump sum, monthly contributions, inflation and time, read in today's money as well as tomorrow's.</p>
+                    <span class="cue">Open <i>&rarr;</i></span>
+                </div>
             </div>
-
-            <div class="card" style="--card-accent: var(--accent-term-sheet);">
-                <h2>Term Sheet — Exit Waterfall</h2>
-                <p>Model what a venture round actually costs you. Set the pre-money, decide who pays for the
-                    option pool, build the preference stack, then watch the exit waterfall decide who gets paid
-                    and in what order — including the exits where ordinary shares get nothing at all. Load a
-                    worked example, save your work, or print.</p>
-                <a href="term-sheet/index.html" class="btn" target="_blank">Open Tool</a>
+        </section>
+        <section class="section">
+            <h2 class="section-head">Learning and visualisation</h2>
+            <div class="grid">
+                <div class="card" style="--card-accent: var(--accent-protocol-lab);">
+                    <h3><a href="protocol-lab/index.html" target="_blank" rel="noopener">Protocol Lab</a></h3>
+                    <p>Watch DNS, TCP, HTTP and TLS actually happen, with packets flying between nodes and every header open to inspection.</p>
+                    <span class="cue">Open <i>&rarr;</i></span>
+                </div>
+                <div class="card" style="--card-accent: var(--accent-fourier);">
+                    <h3><a href="fourier-lab/index.html" target="_blank" rel="noopener">Fourier Audio Lab</a></h3>
+                    <p>Build sounds from sine waves, watch the Fourier transform in real time, and train a small neural network to classify them.</p>
+                    <span class="cue">Open <i>&rarr;</i></span>
+                </div>
+                <div class="card" style="--card-accent: var(--accent-trig);">
+                    <h3><a href="trig-viz/index.html" target="_blank" rel="noopener">Trigonometry Visualized</a></h3>
+                    <p>Explore the unit circle and see how sine, cosine and tangent connect to the waves they trace, through guided lessons.</p>
+                    <span class="cue">Open <i>&rarr;</i></span>
+                </div>
+                <div class="card" style="--card-accent: var(--accent-chi-square-tool);">
+                    <h3><a href="goodness-of-fit/index.html" target="_blank" rel="noopener">Chi-Square Calculator</a></h3>
+                    <p>Upload a CSV or Excel file, or type your data, and get p values, critical values and the distribution plotted instantly.</p>
+                    <span class="cue">Open <i>&rarr;</i></span>
+                </div>
+                <div class="card" style="--card-accent: var(--accent-chi-square-explorer);">
+                    <h3><a href="chi-square-viz/index.html" target="_blank" rel="noopener">Chi-Square Explorer</a></h3>
+                    <p>Learn hypothesis testing through worked scenarios like genetics and fair dice, with tutorials that build the intuition first.</p>
+                    <span class="cue">Open <i>&rarr;</i></span>
+                </div>
+                <div class="card" style="--card-accent: var(--accent-tariff);">
+                    <h3><a href="tariff-viz/index.html" target="_blank" rel="noopener">Tariff Economics</a></h3>
+                    <p>Simulate supply and demand under tariffs, and see where deadweight loss and surplus actually land, with guided scenarios.</p>
+                    <span class="cue">Open <i>&rarr;</i></span>
+                </div>
+                <div class="card" style="--card-accent: var(--accent-anthropic);">
+                    <h3><a href="anthropic-viz/index.html" target="_blank" rel="noopener">Anthropic Visualizations</a></h3>
+                    <p>Experimental charts on how AI is changing engineering work, covering productivity velocity, organic metaphors and workflows.</p>
+                    <span class="cue">Open <i>&rarr;</i></span>
+                </div>
             </div>
-
-            <div class="card" style="--card-accent: var(--accent-intrinsic-dcf);">
-                <h2>Intrinsic Valuation — DCF</h2>
-                <p>A guided, step-by-step discounted-cash-flow workbench. Enter today's figures, forecast ten years
-                    of free cash flow, discount them back, and see what the business is worth — plus what you'd have
-                    to believe for the market price to make sense. Load a worked example, save your work, or print.</p>
-                <a href="intrinsic-dcf-valuation/index.html" class="btn" target="_blank">Open Tool</a>
+        </section>
+        <section class="section">
+            <h2 class="section-head">Utilities</h2>
+            <div class="grid">
+                <div class="card" style="--card-accent: var(--accent-md-viewer);">
+                    <h3><a href="md-viewer/index.html" target="_blank" rel="noopener">Markdown Viewer</a></h3>
+                    <p>Drop in a file and read it rendered, with tables, task lists, syntax highlighting, KaTeX and Mermaid. Nothing leaves your device.</p>
+                    <span class="cue">Open <i>&rarr;</i></span>
+                </div>
+                <div class="card" style="--card-accent: var(--accent-mcp-unpack);">
+                    <h3><a href="mcp-unpack/index.html" target="_blank" rel="noopener">MCP Unpack</a></h3>
+                    <p>Paste any remote MCP server URL and get a clean, shareable reference of every tool, resource and prompt it exposes.</p>
+                    <span class="cue">Open <i>&rarr;</i></span>
+                </div>
+                <div class="card" style="--card-accent: var(--accent-pdf-play);">
+                    <h3><a href="pdf-play/index.html" target="_blank" rel="noopener">PDF Merge &amp; Split</a></h3>
+                    <p>Combine PDFs into one or split a file at chosen page numbers, entirely in your browser. Files are never uploaded.</p>
+                    <span class="cue">Open <i>&rarr;</i></span>
+                </div>
             </div>
-
-            <div class="card" style="--card-accent: var(--accent-relative-valuation);">
-                <h2>Relative Valuation — Peer Multiples</h2>
-                <p>Value a company against its peers. Pick the multiples that fit (P/E, EV/EBITDA, P/B and more),
-                    enter the target and a set of comparables, and get a fair-value range with built-in sanity
-                    checks that flag the single most common error: mixing time periods across peers.</p>
-                <a href="relative-valuation/index.html" class="btn" target="_blank">Open Tool</a>
-            </div>
-
-            <div class="card" style="--card-accent: var(--accent-protocol-lab);">
-                <h2>Protocol Lab</h2>
-                <p>An interactive, animated explainer for foundational internet protocols. Pick a scenario — DNS lookup,
-                    TCP handshake, HTTP request, TLS handshake — and watch packets fly between nodes with synced
-                    narration and inspectable headers.</p>
-                <a href="protocol-lab/index.html" class="btn" target="_blank">Open Lab</a>
-            </div>
-
-            <div class="card" style="--card-accent: var(--accent-compound);">
-                <h2>Compound Investment Calculator</h2>
-                <p>A calm what-if for your savings. Drag sliders for lump sum, monthly contribution, return,
-                    inflation and retirement age — watch the pot grow on a live chart, with side-by-side readings
-                    for the nominal pot and the same pot in today's money.</p>
-                <a href="compound-viz/index.html" class="btn" target="_blank">Open Calculator</a>
-            </div>
-
-            <div class="card" style="--card-accent: var(--accent-md-viewer);">
-                <h2>Markdown Viewer</h2>
-                <p>Drop a <code>.md</code> file and view it rendered with GFM tables, task lists, syntax-highlighted
-                    code, KaTeX math, and Mermaid diagrams. Save as PDF, download as HTML, or copy with one click.
-                    Runs entirely in your browser; your files never leave your device.</p>
-                <a href="md-viewer/index.html" class="btn" target="_blank">Open Tool</a>
-            </div>
-
-            <div class="card" style="--card-accent: var(--accent-mcp-unpack);">
-                <h2>MCP Unpack</h2>
-                <p>Paste any remote MCP server URL and get a clean, shareable reference of every tool, resource, and
-                    prompt it exposes: "the npm package page, but for an MCP server."</p>
-                <a href="mcp-unpack/index.html" class="btn" target="_blank">Open Tool</a>
-            </div>
-
-            <div class="card" style="--card-accent: var(--accent-pdf-play);">
-                <h2>PDF Merge &amp; Split</h2>
-                <p>Combine multiple PDFs into one, or split a PDF at specified page numbers. Runs entirely in your
-                    browser. Files are never uploaded.</p>
-                <a href="pdf-play/index.html" class="btn" target="_blank">Open Tool</a>
-            </div>
-
-            <div class="card" style="--card-accent: var(--accent-fourier);">
-                <h2>Fourier Audio Lab + AI</h2>
-                <p>Build complex sounds from sine waves, visualize the Fourier transform in real-time, and train a
-                    neural network in the browser to classify them.</p>
-                <a href="fourier-lab/index.html" class="btn" target="_blank">Open Lab</a>
-            </div>
-
-            <div class="card" style="--card-accent: var(--accent-trig);">
-                <h2>Trigonometry Visualized</h2>
-                <p>An interactive educational tool for exploring the unit circle. Visualize sine, cosine, and tangent
-                    in real-time, and understand their connection to sine waves through guided lessons.</p>
-                <a href="trig-viz/index.html" class="btn" target="_blank">Explore Trig</a>
-            </div>
-
-            <div class="card" style="--card-accent: var(--accent-chi-square-tool);">
-                <h2>Chi-Square Goodness of Fit Tool</h2>
-                <p>A professional statistical calculator for goodness-of-fit testing. Upload your datasets (CSV/Excel)
-                    or enter data manually to calculate P-Values, Critical Values, and visualize distributions
-                    instantly.</p>
-                <a href="goodness-of-fit/index.html" class="btn" target="_blank">Open Tool</a>
-            </div>
-
-            <div class="card" style="--card-accent: var(--accent-chi-square-explorer);">
-                <h2>Chi-Square Goodness of Fit Explorer</h2>
-                <p>Interactive statistical workbench for hypothesis testing. Learn Chi-Square concepts through
-                    real-world scenarios (Genetics, Fair Dice), dynamic visualizations, and step-by-step tutorials.</p>
-                <a href="chi-square-viz/index.html" class="btn" target="_blank">Launch Experiment</a>
-            </div>
-
-            <div class="card" style="--card-accent: var(--accent-tariff);">
-                <h2>Interactive Tariff Economics Platform</h2>
-                <p>A comprehensive educational tool for understanding trade economics. Features interactive
-                    supply/demand simulations, real-world scenarios, guided tutorials, and quizzes to master concepts
-                    like deadweight loss and surplus.</p>
-                <a href="tariff-viz/index.html" class="btn" target="_blank">Start Learning</a>
-            </div>
-
-            <div class="card" style="--card-accent: var(--accent-anthropic);">
-                <h2>Anthropic Efficiency Visualizations</h2>
-                <p>Experimental visualizations illustrating how AI transforms engineering work at Anthropic. Includes
-                    productivity velocity, organic metaphors, and xenographic workflows.</p>
-                <a href="anthropic-viz/index.html" class="btn" target="_blank">Open Gallery</a>
-            </div>
-            <!-- More tools can be added here in the future -->
+        </section>
         </main>
     </div>
     <script>

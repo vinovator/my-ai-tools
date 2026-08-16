@@ -57,6 +57,9 @@ Uses Plotly.js 2.27.0, SheetJS (xlsx 0.18.5) for CSV/Excel import, and jStat 1.9
 | `term-sheet/` | VC term-sheet modeller: option-pool shuffle, preference stack, exit waterfall (SVG), founder-proceeds sensitivity grid | Vanilla JS/CSS |
 | `intrinsic-dcf-valuation/` | Guided discounted-cash-flow valuation workbench with 10-year forecast, worked example, save/load, print | Vanilla JS/CSS |
 | `relative-valuation/` | Peer-multiples valuation tool (P/E, EV/EBITDA, P/B…) with fair-value range and sanity checks | Vanilla JS/CSS |
+| `compound-viz/` | Compound growth what-if: lump sum, monthly contributions, inflation, goal-seek, hand-rolled canvas chart | Vanilla JS/CSS |
+| `md-viewer/` | Render a Markdown file with tables, maths and diagrams, then export as PDF or HTML | marked, highlight.js, KaTeX, Mermaid |
+| `mcp-unpack/` | Inspect any remote MCP server and list every tool, resource and prompt it exposes | Vanilla JS, hand-rolled JSON-RPC |
 | `protocol-lab/` | Interactive animated explainer for DNS/TCP/HTTP/TLS — data-driven scenarios, packet animation, layered stack viz | React 18, Canvas API |
 | `trig-viz/` | Interactive unit circle / sine wave explorer | React 18, Canvas API |
 | `fourier-lab/` | Additive synthesis + Fourier viz + in-browser AI training | React 18, Canvas API, custom TinyNet |
@@ -64,7 +67,7 @@ Uses Plotly.js 2.27.0, SheetJS (xlsx 0.18.5) for CSV/Excel import, and jStat 1.9
 | `chi-square-viz/` | Chi-Square hypothesis testing explorer | Chart.js 3.9 |
 | `goodness-of-fit/` | Chi-Square calculator with CSV/Excel import | Plotly.js, SheetJS, jStat |
 | `anthropic-viz/` | Animated charts visualizing AI productivity at Anthropic | Vanilla JS/CSS |
-| `pdf-play/` | Placeholder (empty) | — |
+| `pdf-play/` | Merge PDFs or split one at chosen page numbers, entirely client side | pdf-lib, JSZip |
 
 ## Shared Conventions
 

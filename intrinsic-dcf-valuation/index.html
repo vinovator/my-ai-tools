@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intrinsic valuation — discounted cash flow</title>
+<style>
+:root{
+  --paper:#EFF1F4; --panel:#FFFFFF; --ink:#16202B; --muted:#5C6B7A;
+  --prussian:#1F4E6B; --amber:#9A6614; --verdigris:#2A6259; --oxblood:#8C3A2E;
+  --rule:#C7CFD8; --rule-soft:#DDE3E9;
+  --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;
+  line-height:1.5;padding-bottom:150px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+
+.masthead{border-bottom:2px solid var(--ink);margin-bottom:38px;padding:30px 0 16px}
+.mast-row{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
+.mast-title{font-size:27px;font-weight:600;letter-spacing:-.02em;margin:0}
+.mast-sub{font-family:var(--serif);font-style:italic;color:var(--muted);margin:6px 0 0;font-size:15px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap}
+.toolshelf{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-decoration:none;margin:0 0 14px}
+.toolshelf:hover{color:var(--prussian)}
+
+.btn{font-family:var(--sans);font-size:12px;letter-spacing:.06em;text-transform:uppercase;
+  font-weight:600;padding:8px 13px;border:1px solid var(--rule);background:var(--panel);
+  color:var(--ink);cursor:pointer;border-radius:2px}
+.btn:hover{border-color:var(--prussian);color:var(--prussian)}
+.btn:focus-visible{outline:2px solid var(--prussian);outline-offset:2px}
+.btn-quiet{border-style:dashed;color:var(--muted)}
+
+.step{display:grid;grid-template-columns:52px 1fr;gap:20px;margin-bottom:40px}
+.step-num{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--prussian);
+  padding-top:5px;letter-spacing:.04em;border-top:2px solid var(--prussian)}
+.step-body{border-top:1px solid var(--rule);padding-top:12px;min-width:0}
+.step-head{font-size:12px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;margin:0 0 5px}
+.step-why{font-family:var(--serif);font-size:15px;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.step-why em{color:var(--ink);font-style:italic}
+
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:15px 20px}
+.field{display:flex;flex-direction:column;min-width:0}
+.f-label{font-size:12px;font-weight:600;letter-spacing:.03em;margin-bottom:3px}
+.f-tip{font-size:11.5px;color:var(--amber);line-height:1.35;margin-bottom:5px;font-style:italic}
+.f-in{font-family:var(--mono);font-size:14px;padding:7px 9px;border:1px solid var(--rule);
+  border-radius:2px;background:var(--panel);color:var(--prussian);font-weight:600;width:100%}
+.f-in:focus{outline:none;border-color:var(--prussian);box-shadow:0 0 0 2px rgba(31,78,107,.15)}
+.f-in.txt{font-family:var(--sans);font-weight:500;color:var(--ink)}
+
+/* derived readouts */
+.derived{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1px;
+  background:var(--rule-soft);border:1px solid var(--rule);margin-top:20px;border-radius:2px;overflow:hidden}
+.d-cell{background:var(--panel);padding:11px 13px}
+.d-cap{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.d-val{font-family:var(--mono);font-size:19px;font-weight:700;color:var(--verdigris);margin-top:2px}
+.d-sub{font-size:11px;color:var(--muted);margin-top:1px}
+
+/* anchors */
+.anchors{border-collapse:collapse;width:100%;font-size:13px}
+.anchors th{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;
+  text-align:center;padding:9px;border-bottom:1px solid var(--rule);color:var(--muted);white-space:nowrap}
+.anchors th.lft{text-align:left;width:36%}
+.anchors td{padding:5px 7px;border-bottom:1px solid var(--rule-soft);text-align:center}
+.anchors td.lft{text-align:left;font-weight:600;font-size:13px}
+.anchors .tipline{display:block;font-family:var(--serif);font-style:italic;font-weight:400;
+  font-size:12px;color:var(--amber);margin-top:2px}
+.ain{font-family:var(--mono);font-size:13.5px;padding:6px 8px;border:1px solid var(--rule);
+  background:var(--panel);color:var(--prussian);font-weight:600;text-align:right;
+  width:92px;border-radius:2px}
+.ain:focus{outline:none;border-color:var(--prussian);box-shadow:0 0 0 2px rgba(31,78,107,.15)}
+
+.scroller{overflow-x:auto;border:1px solid var(--rule);background:var(--panel);border-radius:2px}
+.ftab{border-collapse:collapse;width:100%;font-size:12.5px;min-width:760px}
+.ftab th{font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;
+  text-align:right;padding:9px 8px;border-bottom:1px solid var(--rule);color:var(--muted);
+  white-space:nowrap;background:#F7F9FA}
+.ftab th.lft{text-align:left}
+.ftab td{padding:6px 8px;border-bottom:1px solid var(--rule-soft);text-align:right;
+  font-family:var(--mono);font-size:12.5px}
+.ftab td.lft{text-align:left;font-family:var(--sans);font-weight:600;white-space:nowrap}
+.ftab tr.rule-top td{border-top:1px solid var(--ink)}
+.ftab tr.hl td{background:#F2F7F6;font-weight:700;color:var(--verdigris)}
+
+/* signature: where the value comes from */
+.source-card{background:var(--panel);border:1px solid var(--rule);border-radius:2px;padding:22px 24px}
+.src-cap{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:16px}
+.srcbar{display:flex;height:46px;border-radius:2px;overflow:hidden;border:1px solid var(--rule)}
+.src-a{background:var(--verdigris)}
+.src-b{background:repeating-linear-gradient(135deg,#8C6A2E,#8C6A2E 5px,#7C5D28 5px,#7C5D28 10px)}
+.src-lab{display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--mono);
+  font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden}
+.src-key{display:flex;gap:22px;margin-top:12px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.src-key i{display:inline-block;width:11px;height:11px;margin-right:6px;vertical-align:-1px;border-radius:1px}
+.bars{display:flex;align-items:flex-end;gap:3px;height:88px;margin-top:26px;padding-top:4px;border-bottom:1px solid var(--rule)}
+.bar{flex:1;background:var(--verdigris);min-height:2px;border-radius:1px 1px 0 0;position:relative}
+.bar.neg{background:var(--oxblood)}
+.bar-x{display:flex;gap:3px;margin-top:5px}
+.bar-x span{flex:1;text-align:center;font-family:var(--mono);font-size:9.5px;color:var(--muted)}
+
+/* sensitivity */
+.grid{border-collapse:collapse;width:100%;font-size:12.5px}
+.grid th{font-family:var(--mono);font-size:11px;font-weight:700;padding:8px;
+  border-bottom:1px solid var(--rule);color:var(--muted);text-align:right}
+.grid th.corner{text-align:left;font-family:var(--sans);font-size:10px;letter-spacing:.07em;text-transform:uppercase}
+.grid td{padding:8px;border-bottom:1px solid var(--rule-soft);text-align:right;font-family:var(--mono)}
+.grid td.rh{font-weight:700;color:var(--muted);text-align:left}
+.grid td.mid{outline:2px solid var(--prussian);outline-offset:-2px;font-weight:700}
+
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:2px;overflow:hidden}
+.seg button{font-family:var(--sans);font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;
+  font-weight:600;padding:7px 14px;border:none;background:var(--panel);color:var(--muted);cursor:pointer}
+.seg button.on{background:var(--prussian);color:#fff}
+.seg button:focus-visible{outline:2px solid var(--prussian);outline-offset:-2px}
+.toggle-row{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.lbl-sm{font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+
+.hint{font-family:var(--serif);font-style:italic;font-size:13.5px;color:var(--muted);margin:12px 0 0}
+.warn{border-left:3px solid var(--oxblood);background:#FBF2F0;padding:10px 14px;font-size:13px;
+  color:var(--oxblood);margin:14px 0 0;border-radius:0 2px 2px 0}
+.note{border-left:3px solid var(--amber);background:#FBF7EF;padding:10px 14px;font-size:13px;
+  color:var(--amber);margin:14px 0 0;border-radius:0 2px 2px 0}
+.stop{border:2px solid var(--oxblood);background:#FBF2F0;padding:16px 18px;margin:16px 0 0;border-radius:2px}
+.stop-h{font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--oxblood);margin-bottom:5px}
+.stop-b{font-size:14px;color:var(--ink)}
+
+.verdict{position:fixed;left:0;right:0;bottom:0;background:var(--ink);color:#fff;
+  border-top:3px solid var(--verdigris);z-index:40}
+.v-inner{max-width:1080px;margin:0 auto;padding:13px 24px;display:flex;align-items:center;gap:26px;flex-wrap:wrap}
+.v-block{display:flex;flex-direction:column;gap:1px}
+.v-cap{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#8FA3B4;font-weight:700}
+.v-num{font-family:var(--mono);font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.v-mid{font-family:var(--mono);font-size:19px;font-weight:600;line-height:1.2}
+.v-tag{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  padding:7px 14px;border-radius:2px;border:1.5px solid currentColor}
+.t-fair{color:#7FD3C4} .t-under{color:#8FC7F0} .t-over{color:#F0A99B} .t-none{color:#8FA3B4}
+.v-note{font-family:var(--serif);font-style:italic;font-size:13px;color:#A9BAC8;flex:1;min-width:190px}
+
+@media print{
+  body{background:#fff;padding-bottom:0;font-size:11pt}
+  .toolbar,.btn,.toolshelf{display:none!important}
+  .verdict{position:static;border-top:2px solid #000}
+  .step{page-break-inside:avoid}
+  .scroller{overflow:visible}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:640px){
+  .step{grid-template-columns:1fr;gap:7px}
+  .step-num{border-top:none;padding-top:0}
+  .v-num{font-size:23px}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <a href="../index.html" class="toolshelf" title="Back to Vinoth's AI Tools">⬅ Toolshelf</a>
+    <div class="mast-row">
+      <div>
+        <h1 class="mast-title">Intrinsic valuation</h1>
+        <p class="mast-sub">What is the cash worth, and what do you have to believe to get it?</p>
+      </div>
+      <div class="toolbar">
+        <button class="btn" id="bEg">Load a worked example</button>
+        <button class="btn" id="bSave">Save to file</button>
+        <button class="btn" id="bLoad">Load from file</button>
+        <button class="btn" id="bPrint">Print</button>
+        <button class="btn btn-quiet" id="bClear">Clear all</button>
+        <input type="file" id="fPick" accept=".json" style="display:none">
+      </div>
+    </div>
+  </header>
+
+  <section class="step">
+    <div class="step-num">01</div>
+    <div class="step-body">
+      <h2 class="step-head">Where the company stands today</h2>
+      <p class="step-why">Year zero. Everything forecast below grows out of these figures, so a mistake here scales through all ten years. Totals in millions; the share price in whatever unit the market quotes.</p>
+      <div class="fields" id="f1"></div>
+      <div class="derived" id="d1"></div>
+    </div>
+  </section>
+
+  <section class="step">
+    <div class="step-num">02</div>
+    <div class="step-body">
+      <h2 class="step-head">What the money costs</h2>
+      <p class="step-why">The discount rate is the price of risk, and it does more work than any other single number here. In the far future you assume the company becomes ordinary — so <em>beta drifts to 1</em> and the terminal discount rate differs from the one you use for the next ten years. That's deliberate, not an error.</p>
+      <div class="fields" id="f2"></div>
+      <div class="derived" id="d2"></div>
+      <div id="w2"></div>
+    </div>
+  </section>
+
+  <section class="step">
+    <div class="step-num">03</div>
+    <div class="step-body">
+      <h2 class="step-head">What you're assuming</h2>
+      <p class="step-why">Set where the company starts and where it ends up; the years in between fade in a straight line. Two anchors and a ruler beat ten guesses. The one that decides the answer is the return on capital in the final year — <em>growth only creates value when the return beats the cost of capital.</em> Set them equal and watch what happens.</p>
+      <div class="scroller"><table class="anchors"><thead id="aHead"></thead><tbody id="aBody"></tbody></table></div>
+      <div id="w3"></div>
+    </div>
+  </section>
+
+  <section class="step">
+    <div class="step-num">04</div>
+    <div class="step-body">
+      <h2 class="step-head">The ten years</h2>
+      <p class="step-why">Reinvestment is what makes this honest. Growth has to be bought — the cash a company ploughs back is cash the owner never sees. A forecast that grows without reinvesting is a wish.</p>
+      <div class="scroller"><table class="ftab"><thead id="tHead"></thead><tbody id="tBody"></tbody></table></div>
+    </div>
+  </section>
+
+  <section class="step">
+    <div class="step-num">05</div>
+    <div class="step-body">
+      <h2 class="step-head">Everything after year ten</h2>
+      <p class="step-why">Two ways to close the model. The plain perpetuity carries the last year's cash flow forward for ever. The second asks what reinvestment that growth would actually need, and takes it out first. They only disagree when the return on capital after year ten differs from the year-ten figure — which is the whole point of setting it separately.</p>
+      <div class="toggle-row">
+        <span class="lbl-sm">Terminal value</span>
+        <div class="seg" id="segTV">
+          <button data-v="1" class="on">Plain perpetuity</button>
+          <button data-v="2">Reinvestment-consistent</button>
+        </div>
+      </div>
+      <div class="derived" id="d5"></div>
+      <div id="w5"></div>
+    </div>
+  </section>
+
+  <section class="step">
+    <div class="step-num">06</div>
+    <div class="step-body">
+      <h2 class="step-head">Where the value actually comes from</h2>
+      <p class="step-why">If almost all of it sits beyond year ten, your answer is a view on the terminal assumptions wearing a ten-year forecast as a disguise. Above roughly 80%, say so out loud rather than let a marker find it.</p>
+      <div class="source-card">
+        <div class="src-cap" id="srcCap">Present value, split by source</div>
+        <div class="srcbar" id="srcBar"></div>
+        <div class="src-key">
+          <span><i style="background:var(--verdigris)"></i>Years 1–10</span>
+          <span><i style="background:#8C6A2E"></i>Everything after</span>
+        </div>
+        <div class="bars" id="bars"></div>
+        <div class="bar-x" id="barsX"></div>
+      </div>
+      <div class="derived" id="d6"></div>
+    </div>
+  </section>
+
+  <section class="step">
+    <div class="step-num">07</div>
+    <div class="step-body">
+      <h2 class="step-head">How wrong could you be</h2>
+      <p class="step-why">Move the discount rate and the long-run growth rate by half a point each way. If the answer swings across the market price inside that box, you don't have a valuation — you have a range, and you should present it as one.</p>
+      <div class="scroller"><table class="grid" id="sens"></table></div>
+      <p class="hint">Outlined cell is your current answer. Values are per share.</p>
+    </div>
+  </section>
+</div>
+
+<div class="verdict">
+  <div class="v-inner">
+    <div class="v-block">
+      <span class="v-cap">Value per share</span>
+      <span class="v-num" id="vVal">—</span>
+    </div>
+    <div class="v-block">
+      <span class="v-cap">Against market</span>
+      <span class="v-mid" id="vGap">—</span>
+    </div>
+    <div class="v-tag t-none" id="vTag">Awaiting inputs</div>
+    <div class="v-note" id="vNote">Fill in step 01 and step 02 to get a verdict.</div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+var N = 10;   /* explicit forecast years */
+
+/* ---------------- input definitions ---------------- */
+var F1 = [
+  {k:"name",  lab:"Company",              txt:true, tip:""},
+  {k:"ccy",   lab:"Currency",             txt:true, tip:"One currency throughout, including the risk-free rate."},
+  {k:"price", lab:"Share price",          tip:"Quote page. Note the date."},
+  {k:"shares",lab:"Shares out (m)",       tip:"Diluted, from the latest report."},
+  {k:"pxu",   lab:"Price units per report unit", tip:"Pence quote against £m accounts: 100. Same unit either side: 1."},
+  {k:"rev0",  lab:"Revenue, last year (m)",tip:"Income statement top line, trailing twelve months."},
+  {k:"ic0",   lab:"Invested capital (m)", tip:"Total equity + total debt − cash. This is the capital the business actually runs on."},
+  {k:"debt",  lab:"Total debt (m)",       tip:"Short + long borrowings, plus lease liabilities."},
+  {k:"cash",  lab:"Cash (m)",             tip:"Cash and equivalents at the same balance sheet date."}
+];
+
+var F2 = [
+  {k:"rf",    lab:"Risk-free rate %",     tip:"Ten-year government bond in your currency. markets.ft.com/data/bonds."},
+  {k:"beta",  lab:"Beta",                 tip:"Five-year monthly against the local index. Sanity-check against peers."},
+  {k:"erp",   lab:"Equity risk premium %",tip:"Damodaran's country tables: pages.stern.nyu.edu/~adamodar. Weight by where revenue is earned, not where the company is listed."},
+  {k:"kd",    lab:"Cost of debt %, pre-tax",tip:"Interest paid ÷ average debt, or the risk-free rate plus a spread for the credit rating."},
+  {k:"tax",   lab:"Tax rate %, today",    tip:"Effective rate from the accounts. Fade it to the statutory rate by year ten."}
+];
+
+/* ---------------- state ---------------- */
+var S = {
+  tgt:{ccy:"INR", pxu:1},
+  cc:{},
+  a:{ g:{y1:"", y10:""}, m:{y1:"", y10:""}, t:{y1:"", y10:""}, roic:{y1:"", y10:""} },
+  gT:"", roicT:"", tv:"1"
+};
+
+/* ---------------- helpers ---------------- */
+function num(v){ if(v===undefined||v===null||v==="") return null;
+  var n=parseFloat(String(v).replace(/[, ]/g,"")); return isFinite(n)?n:null; }
+function pct(v){ var n=num(v); return n===null?null:n/100; }
+function fmt(x,d){ if(x===null||x===undefined||!isFinite(x)) return "—";
+  return x.toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function fpc(x,d){ return x===null||!isFinite(x)?"—":fmt(x*100,d===undefined?1:d)+"%"; }
+function pxu(){ var u=num(S.tgt.pxu); return (u&&u>0)?u:1; }
+function fade(a,b,t){ return a + (b-a)*(t-1)/(N-1); }   /* straight line, year 1 → year N */
+
+/* ---------------- cost of capital ---------------- */
+function capital(){
+  var rf=pct(S.cc.rf), b=num(S.cc.beta), erp=pct(S.cc.erp), kd=pct(S.cc.kd), tx=pct(S.cc.tax);
+  var p=num(S.tgt.price), sh=num(S.tgt.shares), d=num(S.tgt.debt);
+  var o={ok:false};
+  if(rf===null||b===null||erp===null) return o;
+  o.ke = rf + b*erp;
+  o.keT = rf + 1*erp;                       /* beta drifts to 1 in the long run */
+  if(kd===null||tx===null||p===null||sh===null||d===null) return o;
+  o.E = (p/pxu())*sh; o.D = d; o.V = o.E + o.D;
+  if(o.V<=0) return o;
+  o.we = o.E/o.V; o.wd = o.D/o.V;
+  o.kdAT = kd*(1-tx);
+  o.wacc  = o.we*o.ke  + o.wd*o.kdAT;
+  o.waccT = o.we*o.keT + o.wd*o.kdAT;
+  o.ok=true; return o;
+}
+
+/* ---------------- forecast ---------------- */
+function forecast(over){
+  over = over || {};
+  var c = capital();
+  var out = {ok:false, rows:[], c:c};
+  if(!c.ok) return out;
+
+  var rev0=num(S.tgt.rev0), ic0=num(S.tgt.ic0);
+  var g1=pct(S.a.g.y1), g10=pct(S.a.g.y10),
+      m1=pct(S.a.m.y1), m10=pct(S.a.m.y10),
+      t1=pct(S.a.t.y1), t10=pct(S.a.t.y10),
+      r1=pct(S.a.roic.y1), r10=pct(S.a.roic.y10);
+  var gT = (over.gT!==undefined)?over.gT:pct(S.gT);
+  var wacc  = (over.wacc!==undefined)?over.wacc:c.wacc;
+  var waccT = (over.wacc!==undefined)?(c.waccT + (over.wacc - c.wacc)):c.waccT;
+
+  if([rev0,ic0,g1,g10,m1,m10,t1,t10,r1,r10,gT].some(function(x){return x===null;})) return out;
+
+  var rev=rev0, rows=[], pvSum=0;
+  for(var t=1;t<=N;t++){
+    var g=fade(g1,g10,t), m=fade(m1,m10,t), tax=fade(t1,t10,t), roic=fade(r1,r10,t);
+    rev = rev*(1+g);
+    var ebit = rev*m, nopat = ebit*(1-tax);
+    /* reinvestment today buys next year's growth */
+    var gNext = (t<N) ? fade(g1,g10,t+1) : gT;
+    var rr = roic>0 ? gNext/roic : 0;
+    var reinv = nopat*rr;
+    var fcff = nopat - reinv;
+    var df = Math.pow(1+wacc,t), pv = fcff/df;
+    pvSum += pv;
+    rows.push({t:t,g:g,m:m,tax:tax,roic:roic,rev:rev,ebit:ebit,nopat:nopat,rr:rr,reinv:reinv,fcff:fcff,df:df,pv:pv});
+  }
+
+  var last=rows[N-1];
+  var roicT=pct(S.roicT); if(roicT===null) roicT=r10;
+  var spread=waccT-gT;
+  out.rows=rows; out.pvSum=pvSum; out.gT=gT; out.wacc=wacc; out.waccT=waccT; out.roicT=roicT;
+  if(spread<=0){ out.blocked=true; return out; }
+
+  var tv1 = last.fcff*(1+gT)/spread;                              /* plain perpetuity */
+  var nopatNext = last.nopat*(1+gT);
+  var tv2 = roicT>0 ? nopatNext*(1-gT/roicT)/spread : null;       /* reinvestment-consistent */
+  var chosen = (S.tv==="2") ? tv2 : tv1;
+  if(chosen===null||!isFinite(chosen)) return out;
+
+  var dfN=Math.pow(1+wacc,N), pvTV=chosen/dfN;
+  var ev=pvSum+pvTV;
+  var debt=num(S.tgt.debt), cash=num(S.tgt.cash), sh=num(S.tgt.shares);
+  if(debt===null||cash===null||sh===null||!sh) return out;
+  var eq=ev-debt+cash, vps=(eq/sh)*pxu();
+
+  out.tv1=tv1; out.tv2=tv2; out.tv=chosen; out.pvTV=pvTV; out.ev=ev;
+  out.eq=eq; out.vps=vps; out.share=ev?pvTV/ev:null; out.ok=true;
+  return out;
+}
+
+/* ---------------- rendering ---------------- */
+function render(){ r1(); r2(); r3(); rest(); persist(); }
+
+function buildFields(host,defs,store,after){
+  var h=document.getElementById(host); h.innerHTML="";
+  defs.forEach(function(f){
+    var d=document.createElement("div"); d.className="field";
+    var v=store[f.k]===undefined?"":store[f.k];
+    d.innerHTML='<label class="f-label" for="x_'+f.k+'">'+f.lab+'</label>'+
+      (f.tip?'<span class="f-tip">'+f.tip+'</span>':'')+
+      '<input class="f-in'+(f.txt?" txt":"")+'" id="x_'+f.k+'" value="'+
+      String(v).replace(/"/g,"&quot;")+'" '+(f.txt?'type="text"':'inputmode="decimal"')+'>';
+    h.appendChild(d);
+    d.querySelector("input").addEventListener("input",function(e){
+      store[f.k]=e.target.value; after(); persist();
+    });
+  });
+}
+function r1(){ buildFields("f1",F1,S.tgt,rest); }
+function r2(){ buildFields("f2",F2,S.cc,rest); }
+
+var AROWS=[
+  {k:"g",   lab:"Revenue growth %",      tip:"Year 1 from guidance or consensus; year 10 near long-run GDP for the markets it sells into."},
+  {k:"m",   lab:"Operating margin %",    tip:"EBIT ÷ revenue. Fade towards what the industry earns once the advantage erodes."},
+  {k:"t",   lab:"Tax rate %",            tip:"Start at the effective rate; end at the statutory rate."},
+  {k:"roic",lab:"Return on invested capital %", tip:"NOPAT ÷ invested capital. Year 10 is the value driver — set it equal to WACC and growth stops adding anything."}
+];
+function r3(){
+  document.getElementById("aHead").innerHTML=
+    '<tr><th class="lft">Driver</th><th>Year 1</th><th>Year 10</th><th>Fades</th></tr>';
+  var b=document.getElementById("aBody"); b.innerHTML="";
+  AROWS.forEach(function(r){
+    var tr=document.createElement("tr");
+    tr.innerHTML='<td class="lft">'+r.lab+'<span class="tipline">'+r.tip+'</span></td>'+
+      '<td><input class="ain" data-p="y1"  value="'+(S.a[r.k].y1||"")+'" inputmode="decimal"></td>'+
+      '<td><input class="ain" data-p="y10" value="'+(S.a[r.k].y10||"")+'" inputmode="decimal"></td>'+
+      '<td style="font-family:var(--serif);font-style:italic;color:var(--muted);font-size:12px">straight line</td>';
+    b.appendChild(tr);
+    tr.querySelectorAll("[data-p]").forEach(function(el){
+      el.addEventListener("input",function(e){ S.a[r.k][el.getAttribute("data-p")]=e.target.value; rest(); persist(); });
+    });
+  });
+  var tr=document.createElement("tr"); tr.style.borderTop="1px solid var(--ink)";
+  tr.innerHTML='<td class="lft">Growth after year 10 %<span class="tipline">Nothing grows faster than the economy for ever. Keep it at or below the risk-free rate.</span></td>'+
+    '<td colspan="2" style="text-align:center"><input class="ain" id="gT" value="'+(S.gT||"")+'" inputmode="decimal"></td>'+
+    '<td style="font-family:var(--serif);font-style:italic;color:var(--muted);font-size:12px">for ever</td>';
+  b.appendChild(tr);
+  var tr2=document.createElement("tr");
+  tr2.innerHTML='<td class="lft">Return on capital after year 10 %<span class="tipline">Competition eventually drags returns towards the cost of capital. Set it equal to the terminal WACC and the second method values growth at exactly nothing. Blank copies the year-10 figure.</span></td>'+
+    '<td colspan="2" style="text-align:center"><input class="ain" id="roicT" value="'+(S.roicT||"")+'" inputmode="decimal"></td>'+
+    '<td style="font-family:var(--serif);font-style:italic;color:var(--muted);font-size:12px">for ever</td>';
+  b.appendChild(tr2);
+  document.getElementById("gT").addEventListener("input",function(e){ S.gT=e.target.value; rest(); persist(); });
+  document.getElementById("roicT").addEventListener("input",function(e){ S.roicT=e.target.value; rest(); persist(); });
+}
+
+function cells(host,items){
+  document.getElementById(host).innerHTML = items.map(function(i){
+    return '<div class="d-cell"><div class="d-cap">'+i.c+'</div><div class="d-val">'+i.v+
+           '</div>'+(i.s?'<div class="d-sub">'+i.s+'</div>':'')+'</div>';
+  }).join("");
+}
+
+function rest(){
+  var c=capital(), f=forecast(), ccy=S.tgt.ccy||"";
+
+  /* step 1 readout */
+  var mcap=(num(S.tgt.price)!==null&&num(S.tgt.shares)!==null)?(num(S.tgt.price)/pxu())*num(S.tgt.shares):null;
+  var nd=(num(S.tgt.debt)!==null&&num(S.tgt.cash)!==null)?num(S.tgt.debt)-num(S.tgt.cash):null;
+  cells("d1",[
+    {c:"Market capitalisation", v:fmt(mcap,0), s:ccy+" millions"},
+    {c:"Net debt", v:fmt(nd,0), s:nd!==null&&nd<0?"net cash":"debt less cash"},
+    {c:"Enterprise value today", v:fmt(mcap!==null&&nd!==null?mcap+nd:null,0), s:"what the market pays for the business"}
+  ]);
+
+  /* step 2 readout */
+  cells("d2",[
+    {c:"Cost of equity", v:fpc(c.ke,2), s:"risk-free + beta × premium"},
+    {c:"After-tax cost of debt", v:fpc(c.kdAT,2), s:"interest is deductible"},
+    {c:"WACC, years 1–10", v:fpc(c.wacc,2), s:c.ok?fpc(c.we,0)+" equity / "+fpc(c.wd,0)+" debt":"—"},
+    {c:"WACC, terminal", v:fpc(c.waccT,2), s:"beta set to 1"}
+  ]);
+
+  var w2=[];
+  if(c.ok&&c.wd>0.8) w2.push("Debt is over 80% of the capital structure. Check you haven't put market capitalisation and debt in different units.");
+  if(num(S.cc.beta)!==null&&num(S.cc.beta)>2.5) w2.push("A beta above 2.5 is rare. Re-check the index and the period before you rely on it.");
+  document.getElementById("w2").innerHTML=w2.map(function(x){return '<div class="note">'+x+'</div>';}).join("");
+
+  /* step 3 warnings */
+  var w3=[], gT=pct(S.gT), rf=pct(S.cc.rf);
+  var r10=pct(S.roicT); if(r10===null) r10=pct(S.a.roic.y10);
+  if(gT!==null&&rf!==null&&gT>rf+0.0001)
+    w3.push("Long-run growth of "+fpc(gT)+" is above the risk-free rate of "+fpc(rf)+
+            ". Sustained for ever, the company eventually becomes larger than the economy. Bring it down.");
+  if(gT!==null&&r10!==null&&gT>0&&Math.abs(r10-(c.waccT||0))<0.0005)
+    w3.push("Return on capital equals the cost of capital in year 10, so growth beyond that point adds nothing at all. That may be exactly what you intend — just be sure you meant it.");
+  if(r10!==null&&c.waccT&&r10<c.waccT&&gT>0)
+    w3.push("Year-10 return on capital ("+fpc(r10)+") is below the terminal cost of capital ("+fpc(c.waccT)+
+            "). Every pound reinvested destroys value, so growth makes the company worth less, not more.");
+  document.getElementById("w3").innerHTML=w3.map(function(x){return '<div class="note">'+x+'</div>';}).join("");
+
+  renderTable(f,ccy); renderTV(f,ccy); renderSource(f,ccy); renderSens(f); renderVerdict(f,ccy);
+}
+
+function renderTable(f,ccy){
+  var head='<tr><th class="lft">'+(ccy?ccy+"m":"Millions")+'</th>';
+  for(var t=1;t<=N;t++) head+='<th>Y'+t+'</th>';
+  document.getElementById("tHead").innerHTML=head+'</tr>';
+  var body=document.getElementById("tBody");
+  if(!f.rows.length){
+    body.innerHTML='<tr><td class="lft" colspan="'+(N+1)+'" style="padding:16px;color:var(--muted);font-family:var(--sans);font-weight:400">Fill in steps 01 to 03 and the forecast builds itself.</td></tr>';
+    return;
+  }
+  function row(lab,pick,dec,cls,isPc){
+    var h='<tr'+(cls?' class="'+cls+'"':'')+'><td class="lft">'+lab+'</td>';
+    f.rows.forEach(function(r){ h+='<td>'+(isPc?fpc(pick(r),1):fmt(pick(r),dec))+'</td>'; });
+    return h+'</tr>';
+  }
+  body.innerHTML =
+    row("Revenue growth",  function(r){return r.g;},   0,"",true)+
+    row("Revenue",         function(r){return r.rev;}, 0)+
+    row("Operating margin",function(r){return r.m;},   0,"",true)+
+    row("EBIT",            function(r){return r.ebit;},0)+
+    row("Tax rate",        function(r){return r.tax;}, 0,"",true)+
+    row("NOPAT",           function(r){return r.nopat;},0,"rule-top")+
+    row("Return on capital",function(r){return r.roic;},0,"",true)+
+    row("Reinvestment rate",function(r){return r.rr;}, 0,"",true)+
+    row("Reinvestment",    function(r){return -r.reinv;},0)+
+    row("Free cash flow to the firm", function(r){return r.fcff;},0,"hl")+
+    row("Discount factor", function(r){return 1/r.df;},3)+
+    row("Present value",   function(r){return r.pv;}, 0);
+}
+
+function renderTV(f,ccy){
+  var blocked=f.blocked;
+  document.getElementById("w5").innerHTML = blocked ?
+    '<div class="stop"><div class="stop-h">The model can\'t run</div><div class="stop-b">Long-run growth is at or above the terminal cost of capital, which makes the perpetuity divide by zero or go negative. Nothing beyond this point is meaningful. Lower the growth rate below '+
+    fpc(f.waccT,2)+', or raise the discount rate.</div></div>' : "";
+  if(blocked||!f.ok){ cells("d5",[{c:"Terminal value",v:"—"},{c:"Present value of it",v:"—"},{c:"Difference between the two methods",v:"—"}]); return; }
+  var diff=(f.tv2!==null&&f.tv1)?(f.tv2/f.tv1-1):null;
+  cells("d5",[
+    {c:"Plain perpetuity", v:fmt(f.tv1,0), s:ccy+"m, at year 10"},
+    {c:"Reinvestment-consistent", v:fmt(f.tv2,0), s:ccy+"m, at year 10"},
+    {c:"In use", v:fmt(f.tv,0), s:S.tv==="2"?"reinvestment-consistent":"plain perpetuity"},
+    {c:"Present value of it", v:fmt(f.pvTV,0), s:"discounted ten years"},
+    {c:"Gap between methods", v:diff===null?"—":(diff>0?"+":"")+fmt(diff*100,1)+"%", s:"second against first"}
+  ]);
+}
+
+function renderSource(f,ccy){
+  var bar=document.getElementById("srcBar"), bars=document.getElementById("bars"), bx=document.getElementById("barsX");
+  if(!f.ok){ bar.innerHTML=""; bars.innerHTML=""; bx.innerHTML="";
+    cells("d6",[{c:"Enterprise value",v:"—"},{c:"Equity value",v:"—"},{c:"Value per share",v:"—"}]); return; }
+  var a=Math.max(f.pvSum,0), b=Math.max(f.pvTV,0), tot=a+b||1;
+  bar.innerHTML='<div class="src-a src-lab" style="width:'+(a/tot*100)+'%">'+fmt(a/tot*100,0)+'%</div>'+
+                '<div class="src-b src-lab" style="width:'+(b/tot*100)+'%">'+fmt(b/tot*100,0)+'%</div>';
+  document.getElementById("srcCap").textContent =
+    "Present value, split by source — "+fmt(f.share*100,0)+"% of this valuation sits beyond year ten";
+
+  var mx=Math.max.apply(null,f.rows.map(function(r){return Math.abs(r.pv);}))||1;
+  bars.innerHTML=f.rows.map(function(r){
+    return '<div class="bar'+(r.pv<0?" neg":"")+'" style="height:'+(Math.abs(r.pv)/mx*84)+
+           'px" title="Year '+r.t+': present value '+fmt(r.pv,0)+'"></div>';
+  }).join("");
+  bx.innerHTML=f.rows.map(function(r){return '<span>Y'+r.t+'</span>';}).join("");
+
+  cells("d6",[
+    {c:"Present value, years 1–10", v:fmt(f.pvSum,0), s:ccy+"m"},
+    {c:"Present value, after year 10", v:fmt(f.pvTV,0), s:fmt(f.share*100,0)+"% of the total"},
+    {c:"Enterprise value", v:fmt(f.ev,0), s:ccy+"m"},
+    {c:"Equity value", v:fmt(f.eq,0), s:"less debt, plus cash"},
+    {c:"Value per share", v:fmt(f.vps,2), s:ccy}
+  ]);
+}
+
+function renderSens(f){
+  var host=document.getElementById("sens"), c=f.c;
+  if(!f.ok||!c.ok){ host.innerHTML='<tr><td style="padding:16px;color:var(--muted);font-family:var(--sans)">The grid appears once the valuation runs.</td></tr>'; return; }
+  var ws=[-0.01,-0.005,0,0.005,0.01], gs=[-0.01,-0.005,0,0.005,0.01];
+  var h='<tr><th class="corner">WACC ↓ / long-run growth →</th>';
+  gs.forEach(function(dg){ h+='<th>'+fpc(f.gT+dg,2)+'</th>'; });
+  h+='</tr>';
+  ws.forEach(function(dw){
+    h+='<tr><td class="rh">'+fpc(c.wacc+dw,2)+'</td>';
+    gs.forEach(function(dg){
+      var r=forecast({wacc:c.wacc+dw, gT:f.gT+dg});
+      var mid=(dw===0&&dg===0)?' class="mid"':'';
+      h+='<td'+mid+'>'+(r.ok?fmt(r.vps,1):'<span style="color:var(--oxblood)">n/m</span>')+'</td>';
+    });
+    h+='</tr>';
+  });
+  host.innerHTML=h;
+}
+
+function renderVerdict(f,ccy){
+  var vVal=document.getElementById("vVal"), vGap=document.getElementById("vGap"),
+      vTag=document.getElementById("vTag"), vNote=document.getElementById("vNote");
+  if(!f.ok){
+    vVal.textContent="—"; vGap.textContent="—";
+    vTag.className="v-tag t-none"; vTag.textContent=f.blocked?"Model blocked":"Awaiting inputs";
+    vNote.textContent=f.blocked?"Long-run growth is at or above the terminal discount rate. See step 05."
+                               :"Fill in steps 01 to 03 to get a verdict.";
+    return;
+  }
+  vVal.textContent=fmt(f.vps,2)+(ccy?" "+ccy:"");
+  var price=num(S.tgt.price);
+  if(!price){ vGap.textContent="—"; vTag.className="v-tag t-none"; vTag.textContent="No price";
+    vNote.textContent="Add the share price in step 01 to compare."; return; }
+  var gap=(f.vps/price-1)*100, a=Math.abs(gap);
+  vGap.textContent=(gap>0?"+":"")+fmt(gap,1)+"%";
+  var tag,cls,note;
+  if(a<15){ tag="Fairly valued"; cls="t-fair";
+    note="Your assumptions land roughly where the market already is. The interesting question is which of them you'd defend hardest."; }
+  else if(gap>0){ tag=a<40?"Undervalued":"Materially undervalued"; cls="t-under";
+    note="You are more optimistic than the market. Name the one assumption doing the work."; }
+  else { tag=a<40?"Overvalued":"Materially overvalued"; cls="t-over";
+    note="You are less optimistic than the market. Work out what it must be assuming that you aren't."; }
+  if(f.share>0.85) note="Careful — "+fmt(f.share*100,0)+"% of this sits after year ten, so it's a view on the terminal assumptions more than on the forecast.";
+  vTag.className="v-tag "+cls; vTag.textContent=tag; vNote.textContent=note;
+}
+
+/* ---------------- persistence ---------------- */
+var KEY="cftr_dcf_v1";
+function persist(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
+function restore(){ try{ var raw=localStorage.getItem(KEY); if(!raw) return;
+  var o=JSON.parse(raw); if(o&&o.a&&o.a.g){ S=o; } }catch(e){} }
+
+/* ---------------- worked example ---------------- */
+function loadExample(){
+  S.tgt={name:"Illustrative IT services company", ccy:"INR", pxu:1,
+         price:3200, shares:3600, rev0:2550000, ic0:900000, debt:80000, cash:540000};
+  S.cc={rf:6.9, beta:0.85, erp:5.2, kd:7.6, tax:25.2};
+  S.a={ g:{y1:7,y10:4}, m:{y1:24.5,y10:21}, t:{y1:25.2,y10:25.2}, roic:{y1:45,y10:22} };
+  S.gT=4; S.roicT=14; S.tv="1";
+  render();
+  document.getElementById("segTV").querySelectorAll("button").forEach(function(b){
+    b.className = b.getAttribute("data-v")==="1" ? "on" : "";
+  });
+}
+
+/* ---------------- toolbar ---------------- */
+document.getElementById("segTV").addEventListener("click",function(e){
+  var b=e.target.closest("button"); if(!b) return;
+  S.tv=b.getAttribute("data-v");
+  this.querySelectorAll("button").forEach(function(x){ x.className=(x===b)?"on":""; });
+  rest(); persist();
+});
+document.getElementById("bPrint").addEventListener("click",function(){ window.print(); });
+document.getElementById("bEg").addEventListener("click",function(){
+  if(confirm("Load the worked example? This replaces what's on screen.")) loadExample();
+});
+document.getElementById("bClear").addEventListener("click",function(){
+  if(!confirm("Clear every figure and start again?")) return;
+  S={tgt:{ccy:"INR",pxu:1}, cc:{}, a:{g:{y1:"",y10:""},m:{y1:"",y10:""},t:{y1:"",y10:""},roic:{y1:"",y10:""}}, gT:"", roicT:"", tv:"1"};
+  render();
+});
+document.getElementById("bSave").addEventListener("click",function(){
+  var blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download=((S.tgt.name||"dcf-valuation").replace(/[^A-Za-z0-9]+/g,"-").toLowerCase())+".json";
+  a.click(); URL.revokeObjectURL(a.href);
+});
+document.getElementById("bLoad").addEventListener("click",function(){ document.getElementById("fPick").click(); });
+document.getElementById("fPick").addEventListener("change",function(e){
+  var f=e.target.files[0]; if(!f) return;
+  var r=new FileReader();
+  r.onload=function(){ try{ var o=JSON.parse(r.result);
+      if(!o||!o.a) throw 0; S=o; render();
+    }catch(err){ alert("That file isn't a saved valuation. Pick a .json this tool wrote."); } };
+  r.readAsText(f); e.target.value="";
+});
+
+restore(); render();
+</script>
+</body>
+</html>

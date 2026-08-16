@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relative Valuation — peer multiples</title>
+<style>
+:root{
+  --paper:#EFF1F4; --panel:#FFFFFF; --ink:#16202B; --muted:#5C6B7A;
+  --prussian:#1F4E6B; --amber:#9A6614; --verdigris:#2A6259; --oxblood:#8C3A2E;
+  --rule:#C7CFD8; --rule-soft:#DDE3E9;
+  --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper); color:var(--ink); font-family:var(--sans);
+  font-size:15px; line-height:1.5; padding-bottom:150px;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+
+/* ---------- masthead ---------- */
+.masthead{border-bottom:2px solid var(--ink);margin-bottom:38px;padding:30px 0 16px}
+.mast-row{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
+.mast-title{font-size:27px;font-weight:600;letter-spacing:-.02em;margin:0}
+.mast-sub{font-family:var(--serif);font-style:italic;color:var(--muted);margin:6px 0 0;font-size:15px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap}
+.toolshelf{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-decoration:none;margin:0 0 14px}
+.toolshelf:hover{color:var(--prussian)}
+
+/* ---------- buttons ---------- */
+.btn{
+  font-family:var(--sans);font-size:12px;letter-spacing:.06em;text-transform:uppercase;
+  font-weight:600;padding:8px 13px;border:1px solid var(--rule);background:var(--panel);
+  color:var(--ink);cursor:pointer;border-radius:2px;
+}
+.btn:hover{border-color:var(--prussian);color:var(--prussian)}
+.btn:focus-visible{outline:2px solid var(--prussian);outline-offset:2px}
+.btn-solid{background:var(--prussian);color:#fff;border-color:var(--prussian)}
+.btn-solid:hover{background:#173D54;color:#fff}
+.btn-quiet{border-style:dashed;color:var(--muted)}
+
+/* ---------- steps ---------- */
+.step{display:grid;grid-template-columns:52px 1fr;gap:20px;margin-bottom:40px}
+.step-num{
+  font-family:var(--mono);font-size:12px;font-weight:600;color:var(--prussian);
+  padding-top:5px;letter-spacing:.04em;border-top:2px solid var(--prussian);
+}
+.step-body{border-top:1px solid var(--rule);padding-top:12px;min-width:0}
+.step-head{font-size:12px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;margin:0 0 5px}
+.step-why{font-family:var(--serif);font-size:15px;color:var(--muted);margin:0 0 18px;max-width:62ch}
+.step-why em{color:var(--ink);font-style:italic}
+
+/* ---------- fields ---------- */
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:15px 20px}
+.field{display:flex;flex-direction:column;min-width:0}
+.f-label{font-size:12px;font-weight:600;letter-spacing:.03em;margin-bottom:3px}
+.f-tip{font-size:11.5px;color:var(--amber);line-height:1.35;margin-bottom:5px;font-style:italic}
+.f-in{
+  font-family:var(--mono);font-size:14px;padding:7px 9px;border:1px solid var(--rule);
+  border-radius:2px;background:var(--panel);color:var(--prussian);font-weight:600;width:100%;
+}
+.f-in:focus{outline:none;border-color:var(--prussian);box-shadow:0 0 0 2px rgba(31,78,107,.15)}
+.f-in.txt{font-family:var(--sans);font-weight:500;color:var(--ink)}
+.f-in.bad{border-color:var(--oxblood);background:#FBF2F0}
+
+/* ---------- multiple picker ---------- */
+.mults{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:9px}
+.mult{
+  display:grid;grid-template-columns:19px 1fr;gap:10px;align-items:start;
+  border:1px solid var(--rule-soft);background:var(--panel);padding:10px 12px;
+  border-radius:2px;cursor:pointer;
+}
+.mult:hover{border-color:var(--prussian)}
+.mult.on{border-color:var(--prussian);box-shadow:inset 3px 0 0 var(--prussian)}
+.mult input{margin:3px 0 0;cursor:pointer;accent-color:var(--prussian)}
+.mult-name{font-family:var(--mono);font-size:13.5px;font-weight:600}
+.mult-test{font-size:11.5px;margin-top:3px;line-height:1.4}
+.pass{color:var(--verdigris)}
+.fail{color:var(--oxblood)}
+
+/* ---------- peer table ---------- */
+.scroller{overflow-x:auto;border:1px solid var(--rule);background:var(--panel);border-radius:2px}
+.ptab{border-collapse:collapse;width:100%;font-size:13px}
+.ptab th{
+  font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;
+  text-align:right;padding:9px 8px;border-bottom:1px solid var(--rule);
+  white-space:nowrap;color:var(--muted);background:#F7F9FA;
+}
+.ptab th.lft,.ptab td.lft{text-align:left}
+.ptab td{padding:3px 5px;border-bottom:1px solid var(--rule-soft);text-align:right}
+.ptab tr.off td{opacity:.42}
+.cin{
+  font-family:var(--mono);font-size:13px;padding:6px 7px;border:1px solid transparent;
+  background:transparent;color:var(--prussian);font-weight:600;text-align:right;
+  width:100%;min-width:76px;border-radius:2px;
+}
+.cin:focus{outline:none;border-color:var(--prussian);background:#F4F8FA}
+.cin.txt{font-family:var(--sans);text-align:left;color:var(--ink);font-weight:500;min-width:118px}
+.cin.rat{font-family:var(--serif);font-style:italic;font-size:12.5px;text-align:left;color:var(--muted);min-width:150px}
+.chk{accent-color:var(--prussian);cursor:pointer;width:15px;height:15px}
+.rm{border:none;background:none;color:var(--rule);cursor:pointer;font-size:17px;line-height:1;padding:0 5px}
+.rm:hover{color:var(--oxblood)}
+
+/* ---------- stats ---------- */
+.stab{border-collapse:collapse;width:100%;font-size:13px}
+.stab th{
+  font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;
+  text-align:right;padding:9px 10px;border-bottom:1px solid var(--rule);color:var(--muted);white-space:nowrap;
+}
+.stab th.lft{text-align:left}
+.stab td{padding:8px 10px;border-bottom:1px solid var(--rule-soft);text-align:right;font-family:var(--mono);font-size:13px}
+.stab td.lft{text-align:left;font-family:var(--sans);font-weight:600}
+.stab tr:hover td{background:#F7F9FA}
+.pick{color:var(--prussian);font-weight:700}
+.val{color:var(--verdigris);font-weight:700}
+.nm{color:var(--oxblood);font-style:italic;font-family:var(--serif)}
+.cv-hi{color:var(--oxblood)}
+
+/* ---------- scale (signature) ---------- */
+.scale-card{background:var(--panel);border:1px solid var(--rule);border-radius:2px;padding:22px 24px 16px}
+.scale-cap{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:20px}
+.scale{position:relative;height:96px;margin:0 12px}
+.axis{position:absolute;left:0;right:0;top:52px;height:1px;background:var(--rule)}
+.band{position:absolute;top:44px;height:17px;background:rgba(42,98,89,.13);border-left:1px solid var(--verdigris);border-right:1px solid var(--verdigris)}
+.tick{position:absolute;top:44px;height:17px;width:1px;background:var(--verdigris)}
+.tick-lab{position:absolute;top:12px;font-family:var(--mono);font-size:10px;color:var(--muted);transform:translateX(-50%);white-space:nowrap}
+.mark{position:absolute;top:46.5px;width:13px;height:13px;border-radius:50%;background:var(--verdigris);transform:translateX(-50%);border:2px solid var(--panel)}
+.mkt{position:absolute;top:30px;bottom:20px;width:2px;background:var(--oxblood)}
+.mkt-lab{position:absolute;top:72px;font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--oxblood);transform:translateX(-50%);white-space:nowrap}
+
+/* ---------- verdict bar ---------- */
+.verdict{
+  position:fixed;left:0;right:0;bottom:0;background:var(--ink);color:#fff;
+  border-top:3px solid var(--verdigris);z-index:40;
+}
+.v-inner{max-width:1080px;margin:0 auto;padding:13px 24px;display:flex;align-items:center;gap:26px;flex-wrap:wrap}
+.v-block{display:flex;flex-direction:column;gap:1px}
+.v-cap{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#8FA3B4;font-weight:700}
+.v-num{font-family:var(--mono);font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.v-mid{font-family:var(--mono);font-size:19px;font-weight:600;line-height:1.2}
+.v-tag{
+  font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  padding:7px 14px;border-radius:2px;border:1.5px solid currentColor;
+}
+.t-fair{color:#7FD3C4} .t-under{color:#8FC7F0} .t-over{color:#F0A99B} .t-none{color:#8FA3B4}
+.v-note{font-family:var(--serif);font-style:italic;font-size:13px;color:#A9BAC8;flex:1;min-width:190px}
+.v-spacer{flex:1}
+
+.hint{font-family:var(--serif);font-style:italic;font-size:13.5px;color:var(--muted);margin:11px 0 0}
+.warn{
+  border-left:3px solid var(--oxblood);background:#FBF2F0;padding:10px 14px;
+  font-size:13px;color:var(--oxblood);margin:14px 0 0;border-radius:0 2px 2px 0;
+}
+.warn strong{font-weight:700}
+.toggle-row{display:flex;gap:10px;align-items:center;margin-bottom:15px;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:2px;overflow:hidden}
+.seg button{
+  font-family:var(--sans);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;
+  padding:7px 14px;border:none;background:var(--panel);color:var(--muted);cursor:pointer;
+}
+.seg button.on{background:var(--prussian);color:#fff}
+.seg button:focus-visible{outline:2px solid var(--prussian);outline-offset:-2px}
+.lbl-sm{font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+
+@media print{
+  body{background:#fff;padding-bottom:0;font-size:11pt}
+  .toolbar,.rm,.btn,.toolshelf{display:none!important}
+  .verdict{position:static;border-top:2px solid #000}
+  .step{page-break-inside:avoid}
+  .scroller{overflow:visible}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:640px){
+  .step{grid-template-columns:1fr;gap:7px}
+  .step-num{border-top:none;padding-top:0}
+  .v-num{font-size:23px}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <a href="../index.html" class="toolshelf" title="Back to Vinoth's AI Tools">⬅ Toolshelf</a>
+    <div class="mast-row">
+      <div>
+        <h1 class="mast-title">Relative valuation</h1>
+        <p class="mast-sub">What are people paying for companies like this one?</p>
+      </div>
+      <div class="toolbar">
+        <button class="btn" id="bEg">Load M&amp;S example</button>
+        <button class="btn" id="bSave">Save to file</button>
+        <button class="btn" id="bLoad">Load from file</button>
+        <button class="btn" id="bPrint">Print</button>
+        <button class="btn btn-quiet" id="bClear">Clear all</button>
+        <input type="file" id="fPick" accept=".json" style="display:none">
+      </div>
+    </div>
+  </header>
+
+  <!-- STEP 1 -->
+  <section class="step">
+    <div class="step-num">01</div>
+    <div class="step-body">
+      <h2 class="step-head">The company you're valuing</h2>
+      <p class="step-why">Everything below is measured against these figures. Use <em>one date</em> for the company and every peer — mixing a trailing year here with a trailing twelve months there is the single most detectable error in this whole exercise. Per-share figures go in the same unit as the price; totals go in millions.</p>
+      <div class="fields" id="tgtFields"></div>
+    </div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section class="step">
+    <div class="step-num">02</div>
+    <div class="step-body">
+      <h2 class="step-head">Which multiples</h2>
+      <p class="step-why">A multiple only means something if the top and the bottom belong to the same people. Share price belongs to shareholders, so it can only sit above a number shareholders own. Enterprise value belongs to lenders <em>and</em> shareholders, so it sits above profit measured before interest. The two below marked in red fail that test — they're here so you can see the failure, not so you can use them.</p>
+      <div class="mults" id="multPick"></div>
+      <p class="hint">Tick fewer and you type less: each peer only shows the boxes your chosen multiples actually need.</p>
+    </div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section class="step">
+    <div class="step-num">03</div>
+    <div class="step-body">
+      <h2 class="step-head">The peers</h2>
+      <p class="step-why">Untick a company to drop it from the calculation and say why in the last column. That sentence is the argument — a screen nobody can follow is worth less than a narrow one you can defend.</p>
+      <div class="scroller"><table class="ptab"><thead id="pHead"></thead><tbody id="pBody"></tbody></table></div>
+      <div style="margin-top:12px"><button class="btn btn-solid" id="bAdd">+ Add a peer</button></div>
+    </div>
+  </section>
+
+  <!-- STEP 4 -->
+  <section class="step">
+    <div class="step-num">04</div>
+    <div class="step-body">
+      <h2 class="step-head">The spread</h2>
+      <p class="step-why">Multiples are skewed — a handful of expensive companies drag the average somewhere no individual company sits. Watch the two columns diverge. Where they're far apart, the median is telling the truth and the mean isn't.</p>
+      <div class="toggle-row">
+        <span class="lbl-sm">Value on</span>
+        <div class="seg" id="segStat">
+          <button data-v="median" class="on">Median</button>
+          <button data-v="mean">Mean</button>
+        </div>
+      </div>
+      <div class="scroller"><table class="stab"><thead id="sHead"></thead><tbody id="sBody"></tbody></table></div>
+      <div id="warnBox"></div>
+    </div>
+  </section>
+
+  <!-- STEP 5 -->
+  <section class="step">
+    <div class="step-num">05</div>
+    <div class="step-body">
+      <h2 class="step-head">What each multiple says the shares are worth</h2>
+      <p class="step-why">One number per multiple, and the market price marked in red. If the price sits inside the spread, the market agrees with the peer group; if it sits outside, either you've found something or your peer group is wrong. Decide which before you write a word.</p>
+      <div class="scale-card">
+        <div class="scale-cap" id="scaleCap">Implied value per share</div>
+        <div class="scale" id="scale"></div>
+      </div>
+      <div class="scroller" style="margin-top:16px"><table class="stab"><thead id="vHead"></thead><tbody id="vBody"></tbody></table></div>
+      <p class="hint">The headline verdict uses the median across every multiple that produced a usable number.</p>
+    </div>
+  </section>
+</div>
+
+<div class="verdict">
+  <div class="v-inner">
+    <div class="v-block">
+      <span class="v-cap">Value per share</span>
+      <span class="v-num" id="vVal">—</span>
+    </div>
+    <div class="v-block">
+      <span class="v-cap">Against market</span>
+      <span class="v-mid" id="vGap">—</span>
+    </div>
+    <div class="v-tag t-none" id="vTag">Awaiting inputs</div>
+    <div class="v-note" id="vNote">Enter a share price and at least one peer.</div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ============ multiple definitions ============ */
+/* base: 'eq' = equity multiple (price on top) | 'ev' = enterprise multiple */
+var MULTS = [
+  {k:"pe",    name:"P/E",         base:"eq", pf:"eps",   tf:"eps",    test:true,
+   why:"Price is shareholders'. Earnings after interest are shareholders'. Consistent."},
+  {k:"fpe",   name:"Forward P/E", base:"eq", pf:"feps",  tf:"feps",   test:true,
+   why:"Same test as P/E, but next year's earnings. Usually a tighter spread."},
+  {k:"pb",    name:"P/B",         base:"eq", pf:"bvps",  tf:"bvps",   test:true,
+   why:"Book value of equity is shareholders'. Consistent."},
+  {k:"ps",    name:"P/S",         base:"eq", pf:"revps", tf:"revps",  test:false, stmt:true,
+   why:"Revenue belongs to everyone who funds the firm, not just shareholders. Fails — but survives in practice for loss-makers."},
+  {k:"evs",   name:"EV/Sales",    base:"ev", pf:"rev",   tf:"rev",    test:true,  stmt:true,
+   why:"Enterprise value over revenue. Both pre-debt. Consistent."},
+  {k:"evebitda",name:"EV/EBITDA", base:"ev", pf:"ebitda",tf:"ebitda", test:true,  stmt:true,
+   why:"EBITDA is before interest. Consistent, and the workhorse of the trade."},
+  {k:"evebit",name:"EV/EBIT",     base:"ev", pf:"ebit",  tf:"ebit",   test:true,  stmt:true,
+   why:"Harder than EBITDA because depreciation is a real cost. Consistent."},
+  {k:"pebitda",name:"P/EBITDA",   base:"eq", pf:"ebitdaps",tf:"ebitdaps",test:false, stmt:true,
+   why:"Price is shareholders', EBITDA is before lenders are paid. Fails — a geared company looks cheap for no reason."}
+];
+
+/* ============ field definitions ============ */
+var TFIELDS = [
+  {k:"name",  lab:"Company",        tip:"", txt:true,  always:true},
+  {k:"ccy",   lab:"Currency",       tip:"One currency throughout. Multiples don't care; the answer does.", txt:true, always:true},
+  {k:"price", lab:"Share price",    tip:"Quote page. Note the date — you'll need it.", always:true},
+  {k:"shares",lab:"Shares out (m)", tip:"Latest interim or annual report cover page. Diluted.", needs:["ps","evs","evebitda","evebit","pebitda"]},
+  {k:"pxu",   lab:"Price units per report unit", tip:"London quotes in pence but reports in £m, so enter 100. Where the quote and the accounts use the same unit, enter 1.", needs:["ps","evs","evebitda","evebit","pebitda"]},
+  {k:"eps",   lab:"EPS",            tip:"Trailing twelve months, diluted. Same unit as the price — pence if the price is in pence.", needs:["pe"]},
+  {k:"feps",  lab:"Forward EPS",    tip:"Consensus for next year, same unit as the price. Note how many analysts.", needs:["fpe"]},
+  {k:"bvps",  lab:"Book value/share",tip:"Total equity ÷ shares, same unit as the price. Watch for large intangibles.", needs:["pb"]},
+  {k:"rev",   lab:"Revenue (m)",    tip:"Income statement, top line, same period as EPS.", needs:["ps","evs"]},
+  {k:"ebitda",lab:"EBITDA (m)",     tip:"Operating profit + depreciation + amortisation. Say which definition you used.", needs:["evebitda","pebitda"]},
+  {k:"ebit",  lab:"EBIT (m)",       tip:"Operating profit, before interest and tax.", needs:["evebit"]},
+  {k:"debt",  lab:"Total debt (m)", tip:"Balance sheet: short + long borrowings, plus lease liabilities.", needs:["evs","evebitda","evebit"]},
+  {k:"cash",  lab:"Cash (m)",       tip:"Cash and equivalents, plus liquid investments if you can defend it.", needs:["evs","evebitda","evebit"]}
+];
+
+var PCOLS = [
+  {k:"name",  lab:"Peer",        cls:"txt", always:true},
+  {k:"price", lab:"Price",       always:true},
+  {k:"shares",lab:"Shares (m)",  needs:["ps","evs","evebitda","evebit","pebitda"]},
+  {k:"eps",   lab:"EPS",         needs:["pe"]},
+  {k:"feps",  lab:"Fwd EPS",     needs:["fpe"]},
+  {k:"bvps",  lab:"BV/share",    needs:["pb"]},
+  {k:"rev",   lab:"Revenue",     needs:["ps","evs"]},
+  {k:"ebitda",lab:"EBITDA",      needs:["evebitda","pebitda"]},
+  {k:"ebit",  lab:"EBIT",        needs:["evebit"]},
+  {k:"debt",  lab:"Debt",        needs:["evs","evebitda","evebit"]},
+  {k:"cash",  lab:"Cash",        needs:["evs","evebitda","evebit"]}
+];
+
+/* ============ state ============ */
+var S = {
+  tgt:{ccy:"GBp"},
+  on:{pe:true, evebitda:true},
+  stat:"median",
+  peers:[]
+};
+function blankPeer(){ return {id:Math.random().toString(36).slice(2,9), inc:true, rat:""}; }
+for(var i=0;i<5;i++) S.peers.push(blankPeer());
+
+/* ============ helpers ============ */
+function num(v){ if(v===undefined||v===null||v==="") return null; var n=parseFloat(String(v).replace(/[, ]/g,"")); return isFinite(n)?n:null; }
+function activeMults(){ return MULTS.filter(function(m){return S.on[m.k];}); }
+function needed(f){ if(f.always) return true; if(!f.needs) return false;
+  return f.needs.some(function(k){return S.on[k];}); }
+function fmt(x,d){ if(x===null||x===undefined||!isFinite(x)) return "—";
+  return x.toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}); }
+
+/* derive a per-entity metric, incl. computed per-share values */
+function metric(o,key){
+  var d=num(o[key]); if(d!==null) return d;
+  var sh=num(o.shares);
+  if(key==="revps"){ var r=num(o.rev); return (r!==null&&sh)?r/sh:null; }
+  if(key==="ebitdaps"){ var e=num(o.ebitda); return (e!==null&&sh)?e/sh:null; }
+  return null;
+}
+function pxu(){ var u=num(S.tgt.pxu); return (u&&u>0)?u:1; }
+function evOf(o){
+  var p=num(o.price), sh=num(o.shares), d=num(o.debt), c=num(o.cash);
+  if(p===null||sh===null||d===null||c===null) return null;
+  return (p/pxu())*sh + d - c;          /* price converted into report units */
+}
+/* the observed multiple for one company */
+function multOf(o,m){
+  var den = metric(o, m.base==="ev" ? m.pf : m.pf);
+  if(den===null || den<=0) return null;                 /* guard: n/m */
+  if(m.base==="eq"){ var p=num(o.price); if(p===null) return null;
+    return (m.stmt ? p/pxu() : p)/den; }   /* statement-derived denominators need the unit bridge */
+  var ev=evOf(o); return ev===null?null:ev/den;
+}
+
+/* ============ statistics ============ */
+function stats(arr){
+  var a=arr.filter(function(x){return x!==null&&isFinite(x);}).sort(function(x,y){return x-y;});
+  var n=a.length; if(!n) return {n:0};
+  var sum=a.reduce(function(s,x){return s+x;},0), mean=sum/n;
+  function q(p){ var i=(n-1)*p, lo=Math.floor(i), hi=Math.ceil(i);
+    return lo===hi ? a[lo] : a[lo]+(a[hi]-a[lo])*(i-lo); }
+  var sd=0;
+  if(n>1){ sd=Math.sqrt(a.reduce(function(s,x){return s+(x-mean)*(x-mean);},0)/(n-1)); }
+  return {n:n, mean:mean, median:q(.5), q1:q(.25), q3:q(.75),
+          min:a[0], max:a[n-1], sd:sd, cv:mean?sd/mean:null};
+}
+
+/* ============ valuation ============ */
+function impliedValue(m, mult){
+  if(mult===null||!isFinite(mult)) return null;
+  var t=S.tgt, sh=num(t.shares);
+  if(m.base==="eq"){
+    var den=metric(t,m.tf);
+    if(den===null||den<=0) return null;
+    return mult*den*(m.stmt?pxu():1);             /* back into price units */
+  }
+  var d=metric(t,m.tf), debt=num(t.debt), cash=num(t.cash);
+  if(d===null||d<=0||sh===null||!sh||debt===null||cash===null) return null;
+  return ((mult*d - debt + cash)/sh)*pxu();       /* EV → equity → per share, in price units */
+}
+
+/* ============ rendering ============ */
+function render(){
+  renderTarget(); renderMults(); renderPeers(); renderStats(); renderVerdict();
+  persist();
+}
+
+function renderTarget(){
+  var host=document.getElementById("tgtFields"); host.innerHTML="";
+  TFIELDS.filter(needed).forEach(function(f){
+    var d=document.createElement("div"); d.className="field";
+    var v=S.tgt[f.k]===undefined?"":S.tgt[f.k];
+    d.innerHTML='<label class="f-label" for="t_'+f.k+'">'+f.lab+'</label>'+
+      (f.tip?'<span class="f-tip">'+f.tip+'</span>':'')+
+      '<input class="f-in'+(f.cls||f.txt?" txt":"")+'" id="t_'+f.k+'" value="'+
+      String(v).replace(/"/g,"&quot;")+'" '+(f.txt?'type="text"':'inputmode="decimal"')+'>';
+    host.appendChild(d);
+    d.querySelector("input").addEventListener("input",function(e){
+      S.tgt[f.k]=e.target.value; renderStats(); renderVerdict(); persist();
+    });
+  });
+}
+
+function renderMults(){
+  var host=document.getElementById("multPick"); host.innerHTML="";
+  MULTS.forEach(function(m){
+    var l=document.createElement("label");
+    l.className="mult"+(S.on[m.k]?" on":"");
+    l.innerHTML='<input type="checkbox" '+(S.on[m.k]?"checked":"")+'>'+
+      '<span><span class="mult-name">'+m.name+'</span>'+
+      '<span class="mult-test '+(m.test?"pass":"fail")+'">'+
+      (m.test?"✓ ":"✗ ")+m.why+'</span></span>';
+    host.appendChild(l);
+    l.querySelector("input").addEventListener("change",function(e){
+      S.on[m.k]=e.target.checked; render();
+    });
+  });
+}
+
+function visibleCols(){ return PCOLS.filter(needed); }
+
+function renderPeers(){
+  var cols=visibleCols();
+  var th='<tr><th style="width:34px"></th>';
+  cols.forEach(function(c){ th+='<th class="'+(c.cls==="txt"?"lft":"")+'">'+c.lab+'</th>'; });
+  th+='<th class="lft">Why in, or why out</th><th style="width:30px"></th></tr>';
+  document.getElementById("pHead").innerHTML=th;
+
+  var body=document.getElementById("pBody"); body.innerHTML="";
+  S.peers.forEach(function(p,idx){
+    var tr=document.createElement("tr"); if(!p.inc) tr.className="off";
+    var h='<td><input type="checkbox" class="chk" data-a="inc" '+(p.inc?"checked":"")+' title="Include in the calculation"></td>';
+    cols.forEach(function(c){
+      var v=p[c.k]===undefined?"":p[c.k];
+      h+='<td class="'+(c.cls==="txt"?"lft":"")+'"><input class="cin '+(c.cls||"")+'" data-a="'+c.k+
+         '" value="'+String(v).replace(/"/g,"&quot;")+'" '+(c.cls==="txt"?'type="text"':'inputmode="decimal"')+
+         ' placeholder="'+(c.cls==="txt"?"name":"")+'"></td>';
+    });
+    h+='<td class="lft"><input class="cin rat" data-a="rat" value="'+String(p.rat||"").replace(/"/g,"&quot;")+
+       '" placeholder="same market, similar margin…"></td>'+
+       '<td><button class="rm" data-x="'+idx+'" title="Remove this peer">×</button></td>';
+    tr.innerHTML=h; body.appendChild(tr);
+
+    tr.querySelectorAll("[data-a]").forEach(function(el){
+      var a=el.getAttribute("data-a");
+      var ev=(el.type==="checkbox")?"change":"input";
+      el.addEventListener(ev,function(e){
+        p[a] = (el.type==="checkbox") ? e.target.checked : e.target.value;
+        if(a==="inc"){ tr.className=p.inc?"":"off"; }
+        renderStats(); renderVerdict(); persist();
+      });
+    });
+    tr.querySelector(".rm").addEventListener("click",function(){
+      S.peers.splice(idx,1); if(!S.peers.length) S.peers.push(blankPeer()); render();
+    });
+  });
+}
+
+function included(){ return S.peers.filter(function(p){return p.inc;}); }
+
+function renderStats(){
+  var ms=activeMults(), inc=included();
+  var head='<tr><th class="lft">Multiple</th><th>n</th><th>Min</th><th>Q1</th><th>Median</th>'+
+           '<th>Mean</th><th>Q3</th><th>Max</th><th>Std dev</th><th>Spread</th><th>Company</th></tr>';
+  document.getElementById("sHead").innerHTML=head;
+
+  var rows="", warnings=[];
+  ms.forEach(function(m){
+    var vals=inc.map(function(p){return multOf(p,m);});
+    var dropped=inc.filter(function(p,i){
+      return vals[i]===null && Object.keys(p).some(function(k){return k!=="id"&&k!=="inc"&&k!=="rat"&&p[k];});
+    }).length;
+    var st=stats(vals), own=multOf(S.tgt,m);
+    if(dropped) warnings.push(dropped+" "+(dropped===1?"peer":"peers")+" dropped from "+m.name+
+      " — the number underneath is zero, negative or missing, so the multiple has no meaning.");
+    if(st.n&&st.cv!==null&&st.cv>0.6) warnings.push(m.name+" spreads very widely (variation "+
+      fmt(st.cv*100,0)+"% of the mean). Either the group isn't comparable or one company is distorting it.");
+    rows+='<tr><td class="lft">'+m.name+'</td><td>'+(st.n||0)+'</td>'+
+      ["min","q1","median","mean","q3","max","sd"].map(function(k){
+        var cls = (k===S.stat)?' class="pick"':"";
+        return '<td'+cls+'>'+(st.n?fmt(st[k],2)+"x":"—")+'</td>';
+      }).join("")+
+      '<td class="'+(st.cv>0.6?"cv-hi":"")+'">'+(st.n>1&&st.cv!==null?fmt(st.cv*100,0)+"%":"—")+'</td>'+
+      '<td>'+(own!==null?fmt(own,2)+"x":'<span class="nm">n/m</span>')+'</td></tr>';
+  });
+  document.getElementById("sBody").innerHTML = rows ||
+    '<tr><td colspan="11" class="lft" style="padding:16px;color:var(--muted)">Tick at least one multiple in step 02.</td></tr>';
+
+  var wb=document.getElementById("warnBox");
+  wb.innerHTML = warnings.map(function(w){return '<div class="warn">'+w+'</div>';}).join("");
+}
+
+function results(){
+  var inc=included(), out=[];
+  activeMults().forEach(function(m){
+    var st=stats(inc.map(function(p){return multOf(p,m);}));
+    if(!st.n) return;
+    var chosen=st[S.stat];
+    var v=impliedValue(m,chosen);
+    if(v!==null&&isFinite(v)&&v>0) out.push({m:m, mult:chosen, val:v, n:st.n});
+  });
+  return out;
+}
+
+function renderVerdict(){
+  var res=results(), price=num(S.tgt.price), ccy=S.tgt.ccy||"";
+  document.getElementById("vHead").innerHTML=
+    '<tr><th class="lft">Multiple</th><th>Peers used</th><th>'+
+    (S.stat==="median"?"Median":"Mean")+'</th><th>Value per share</th><th>vs price</th></tr>';
+  document.getElementById("vBody").innerHTML = res.length ? res.map(function(r){
+    var gap = price ? (r.val/price-1)*100 : null;
+    return '<tr><td class="lft">'+r.m.name+'</td><td>'+r.n+'</td><td>'+fmt(r.mult,2)+'x</td>'+
+      '<td class="val">'+fmt(r.val,2)+'</td><td>'+(gap===null?"—":(gap>0?"+":"")+fmt(gap,1)+"%")+'</td></tr>';
+  }).join("") : '<tr><td colspan="5" class="lft" style="padding:16px;color:var(--muted)">Nothing to value yet — needs a peer multiple and the matching figure for your company.</td></tr>';
+
+  drawScale(res, price, ccy);
+
+  var vVal=document.getElementById("vVal"), vGap=document.getElementById("vGap"),
+      vTag=document.getElementById("vTag"), vNote=document.getElementById("vNote");
+  if(!res.length){
+    vVal.textContent="—"; vGap.textContent="—";
+    vTag.className="v-tag t-none"; vTag.textContent="Awaiting inputs";
+    vNote.textContent="Enter a share price and at least one peer.";
+    return;
+  }
+  var central=stats(res.map(function(r){return r.val;})).median;
+  vVal.textContent=fmt(central,2)+(ccy?" "+ccy:"");
+  if(!price){
+    vGap.textContent="—";
+    vTag.className="v-tag t-none"; vTag.textContent="No price";
+    vNote.textContent="Add the share price in step 01 to get a verdict.";
+    return;
+  }
+  var gap=(central/price-1)*100, a=Math.abs(gap);
+  vGap.textContent=(gap>0?"+":"")+fmt(gap,1)+"%";
+  var tag,cls,note;
+  if(a<10){ tag="Fairly valued"; cls="t-fair";
+    note="The peer group and the market agree. Any case you make now rests on something the multiples can't see."; }
+  else if(gap>0){ tag=a<25?"Undervalued":"Materially undervalued"; cls="t-under";
+    note=a<25?"Cheap against its peers. Check growth and margin before you call it a bargain."
+             :"A gap this wide is usually the peer group, not the company. Re-read your screen first."; }
+  else { tag=a<25?"Overvalued":"Materially overvalued"; cls="t-over";
+    note=a<25?"Expensive against its peers. Faster growth or higher returns can justify it — evidence it."
+             :"A gap this wide is usually the peer group, not the company. Re-read your screen first."; }
+  vTag.className="v-tag "+cls; vTag.textContent=tag;
+  vNote.textContent=note+" Based on "+res.length+" multiple"+(res.length>1?"s":"")+".";
+}
+
+function drawScale(res, price, ccy){
+  var host=document.getElementById("scale"); host.innerHTML="";
+  document.getElementById("scaleCap").textContent =
+    "Implied value per share"+(ccy?" — "+ccy:"")+"   ·   red line is today's price";
+  if(!res.length){
+    host.innerHTML='<div style="color:var(--muted);font-family:var(--serif);font-style:italic;padding-top:38px">'+
+      'The scale fills in once a multiple produces a value.</div>';
+    return;
+  }
+  var vals=res.map(function(r){return r.val;});
+  var lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals);
+  if(price){ lo=Math.min(lo,price); hi=Math.max(hi,price); }
+  var pad=(hi-lo)*0.14 || Math.max(hi*0.1,1);
+  lo-=pad; hi+=pad;
+  function pos(v){ return ((v-lo)/(hi-lo))*100; }
+
+  var st=stats(vals);
+  var html='<div class="axis"></div>';
+  if(st.n>1){
+    html+='<div class="band" style="left:'+pos(st.min)+'%;width:'+(pos(st.max)-pos(st.min))+'%"></div>';
+  }
+  res.forEach(function(r){
+    var x=pos(r.val);
+    html+='<div class="tick" style="left:'+x+'%"></div>'+
+          '<div class="tick-lab" style="left:'+x+'%">'+r.m.name+'<br>'+fmt(r.val,1)+'</div>';
+  });
+  html+='<div class="mark" style="left:'+pos(st.median)+'%" title="Central estimate"></div>';
+  if(price){
+    html+='<div class="mkt" style="left:'+pos(price)+'%"></div>'+
+          '<div class="mkt-lab" style="left:'+pos(price)+'%">price '+fmt(price,1)+'</div>';
+  }
+  host.innerHTML=html;
+}
+
+/* ============ persistence ============ */
+var KEY="cftr_relval_v1";
+function persist(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
+function restore(){
+  try{
+    var raw=localStorage.getItem(KEY); if(!raw) return;
+    var o=JSON.parse(raw);
+    if(o&&o.peers&&o.peers.length){ S.tgt=o.tgt||{}; S.on=o.on||S.on; S.stat=o.stat||"median"; S.peers=o.peers; }
+  }catch(e){}
+}
+
+/* ============ the Session 08 worked example ============ */
+function loadExample(){
+  S.tgt={name:"Marks & Spencer", ccy:"GBp", price:355.9, shares:2041.4, pxu:100,
+         eps:12.66, feps:33.21, ebitda:1511.90, debt:3406.95, cash:929.35,
+         bvps:(2928.20/2041.4*100).toFixed(2)};   /* pence, to match the quote */
+  S.on={pe:true, evebitda:true};
+  S.stat="median";
+  S.peers=[
+    {id:"a", inc:true, name:"Peer A", price:100, shares:500, eps:24.39, ebitda:380.6, debt:900,  cash:220, rat:"same market, similar scale"},
+    {id:"b", inc:true, name:"Peer B", price:100, shares:500, eps:16.95, ebitda:341.3, debt:1250, cash:180, rat:"same market, more geared"},
+    {id:"c", inc:true, name:"Peer C", price:100, shares:500, eps:13.6986, ebitda:146.6, debt:640,  cash:300, rat:"same market, thinner margin"},
+    {id:"d", inc:true, name:"Peer D", price:100, shares:500, eps:8.06,  ebitda:211.8, debt:1480, cash:95,  rat:"heavily geared - watch the equity multiple"},
+    {id:"e", inc:true, name:"Peer E", price:100, shares:500, eps:4.59,  ebitda:43.0,  debt:520,  cash:410, rat:"smaller, net cash, barely profitable"}
+  ];
+
+  render();
+}
+
+/* ============ toolbar ============ */
+document.getElementById("bAdd").addEventListener("click",function(){ S.peers.push(blankPeer()); render(); });
+document.getElementById("segStat").addEventListener("click",function(e){
+  var b=e.target.closest("button"); if(!b) return;
+  S.stat=b.getAttribute("data-v");
+  this.querySelectorAll("button").forEach(function(x){ x.className = (x===b)?"on":""; });
+  renderStats(); renderVerdict(); persist();
+});
+document.getElementById("bPrint").addEventListener("click",function(){ window.print(); });
+document.getElementById("bEg").addEventListener("click",function(){
+  if(confirm("Load the Session 08 worked example? This replaces what's on screen.")) loadExample();
+});
+document.getElementById("bClear").addEventListener("click",function(){
+  if(!confirm("Clear every figure and start again?")) return;
+  S.tgt={ccy:"GBp"}; S.on={pe:true, evebitda:true}; S.stat="median"; S.peers=[];
+  for(var i=0;i<5;i++) S.peers.push(blankPeer());
+  render();
+});
+document.getElementById("bSave").addEventListener("click",function(){
+  var blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=((S.tgt.name||"relative-valuation").replace(/[^A-Za-z0-9]+/g,"-").toLowerCase())+".json";
+  a.click(); URL.revokeObjectURL(a.href);
+});
+document.getElementById("bLoad").addEventListener("click",function(){ document.getElementById("fPick").click(); });
+document.getElementById("fPick").addEventListener("change",function(e){
+  var f=e.target.files[0]; if(!f) return;
+  var r=new FileReader();
+  r.onload=function(){
+    try{
+      var o=JSON.parse(r.result);
+      S.tgt=o.tgt||{}; S.on=o.on||{}; S.stat=o.stat||"median";
+      S.peers=(o.peers&&o.peers.length)?o.peers:[blankPeer()];
+      render();
+    }catch(err){ alert("That file isn't a saved valuation. Pick a .json this tool wrote."); }
+  };
+  r.readAsText(f); e.target.value="";
+});
+
+restore(); render();
+</script>
+</body>
+</html>

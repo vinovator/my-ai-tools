@@ -53,6 +53,8 @@ Uses Plotly.js 2.27.0, SheetJS (xlsx 0.18.5) for CSV/Excel import, and jStat 1.9
 
 | Directory | Description | Key Libraries |
 |-----------|-------------|---------------|
+| `intrinsic-dcf-valuation/` | Guided discounted-cash-flow valuation workbench with 10-year forecast, worked example, save/load, print | Vanilla JS/CSS |
+| `relative-valuation/` | Peer-multiples valuation tool (P/E, EV/EBITDA, P/B…) with fair-value range and sanity checks | Vanilla JS/CSS |
 | `protocol-lab/` | Interactive animated explainer for DNS/TCP/HTTP/TLS — data-driven scenarios, packet animation, layered stack viz | React 18, Canvas API |
 | `trig-viz/` | Interactive unit circle / sine wave explorer | React 18, Canvas API |
 | `fourier-lab/` | Additive synthesis + Fourier viz + in-browser AI training | React 18, Canvas API, custom TinyNet |

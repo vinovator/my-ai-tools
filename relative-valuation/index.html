@@ -623,9 +623,29 @@ function persist(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){
 function restore(){
   try{
     var raw=localStorage.getItem(KEY); if(!raw) return;
-    var o=JSON.parse(raw);
-    if(o&&o.peers&&o.peers.length){ S.tgt=o.tgt||{}; S.on=o.on||S.on; S.stat=o.stat||"median"; S.peers=o.peers; }
+    S=adopt(JSON.parse(raw));
   }catch(e){}
+}
+
+/* Anything reaching the model — a restored session, a saved file, a hand-edited template —
+   is coerced into a complete, well-formed state here. Nothing downstream then has to guard
+   against a missing branch, and a half-written file can no longer leave the tool unusable. */
+function isObj(o){ return o!==null && typeof o==="object" && Object.prototype.toString.call(o)!=="[object Array]"; }
+function isArr(o){ return Object.prototype.toString.call(o)==="[object Array]"; }
+function adopt(o){
+  o = isObj(o) ? o : {};
+  var peers = (isArr(o.peers) ? o.peers : []).filter(isObj).map(function(p){
+    if(!p.id) p.id=Math.random().toString(36).slice(2,9);
+    if(p.inc===undefined) p.inc=true; else p.inc=!!p.inc;
+    return p;
+  });
+  if(!peers.length) peers=[blankPeer()];
+  return {
+    tgt:  isObj(o.tgt) ? o.tgt : {ccy:"GBp"},
+    on:   isObj(o.on)  ? o.on  : {pe:true, evebitda:true},
+    stat: (o.stat==="mean") ? "mean" : "median",
+    peers:peers
+  };
 }
 
 /* ============ the Session 08 worked example ============ */
@@ -748,18 +768,15 @@ document.getElementById("fPick").addEventListener("change",function(e){
   var f=e.target.files[0]; if(!f) return;
   var r=new FileReader();
   r.onload=function(){
+    var prev=S;                                    /* roll back if anything goes wrong */
     try{
       var o=stripMeta(JSON.parse(r.result));
-      if(!o||!o.tgt) throw 0;
-      S.tgt=o.tgt||{}; S.on=o.on||{}; S.stat=o.stat||"median";
-      S.peers=(o.peers&&o.peers.length)?o.peers:[blankPeer()];
-      /* a hand-written template has no ids — mint them so every row is addressable */
-      S.peers.forEach(function(p){
-        if(!p.id) p.id=Math.random().toString(36).slice(2,9);
-        if(p.inc===undefined) p.inc=true;
-      });
-      render();
-    }catch(err){ alert("That file isn't a saved valuation or a template. Pick a .json this tool wrote."); }
+      if(!isObj(o)||(!isObj(o.tgt)&&!isArr(o.peers))) throw 0;
+      S=adopt(o); render();
+    }catch(err){
+      S=prev; render();
+      alert("That file isn't a saved valuation or a template. Pick a .json this tool wrote.");
+    }
   };
   r.readAsText(f); e.target.value="";
 });

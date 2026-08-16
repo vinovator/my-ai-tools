@@ -327,6 +327,29 @@ function pxu(){ var u=num(S.tgt.pxu); return (u&&u>0)?u:1; }
    the reporting currency only when pxu is 1. A pence quote against £m accounts must not
    be labelled GBP — it would read a hundred times too large. */
 function psUnit(){ return pxu()===1 ? (S.tgt.ccy||"") : ""; }
+function esc(v){ return String(v===undefined||v===null?"":v)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+/* Anything reaching the model — a restored session, a saved file, a hand-edited template —
+   is coerced into a complete, well-formed state here. Nothing downstream then has to guard
+   against a missing branch, and a half-written file can no longer leave the tool unusable. */
+function isObj(o){ return o!==null && typeof o==="object" && Object.prototype.toString.call(o)!=="[object Array]"; }
+function adopt(o){
+  o = isObj(o) ? o : {};
+  var a = isObj(o.a) ? o.a : {};
+  function pair(x){
+    x = isObj(x) ? x : {};
+    return {y1:x.y1===undefined?"":x.y1, y10:x.y10===undefined?"":x.y10};
+  }
+  return {
+    tgt: isObj(o.tgt) ? o.tgt : {ccy:"GBP", pxu:1},
+    cc:  isObj(o.cc)  ? o.cc  : {},
+    a:   {g:pair(a.g), m:pair(a.m), t:pair(a.t), roic:pair(a.roic)},
+    gT:    o.gT===undefined    ? "" : o.gT,
+    roicT: o.roicT===undefined ? "" : o.roicT,
+    tv:    (o.tv==="2") ? "2" : "1"
+  };
+}
 function fade(a,b,t){ return a + (b-a)*(t-1)/(N-1); }   /* straight line, year 1 → year N */
 
 /* ---------------- cost of capital ---------------- */
@@ -475,7 +498,7 @@ function cells(host,items){
 }
 
 function rest(){
-  var c=capital(), f=forecast(), ccy=S.tgt.ccy||"";
+  var c=capital(), f=forecast(), ccy=esc(S.tgt.ccy||"");
 
   /* step 1 readout */
   var mcap=(num(S.tgt.price)!==null&&num(S.tgt.shares)!==null)?(num(S.tgt.price)/pxu())*num(S.tgt.shares):null;
@@ -582,7 +605,7 @@ function renderSource(f,ccy){
     {c:"Present value, after year 10", v:fmt(f.pvTV,0), s:fmt(f.share*100,0)+"% of the total"},
     {c:"Enterprise value", v:fmt(f.ev,0), s:ccy+"m"},
     {c:"Equity value", v:fmt(f.eq,0), s:"less debt, plus cash"},
-    {c:"Value per share", v:fmt(f.vps,2), s:psUnit()||"same unit as the share price"}
+    {c:"Value per share", v:fmt(f.vps,2), s:esc(psUnit())||"same unit as the share price"}
   ]);
 }
 
@@ -636,7 +659,7 @@ function renderVerdict(f,ccy){
 var KEY="cftr_dcf_v1";
 function persist(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
 function restore(){ try{ var raw=localStorage.getItem(KEY); if(!raw) return;
-  var o=JSON.parse(raw); if(o&&o.a&&o.a.g){ S=o; } }catch(e){} }
+  S=adopt(JSON.parse(raw)); }catch(e){} }
 
 /* ---------------- worked example ----------------
    Marks & Spencer, on the same figures the relative-valuation tool uses, so the two
@@ -747,9 +770,17 @@ document.getElementById("bLoad").addEventListener("click",function(){ document.g
 document.getElementById("fPick").addEventListener("change",function(e){
   var f=e.target.files[0]; if(!f) return;
   var r=new FileReader();
-  r.onload=function(){ try{ var o=stripMeta(JSON.parse(r.result));
-      if(!o||!o.a) throw 0; S=o; render();
-    }catch(err){ alert("That file isn't a saved valuation or a template. Pick a .json this tool wrote."); } };
+  r.onload=function(){
+    var prev=S;                                    /* roll back if anything goes wrong */
+    try{
+      var o=stripMeta(JSON.parse(r.result));
+      if(!isObj(o)||(!isObj(o.tgt)&&!isObj(o.a))) throw 0;
+      S=adopt(o); render();
+    }catch(err){
+      S=prev; render();
+      alert("That file isn't a saved valuation or a template. Pick a .json this tool wrote.");
+    }
+  };
   r.readAsText(f); e.target.value="";
 });
 

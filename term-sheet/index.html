@@ -366,7 +366,10 @@ function pct(v){ var n=num(v); return n===null?null:n/100; }
 function fmt(x,d){ if(x===null||x===undefined||!isFinite(x)) return "—";
   return x.toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}); }
 function fpc(x,d){ return x===null||!isFinite(x)?"—":fmt(x*100,d===undefined?1:d)+"%"; }
-function ccy(){ return S.co.ccy||""; }
+/* The currency prefix is free text and money()/compact() feed both innerHTML and
+   textContent, so escaping at the output sites would show entities in the verdict bar.
+   Strip the markup characters instead — no currency symbol needs them. */
+function ccy(){ return String(S.co.ccy||"").replace(/[<>&"']/g,""); }
 function money(x,d){ return x===null||!isFinite(x)?"—":ccy()+fmt(x,d===undefined?0:d); }
 function esc(v){ return String(v===undefined||v===null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;"); }
 
@@ -468,11 +471,15 @@ function round(){
 
 /* ---------------- the preference stack ---------------- */
 function stack(){
-  var r=round(), out=[], n=S.classes.length;
+  var r=round(), out=[], n=S.classes.length, seenNew=false;
   S.classes.forEach(function(c,idx){
     if(!c.inc) return;
+    /* only the first row may draw its figures from the round — a second one claiming
+       isNew would price the same money twice and inflate the whole preference stack */
+    var mine = !!c.isNew && !seenNew;
+    if(mine) seenNew=true;
     var amt, sh;
-    if(c.isNew){ if(!r.ok) return; amt=r.inv; sh=r.invShares; }
+    if(mine){ if(!r.ok) return; amt=r.inv; sh=r.invShares; }
     else { amt=num(c.amt); sh=num(c.sh); }
     if(amt===null||sh===null||amt<=0||sh<=0) return;
     var m=num(c.mult); if(m===null||m<0) m=1;
@@ -483,10 +490,10 @@ function stack(){
     var capRaw=cp;
     if(cp!==null&&cp<=m) cp=null;
     out.push({
-      name:(c.name||(c.isNew?"New round":"Round "+(idx+1))),
+      name:(c.name||(mine?"New round":"Round "+(idx+1))),
       amt:amt, sh:sh, mult:m, part:!!c.part, cap:cp, capRaw:capRaw,
       rank:(S.seniority==="stacked"?(n-idx):1),
-      idx:idx, isNew:!!c.isNew
+      idx:idx, isNew:mine
     });
   });
   return out;
@@ -1044,14 +1051,44 @@ function persist(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){
 function restore(){
   try{
     var raw=localStorage.getItem(KEY); if(!raw) return;
-    var o=JSON.parse(raw);
-    if(o&&o.co&&o.rd&&o.classes&&o.classes.length){ S=o; ensureNew(); }
+    S=adopt(JSON.parse(raw));
   }catch(e){}
 }
-function ensureNew(){
-  var has=false;
-  S.classes.forEach(function(c){ if(c.isNew) has=true; });
-  if(!has) S.classes.unshift(newRoundRow());
+/* Anything reaching the model — a restored session, a saved file, a hand-edited template —
+   is coerced into a complete, well-formed state here. Nothing downstream then has to guard
+   against a missing branch, and a half-written file can no longer leave the tool unusable.
+   Only the first row may claim isNew: two of them would price the same round twice. */
+function isObj(o){ return o!==null && typeof o==="object" && Object.prototype.toString.call(o)!=="[object Array]"; }
+function isArr(o){ return Object.prototype.toString.call(o)==="[object Array]"; }
+function str(v){ return v===undefined||v===null ? "" : String(v); }
+
+function adopt(o){
+  o = isObj(o) ? o : {};
+  var co = isObj(o.co) ? o.co : {}, rd = isObj(o.rd) ? o.rd : {};
+  var seenNew = false;
+  var cls = (isArr(o.classes) ? o.classes : []).filter(isObj).map(function(c){
+    var mine = !!c.isNew && !seenNew;
+    if(mine) seenNew = true;
+    return {
+      id: c.id || Math.random().toString(36).slice(2,9),
+      inc: c.inc===undefined ? true : !!c.inc,
+      isNew: mine,
+      name: str(c.name), amt: str(c.amt), sh: str(c.sh),
+      mult: c.mult===undefined||c.mult==="" ? "1" : str(c.mult),
+      part: !!c.part, cap: str(c.cap)
+    };
+  });
+  if(!seenNew) cls.unshift(newRoundRow());
+  return {
+    co:{ name:str(co.name), ccy:co.ccy===undefined?"£":str(co.ccy),
+         founders:str(co.founders), common:str(co.common), pool:str(co.pool) },
+    rd:{ pre:str(rd.pre), inv:str(rd.inv), poolPct:str(rd.poolPct),
+         poolFrom:(rd.poolFrom==="post")?"post":"pre" },
+    classes: cls,
+    seniority:(o.seniority==="paripassu")?"paripassu":"stacked",
+    exit: str(o.exit),
+    chartMode:(o.chartMode==="pct")?"pct":"abs"
+  };
 }
 
 /* ---------------- blank template ----------------
@@ -1194,17 +1231,15 @@ document.getElementById("fPick").addEventListener("change",function(e){
   var f=e.target.files[0]; if(!f) return;
   var r=new FileReader();
   r.onload=function(){
+    var prev=S;                                    /* roll back if anything goes wrong */
     try{
       var o=stripMeta(JSON.parse(r.result));
-      if(!o||!o.co||!o.rd||!o.classes||!o.classes.length) throw 0;
-      S=o;
-      /* a hand-written template has no ids — mint them so every row is addressable */
-      S.classes.forEach(function(c){
-        if(!c.id) c.id=Math.random().toString(36).slice(2,9);
-        if(c.inc===undefined) c.inc=true;
-      });
-      ensureNew(); render();
-    }catch(err){ alert("That file isn't a saved term sheet or a template. Pick a .json this tool wrote."); }
+      if(!isObj(o)||(!isObj(o.co)&&!isObj(o.rd)&&!isArr(o.classes))) throw 0;
+      S=adopt(o); render();
+    }catch(err){
+      S=prev; render();
+      alert("That file isn't a saved term sheet or a template. Pick a .json this tool wrote.");
+    }
   };
   r.readAsText(f); e.target.value="";
 });

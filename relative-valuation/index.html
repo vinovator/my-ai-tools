@@ -193,7 +193,8 @@ body{
         <p class="mast-sub">What are people paying for companies like this one?</p>
       </div>
       <div class="toolbar">
-        <button class="btn" id="bEg">Load M&amp;S example</button>
+        <button class="btn" id="bEg">Load a worked example</button>
+        <button class="btn" id="bTpl">Download a template</button>
         <button class="btn" id="bSave">Save to file</button>
         <button class="btn" id="bLoad">Load from file</button>
         <button class="btn" id="bPrint">Print</button>
@@ -410,7 +411,15 @@ function impliedValue(m, mult){
 /* ============ rendering ============ */
 function render(){
   renderTarget(); renderMults(); renderPeers(); renderStats(); renderVerdict();
-  persist();
+  syncStat(); persist();
+}
+
+/* the median/mean toggle is state like anything else — resync it on every render,
+   or a restored session and a loaded file both show the wrong statistic */
+function syncStat(){
+  document.getElementById("segStat").querySelectorAll("button").forEach(function(b){
+    b.className = b.getAttribute("data-v")===(S.stat||"median") ? "on" : "";
+  });
 }
 
 function renderTarget(){
@@ -637,7 +646,83 @@ function loadExample(){
   render();
 }
 
+/* ============ blank template ============
+   The guidance is generated from the same field definitions that build the form, so the
+   template cannot drift out of step with the tool. Every key beginning with an underscore
+   is a note to the reader; stripMeta removes them again on the way back in.            */
+function stripMeta(o){
+  if(o===null||typeof o!=="object") return o;
+  if(Object.prototype.toString.call(o)==="[object Array]"){
+    var arr=[],i; for(i=0;i<o.length;i++) arr.push(stripMeta(o[i]));
+    return arr;
+  }
+  var out={},k;
+  for(k in o){
+    if(!Object.prototype.hasOwnProperty.call(o,k)) continue;
+    if(k.charAt(0)==="_") continue;
+    out[k]=stripMeta(o[k]);
+  }
+  return out;
+}
+function templateObj(){
+  var tHelp={}, pHelp={}, mHelp={};
+  TFIELDS.forEach(function(f){ tHelp[f.k]=f.lab+(f.tip?" — "+f.tip:""); });
+  PCOLS.forEach(function(c){ if(c.k!=="name") pHelp[c.k]=c.lab+" — same definition, unit and date as the company above."; });
+  pHelp.name="Peer name.";
+  pHelp.inc="true to include this peer in the calculation, false to park it without deleting it.";
+  pHelp.rat="Why this company is a fair comparison. Write it down — if you cannot, it probably isn't one.";
+  MULTS.forEach(function(m){ mHelp[m.k]=m.name+" — "+(m.test?"passes":"FAILS")+" the consistency test. "+m.why; });
+
+  var tgt={_help:tHelp};
+  TFIELDS.forEach(function(f){ tgt[f.k]=(f.k==="ccy")?"GBp":(f.k==="pxu"?100:""); });
+
+  var peer=function(){ return {inc:true, name:"", price:"", shares:"", eps:"", feps:"", bvps:"",
+                               rev:"", ebitda:"", ebit:"", debt:"", cash:"", rat:""}; };
+  return {
+    _readme:[
+      "TEMPLATE — Relative valuation (peer multiples)",
+      "",
+      "HOW TO USE THIS FILE",
+      "  1. Open it in any text editor.",
+      "  2. Replace each \"\" with your figure, keeping the quotation marks.",
+      "  3. Add or delete whole peer blocks in the 'peers' list as you need them.",
+      "  4. Save it, then click 'Load from file' in the tool.",
+      "",
+      "CONVENTIONS",
+      "  Totals — revenue, EBITDA, EBIT, debt, cash — are in MILLIONS.",
+      "  Per-share figures — EPS, forward EPS, book value per share — are in the SAME UNIT",
+      "  as the share price. If the price is in pence, these are in pence too.",
+      "  'pxu' reconciles the two: a London price in pence against accounts in £m means 100.",
+      "  Use ONE date for the company and every peer. Mixing periods is the single most",
+      "  detectable error in the whole exercise.",
+      "  Anything you do not have can stay as \"\" — that peer drops out of that multiple only.",
+      "",
+      "Every key starting with an underscore is guidance for you. The tool strips them",
+      "out when it loads the file, so you can leave them in place or delete them."
+    ],
+    _help:{
+      on:"Which multiples to calculate — set a key to true to switch it on. " +
+         "Two of them deliberately fail the consistency test; the tool will say so.",
+      stat:"\"median\" or \"mean\". The median is usually the honest one.",
+      peers:pHelp
+    },
+    _multiples:mHelp,
+    tgt:tgt,
+    on:{pe:true, fpe:false, pb:false, ps:false, evs:false, evebitda:true, evebit:false, pebitda:false},
+    stat:"median",
+    peers:[peer(),peer(),peer(),peer(),peer()]
+  };
+}
+function download(obj,filename){
+  var blob=new Blob([JSON.stringify(obj,null,2)],{type:"application/json"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download=filename; a.click(); URL.revokeObjectURL(a.href);
+}
+
 /* ============ toolbar ============ */
+document.getElementById("bTpl").addEventListener("click",function(){
+  download(templateObj(),"relative-valuation-template.json");
+});
 document.getElementById("bAdd").addEventListener("click",function(){ S.peers.push(blankPeer()); render(); });
 document.getElementById("segStat").addEventListener("click",function(e){
   var b=e.target.closest("button"); if(!b) return;
@@ -647,7 +732,7 @@ document.getElementById("segStat").addEventListener("click",function(e){
 });
 document.getElementById("bPrint").addEventListener("click",function(){ window.print(); });
 document.getElementById("bEg").addEventListener("click",function(){
-  if(confirm("Load the Session 08 worked example? This replaces what's on screen.")) loadExample();
+  if(confirm("Load the Marks & Spencer worked example? The figures are rounded and illustrative — check them against the annual report before you rely on them.\n\nThis replaces what's on screen.")) loadExample();
 });
 document.getElementById("bClear").addEventListener("click",function(){
   if(!confirm("Clear every figure and start again?")) return;
@@ -656,11 +741,7 @@ document.getElementById("bClear").addEventListener("click",function(){
   render();
 });
 document.getElementById("bSave").addEventListener("click",function(){
-  var blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
-  var a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download=((S.tgt.name||"relative-valuation").replace(/[^A-Za-z0-9]+/g,"-").toLowerCase())+".json";
-  a.click(); URL.revokeObjectURL(a.href);
+  download(S,((S.tgt.name||"relative-valuation").replace(/[^A-Za-z0-9]+/g,"-").toLowerCase())+".json");
 });
 document.getElementById("bLoad").addEventListener("click",function(){ document.getElementById("fPick").click(); });
 document.getElementById("fPick").addEventListener("change",function(e){
@@ -668,11 +749,17 @@ document.getElementById("fPick").addEventListener("change",function(e){
   var r=new FileReader();
   r.onload=function(){
     try{
-      var o=JSON.parse(r.result);
+      var o=stripMeta(JSON.parse(r.result));
+      if(!o||!o.tgt) throw 0;
       S.tgt=o.tgt||{}; S.on=o.on||{}; S.stat=o.stat||"median";
       S.peers=(o.peers&&o.peers.length)?o.peers:[blankPeer()];
+      /* a hand-written template has no ids — mint them so every row is addressable */
+      S.peers.forEach(function(p){
+        if(!p.id) p.id=Math.random().toString(36).slice(2,9);
+        if(p.inc===undefined) p.inc=true;
+      });
       render();
-    }catch(err){ alert("That file isn't a saved valuation. Pick a .json this tool wrote."); }
+    }catch(err){ alert("That file isn't a saved valuation or a template. Pick a .json this tool wrote."); }
   };
   r.readAsText(f); e.target.value="";
 });

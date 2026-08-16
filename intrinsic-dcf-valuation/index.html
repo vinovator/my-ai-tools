@@ -53,9 +53,11 @@ body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:
 .f-in.txt{font-family:var(--sans);font-weight:500;color:var(--ink)}
 
 /* derived readouts */
-.derived{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1px;
-  background:var(--rule-soft);border:1px solid var(--rule);margin-top:20px;border-radius:2px;overflow:hidden}
-.d-cell{background:var(--panel);padding:11px 13px}
+/* the separators are drawn by each cell's 1px ring meeting across the gap, rather than by
+   the container's background showing through — so a part-filled last row stays white */
+.derived{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;
+  background:var(--panel);border:1px solid var(--rule);margin-top:20px;border-radius:2px;overflow:hidden}
+.d-cell{background:var(--panel);padding:11px 13px;box-shadow:0 0 0 1px var(--rule-soft)}
 .d-cap{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700}
 .d-val{font-family:var(--mono);font-size:19px;font-weight:700;color:var(--verdigris);margin-top:2px}
 .d-sub{font-size:11px;color:var(--muted);margin-top:1px}
@@ -167,6 +169,7 @@ body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:
       </div>
       <div class="toolbar">
         <button class="btn" id="bEg">Load a worked example</button>
+        <button class="btn" id="bTpl">Download a template</button>
         <button class="btn" id="bSave">Save to file</button>
         <button class="btn" id="bLoad">Load from file</button>
         <button class="btn" id="bPrint">Print</button>
@@ -306,7 +309,7 @@ var F2 = [
 
 /* ---------------- state ---------------- */
 var S = {
-  tgt:{ccy:"INR", pxu:1},
+  tgt:{ccy:"GBP", pxu:1},
   cc:{},
   a:{ g:{y1:"", y10:""}, m:{y1:"", y10:""}, t:{y1:"", y10:""}, roic:{y1:"", y10:""} },
   gT:"", roicT:"", tv:"1"
@@ -320,6 +323,10 @@ function fmt(x,d){ if(x===null||x===undefined||!isFinite(x)) return "—";
   return x.toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}); }
 function fpc(x,d){ return x===null||!isFinite(x)?"—":fmt(x*100,d===undefined?1:d)+"%"; }
 function pxu(){ var u=num(S.tgt.pxu); return (u&&u>0)?u:1; }
+/* Per-share figures come out in whatever unit the share price was entered in, which is
+   the reporting currency only when pxu is 1. A pence quote against £m accounts must not
+   be labelled GBP — it would read a hundred times too large. */
+function psUnit(){ return pxu()===1 ? (S.tgt.ccy||"") : ""; }
 function fade(a,b,t){ return a + (b-a)*(t-1)/(N-1); }   /* straight line, year 1 → year N */
 
 /* ---------------- cost of capital ---------------- */
@@ -397,7 +404,15 @@ function forecast(over){
 }
 
 /* ---------------- rendering ---------------- */
-function render(){ r1(); r2(); r3(); rest(); persist(); }
+function render(){ r1(); r2(); r3(); rest(); syncTV(); persist(); }
+
+/* the terminal-value toggle is state like anything else — resync it on every render,
+   or a restored session and a loaded file both show the wrong method */
+function syncTV(){
+  document.getElementById("segTV").querySelectorAll("button").forEach(function(b){
+    b.className = b.getAttribute("data-v")===String(S.tv||"1") ? "on" : "";
+  });
+}
 
 function buildFields(host,defs,store,after){
   var h=document.getElementById(host); h.innerHTML="";
@@ -567,7 +582,7 @@ function renderSource(f,ccy){
     {c:"Present value, after year 10", v:fmt(f.pvTV,0), s:fmt(f.share*100,0)+"% of the total"},
     {c:"Enterprise value", v:fmt(f.ev,0), s:ccy+"m"},
     {c:"Equity value", v:fmt(f.eq,0), s:"less debt, plus cash"},
-    {c:"Value per share", v:fmt(f.vps,2), s:ccy}
+    {c:"Value per share", v:fmt(f.vps,2), s:psUnit()||"same unit as the share price"}
   ]);
 }
 
@@ -600,7 +615,7 @@ function renderVerdict(f,ccy){
                                :"Fill in steps 01 to 03 to get a verdict.";
     return;
   }
-  vVal.textContent=fmt(f.vps,2)+(ccy?" "+ccy:"");
+  vVal.textContent=fmt(f.vps,2)+(psUnit()?" "+psUnit():"");
   var price=num(S.tgt.price);
   if(!price){ vGap.textContent="—"; vTag.className="v-tag t-none"; vTag.textContent="No price";
     vNote.textContent="Add the share price in step 01 to compare."; return; }
@@ -623,20 +638,93 @@ function persist(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){
 function restore(){ try{ var raw=localStorage.getItem(KEY); if(!raw) return;
   var o=JSON.parse(raw); if(o&&o.a&&o.a.g){ S=o; } }catch(e){} }
 
-/* ---------------- worked example ---------------- */
+/* ---------------- worked example ----------------
+   Marks & Spencer, on the same figures the relative-valuation tool uses, so the two
+   methods can be run on one company and compared. Rounded and illustrative — refresh
+   them from the annual report before you lean on the answer.
+   Invested capital = total equity 2,928.20 + total debt 3,406.95 - cash 929.35.      */
 function loadExample(){
-  S.tgt={name:"Illustrative IT services company", ccy:"INR", pxu:1,
-         price:3200, shares:3600, rev0:2550000, ic0:900000, debt:80000, cash:540000};
-  S.cc={rf:6.9, beta:0.85, erp:5.2, kd:7.6, tax:25.2};
-  S.a={ g:{y1:7,y10:4}, m:{y1:24.5,y10:21}, t:{y1:25.2,y10:25.2}, roic:{y1:45,y10:22} };
-  S.gT=4; S.roicT=14; S.tv="1";
+  S.tgt={name:"Marks & Spencer Group", ccy:"GBP", pxu:100,
+         price:355.9, shares:2041.4, rev0:13040, ic0:5405.80, debt:3406.95, cash:929.35};
+  S.cc={rf:4.5, beta:1.15, erp:5.5, kd:5.5, tax:25};
+  S.a={ g:{y1:4,y10:2}, m:{y1:7,y10:6}, t:{y1:25,y10:25}, roic:{y1:12.5,y10:11} };
+  S.gT=2; S.roicT=9; S.tv="1";
   render();
-  document.getElementById("segTV").querySelectorAll("button").forEach(function(b){
-    b.className = b.getAttribute("data-v")==="1" ? "on" : "";
+}
+
+/* ---------------- blank template ----------------
+   The guidance is generated from the same field definitions that build the form, so the
+   template cannot drift out of step with the tool. Every key beginning with an underscore
+   is a note to the reader; stripMeta removes them again on the way back in.            */
+function stripMeta(o){
+  if(o===null||typeof o!=="object") return o;
+  if(Object.prototype.toString.call(o)==="[object Array]"){
+    var arr=[],i; for(i=0;i<o.length;i++) arr.push(stripMeta(o[i]));
+    return arr;
+  }
+  var out={},k;
+  for(k in o){
+    if(!Object.prototype.hasOwnProperty.call(o,k)) continue;
+    if(k.charAt(0)==="_") continue;
+    out[k]=stripMeta(o[k]);
+  }
+  return out;
+}
+function helpFrom(defs){
+  var h={}; defs.forEach(function(f){ h[f.k]=f.lab+(f.tip?" — "+f.tip:""); }); return h;
+}
+function withHelp(defs,preset){
+  var o={_help:helpFrom(defs)};
+  defs.forEach(function(f){ o[f.k]=(preset&&preset[f.k]!==undefined)?preset[f.k]:""; });
+  return o;
+}
+function templateObj(){
+  var aHelp={};
+  AROWS.forEach(function(r){
+    aHelp[r.k]=r.lab+" — "+r.tip+" Put year 1 in y1 and year 10 in y10; the tool fades between them in a straight line.";
   });
+  return {
+    _readme:[
+      "TEMPLATE — Intrinsic valuation (discounted cash flow)",
+      "",
+      "HOW TO USE THIS FILE",
+      "  1. Open it in any text editor.",
+      "  2. Replace each \"\" with your figure, keeping the quotation marks.",
+      "  3. Save it, then click 'Load from file' in the tool.",
+      "",
+      "CONVENTIONS",
+      "  Money is in MILLIONS of the reporting currency: 13040 means 13,040 million.",
+      "  Percentages are plain numbers: 7.5 means 7.5%, not 0.075.",
+      "  Share price goes in whatever unit it is quoted in, and 'pxu' reconciles the two.",
+      "  Anything you do not have can stay as \"\" — the tool shows a dash and carries on.",
+      "",
+      "Every key starting with an underscore is guidance for you. The tool strips them",
+      "out when it loads the file, so you can leave them in place or delete them."
+    ],
+    _help:{
+      gT:"Growth after year ten, % — nothing grows faster than the economy for ever. Keep it at or below the risk-free rate.",
+      roicT:"Return on capital after year ten, % — set it equal to the terminal WACC and growth is worth exactly nothing. Leave blank to copy the year-10 figure.",
+      tv:"Terminal method: \"1\" for the plain perpetuity, \"2\" for the reinvestment-consistent version."
+    },
+    tgt:withHelp(F1,{ccy:"GBP",pxu:1}),
+    cc:withHelp(F2),
+    a:{
+      _help:aHelp,
+      g:{y1:"",y10:""}, m:{y1:"",y10:""}, t:{y1:"",y10:""}, roic:{y1:"",y10:""}
+    },
+    gT:"", roicT:"", tv:"1"
+  };
+}
+function download(obj,filename){
+  var blob=new Blob([JSON.stringify(obj,null,2)],{type:"application/json"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download=filename; a.click(); URL.revokeObjectURL(a.href);
 }
 
 /* ---------------- toolbar ---------------- */
+document.getElementById("bTpl").addEventListener("click",function(){
+  download(templateObj(),"dcf-valuation-template.json");
+});
 document.getElementById("segTV").addEventListener("click",function(e){
   var b=e.target.closest("button"); if(!b) return;
   S.tv=b.getAttribute("data-v");
@@ -645,26 +733,23 @@ document.getElementById("segTV").addEventListener("click",function(e){
 });
 document.getElementById("bPrint").addEventListener("click",function(){ window.print(); });
 document.getElementById("bEg").addEventListener("click",function(){
-  if(confirm("Load the worked example? This replaces what's on screen.")) loadExample();
+  if(confirm("Load the Marks & Spencer worked example? The figures are rounded and illustrative — check them against the annual report before you rely on them.\n\nThis replaces what's on screen.")) loadExample();
 });
 document.getElementById("bClear").addEventListener("click",function(){
   if(!confirm("Clear every figure and start again?")) return;
-  S={tgt:{ccy:"INR",pxu:1}, cc:{}, a:{g:{y1:"",y10:""},m:{y1:"",y10:""},t:{y1:"",y10:""},roic:{y1:"",y10:""}}, gT:"", roicT:"", tv:"1"};
+  S={tgt:{ccy:"GBP",pxu:1}, cc:{}, a:{g:{y1:"",y10:""},m:{y1:"",y10:""},t:{y1:"",y10:""},roic:{y1:"",y10:""}}, gT:"", roicT:"", tv:"1"};
   render();
 });
 document.getElementById("bSave").addEventListener("click",function(){
-  var blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
-  var a=document.createElement("a"); a.href=URL.createObjectURL(blob);
-  a.download=((S.tgt.name||"dcf-valuation").replace(/[^A-Za-z0-9]+/g,"-").toLowerCase())+".json";
-  a.click(); URL.revokeObjectURL(a.href);
+  download(S,((S.tgt.name||"dcf-valuation").replace(/[^A-Za-z0-9]+/g,"-").toLowerCase())+".json");
 });
 document.getElementById("bLoad").addEventListener("click",function(){ document.getElementById("fPick").click(); });
 document.getElementById("fPick").addEventListener("change",function(e){
   var f=e.target.files[0]; if(!f) return;
   var r=new FileReader();
-  r.onload=function(){ try{ var o=JSON.parse(r.result);
+  r.onload=function(){ try{ var o=stripMeta(JSON.parse(r.result));
       if(!o||!o.a) throw 0; S=o; render();
-    }catch(err){ alert("That file isn't a saved valuation. Pick a .json this tool wrote."); } };
+    }catch(err){ alert("That file isn't a saved valuation or a template. Pick a .json this tool wrote."); } };
   r.readAsText(f); e.target.value="";
 });
 

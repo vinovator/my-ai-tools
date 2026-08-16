@@ -185,6 +185,7 @@ body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:
       </div>
       <div class="toolbar">
         <button class="btn" id="bEg">Load a worked example</button>
+        <button class="btn" id="bTpl">Download a template</button>
         <button class="btn" id="bSave">Save to file</button>
         <button class="btn" id="bLoad">Load from file</button>
         <button class="btn" id="bPrint">Print</button>
@@ -1053,6 +1054,90 @@ function ensureNew(){
   if(!has) S.classes.unshift(newRoundRow());
 }
 
+/* ---------------- blank template ----------------
+   The guidance is generated from the same field definitions that build the form, so the
+   template cannot drift out of step with the tool. Every key beginning with an underscore
+   is a note to the reader; stripMeta removes them again on the way back in.            */
+function stripMeta(o){
+  if(o===null||typeof o!=="object") return o;
+  if(Object.prototype.toString.call(o)==="[object Array]"){
+    var arr=[],i; for(i=0;i<o.length;i++) arr.push(stripMeta(o[i]));
+    return arr;
+  }
+  var out={},k;
+  for(k in o){
+    if(!Object.prototype.hasOwnProperty.call(o,k)) continue;
+    if(k.charAt(0)==="_") continue;
+    out[k]=stripMeta(o[k]);
+  }
+  return out;
+}
+function withHelp(defs,preset){
+  var o={_help:{}};
+  defs.forEach(function(f){ o._help[f.k]=f.lab+(f.tip?" — "+f.tip:""); });
+  defs.forEach(function(f){ o[f.k]=(preset&&preset[f.k]!==undefined)?preset[f.k]:""; });
+  return o;
+}
+function templateObj(){
+  var co=withHelp(F_CO,{ccy:"£"}), rd=withHelp(F_RD,{poolFrom:"pre"});
+  rd.poolFrom="pre";
+  rd._help.poolFrom="\"pre\" if the new option pool comes out of the pre-money valuation (the market standard, and you pay for all of it), \"post\" if it is created after the round so everyone shares the dilution.";
+  return {
+    _readme:[
+      "TEMPLATE — Term sheet (exit waterfall)",
+      "",
+      "HOW TO USE THIS FILE",
+      "  1. Open it in any text editor.",
+      "  2. Replace each \"\" with your figure, keeping the quotation marks.",
+      "  3. Add or delete whole blocks in the 'classes' list, one per preference class.",
+      "  4. Save it, then click 'Load from file' in the tool.",
+      "",
+      "CONVENTIONS",
+      "  Money is in WHOLE CURRENCY UNITS, not millions: 6000000 means six million.",
+      "  Shares are whole share counts: 8000000 means eight million shares.",
+      "  Percentages are plain numbers: 10 means 10%, not 0.10.",
+      "",
+      "THE 'classes' LIST",
+      "  Order it NEWEST FIRST. Under stacked seniority the first entry is paid first.",
+      "  Exactly one entry should have \"isNew\": true — that is the round you are being",
+      "  offered, and the tool fills in its investment and shares from the round above.",
+      "  Every other entry is a round that already happened; fill in its own figures.",
+      "",
+      "Every key starting with an underscore is guidance for you. The tool strips them",
+      "out when it loads the file, so you can leave them in place or delete them."
+    ],
+    _help:{
+      seniority:"\"stacked\" pays the newest round in full before earlier ones see anything (the usual arrangement). \"paripassu\" shares any shortfall pro rata across all classes.",
+      exit:"The sale price you want the waterfall run at, in whole currency units.",
+      chartMode:"\"abs\" plots proceeds, \"pct\" plots each holder's share of the exit.",
+      classes:{
+        inc:"true to include this class in the waterfall, false to park it without deleting it.",
+        isNew:"true for the round on the table (its invested amount and shares come from 'rd'). false for a round that already closed.",
+        name:"What the class is called, e.g. \"Series A\" or \"Seed\".",
+        amt:"Money this class invested, in whole currency units. Ignored when isNew is true.",
+        sh:"Shares this class holds, as converted. Ignored when isNew is true.",
+        mult:"Liquidation preference multiple. 1 is market standard; anything above it is not.",
+        part:"true for participating preferred — it takes the preference AND then its percentage of the remainder. false for non-participating, which takes whichever of the two is worth more.",
+        cap:"Only applies when part is true. The ceiling on total receipts, as a multiple of the amount invested, e.g. 3 for a 3x cap. Leave \"\" for uncapped, which is off-market."
+      }
+    },
+    co:co,
+    rd:rd,
+    classes:[
+      {inc:true, isNew:true,  name:"New round", amt:"", sh:"", mult:"1", part:false, cap:""},
+      {inc:true, isNew:false, name:"",          amt:"", sh:"", mult:"1", part:false, cap:""}
+    ],
+    seniority:"stacked",
+    exit:"",
+    chartMode:"abs"
+  };
+}
+function download(obj,filename){
+  var blob=new Blob([JSON.stringify(obj,null,2)],{type:"application/json"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download=filename; a.click(); URL.revokeObjectURL(a.href);
+}
+
 /* ---------------- example, clear, file IO ---------------- */
 function loadExample(){
   S.co={name:"Northgate Labs", ccy:"£", founders:"8000000", common:"400000", pool:"1000000"};
@@ -1098,11 +1183,11 @@ document.getElementById("segChart").addEventListener("click",function(e){
   S.chartMode=b.getAttribute("data-v"); segSet("segChart",S.chartMode); rest(); persist();
 });
 
+document.getElementById("bTpl").addEventListener("click",function(){
+  download(templateObj(),"term-sheet-template.json");
+});
 document.getElementById("bSave").addEventListener("click",function(){
-  var blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
-  var a=document.createElement("a"); a.href=URL.createObjectURL(blob);
-  a.download=((S.co.name||"term-sheet").replace(/[^A-Za-z0-9]+/g,"-").toLowerCase())+".json";
-  a.click(); URL.revokeObjectURL(a.href);
+  download(S,((S.co.name||"term-sheet").replace(/[^A-Za-z0-9]+/g,"-").toLowerCase())+".json");
 });
 document.getElementById("bLoad").addEventListener("click",function(){ document.getElementById("fPick").click(); });
 document.getElementById("fPick").addEventListener("change",function(e){
@@ -1110,10 +1195,16 @@ document.getElementById("fPick").addEventListener("change",function(e){
   var r=new FileReader();
   r.onload=function(){
     try{
-      var o=JSON.parse(r.result);
-      if(!o||!o.co||!o.rd||!o.classes) throw 0;
-      S=o; ensureNew(); render();
-    }catch(err){ alert("That file isn't a saved term sheet. Pick a .json this tool wrote."); }
+      var o=stripMeta(JSON.parse(r.result));
+      if(!o||!o.co||!o.rd||!o.classes||!o.classes.length) throw 0;
+      S=o;
+      /* a hand-written template has no ids — mint them so every row is addressable */
+      S.classes.forEach(function(c){
+        if(!c.id) c.id=Math.random().toString(36).slice(2,9);
+        if(c.inc===undefined) c.inc=true;
+      });
+      ensureNew(); render();
+    }catch(err){ alert("That file isn't a saved term sheet or a template. Pick a .json this tool wrote."); }
   };
   r.readAsText(f); e.target.value="";
 });

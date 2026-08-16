@@ -11,9 +11,27 @@
     <meta property="og:url" content="https://vinovator.github.io/my-ai-tools/">
     <meta property="og:title" content="Vinoth's AI Tools">
     <meta property="og:description" content="A collection of AI-powered tools, experiments, and visualizations.">
+    <meta name="color-scheme" content="dark light">
+
+    <!-- Resolve the theme before the body paints, so there is no flash of the wrong palette.
+         Only an explicit click writes to storage; until then the page follows the OS. -->
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem("vat-theme");
+                if (t !== "light" && t !== "dark") {
+                    t = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+                }
+                document.documentElement.setAttribute("data-theme", t);
+            } catch (e) { /* private mode blocks storage: fall through to the dark default */ }
+        })();
+    </script>
 
     <style>
+        /* Dark is the base and keeps every value it has always had, so the site renders
+           exactly as before. Light below is purely an override. */
         :root {
+            color-scheme: dark;
             --bg-color: #0d1117;
             --bg-dot: #21262d;
             --card-bg: #161b22;
@@ -22,6 +40,10 @@
             --accent: #d292ff;
             --accent-hover: #e0b0ff;
             --border: #30363d;
+            --btn-text: #0f1115;
+            --card-shadow: rgba(0, 0, 0, 0.5);
+            --wordmark-a: #d292ff;
+            --wordmark-b: #7e57c2;
             /* Per-tool accent colors (used as each card's top-border) */
             --accent-anthropic: #d292ff;
             --accent-tariff: #48bb78;
@@ -33,21 +55,53 @@
             --accent-mcp-unpack: #06b6d4;
             --accent-md-viewer: #0969da;
             --accent-protocol-lab: #38bdf8;
+            --accent-compound: #2d5a3d;
             --accent-intrinsic-dcf: #2a6259;
             --accent-relative-valuation: #1f4e6b;
             --accent-term-sheet: #8c3a2e;
             --accent-mortgage: #9a6614;
         }
 
+        /* GitHub Light, to match the GitHub Dark above — the same design language rather
+           than an invented palette. */
+        :root[data-theme="light"] {
+            color-scheme: light;
+            --bg-color: #f6f8fa;
+            --bg-dot: #d8dee4;
+            --card-bg: #ffffff;
+            --text-primary: #1f2328;
+            --text-secondary: #59636e;
+            --accent: #8250df;
+            --accent-hover: #6639ba;
+            --border: #d1d9e0;
+            --btn-text: #ffffff;
+            --card-shadow: rgba(31, 35, 40, 0.15);
+            --wordmark-a: #8250df;
+            --wordmark-b: #5a32a3;
+            /* The bright accents are tuned for a dark ground and wash out on white, so each
+               takes a darker value of the same hue and keeps its identity. The finance four,
+               md-viewer and compound are already dark and are left alone. */
+            --accent-anthropic: #7e57c2;
+            --accent-tariff: #2f855a;
+            --accent-chi-square-explorer: #4f46e5;
+            --accent-chi-square-tool: #7c3aed;
+            --accent-trig: #db2777;
+            --accent-fourier: #00875a;
+            --accent-pdf-play: #c2410c;
+            --accent-mcp-unpack: #0e7490;
+            --accent-protocol-lab: #0284c7;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
             background-color: var(--bg-color);
-            background-image: radial-gradient(circle, #21262d 1px, transparent 1px);
+            background-image: radial-gradient(circle, var(--bg-dot) 1px, transparent 1px);
             background-size: 28px 28px;
             color: var(--text-primary);
             margin: 0;
             padding: 2rem;
             line-height: 1.5;
+            transition: background-color 0.25s, color 0.25s;
         }
 
         .container {
@@ -63,7 +117,7 @@
         h1 {
             font-size: 3rem;
             margin-bottom: 1rem;
-            background: linear-gradient(90deg, #d292ff, #7e57c2);
+            background: linear-gradient(90deg, var(--wordmark-a), var(--wordmark-b));
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -83,9 +137,10 @@
         .card {
             background-color: var(--card-bg);
             border: 1px solid var(--border);
+            border-top: 3px solid var(--card-accent, var(--border));
             border-radius: 12px;
             padding: 2rem;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s, background-color 0.25s, border-color 0.25s;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -95,7 +150,7 @@
 
         .card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 10px 30px var(--card-shadow);
             border-color: var(--accent);
         }
 
@@ -114,7 +169,7 @@
         .btn {
             display: inline-block;
             background-color: var(--accent);
-            color: #0f1115;
+            color: var(--btn-text);
             padding: 0.75rem 1.5rem;
             text-decoration: none;
             border-radius: 6px;
@@ -127,10 +182,81 @@
             background-color: var(--accent-hover);
             text-decoration: none;
         }
+
+        /* ---------- theme toggle ---------- */
+        .theme-toggle {
+            position: fixed;
+            top: 1.25rem;
+            right: 1.25rem;
+            z-index: 10;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--card-bg);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s, color 0.2s, background-color 0.25s;
+        }
+
+        .theme-toggle:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .theme-toggle:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        .theme-toggle svg {
+            width: 18px;
+            height: 18px;
+            display: block;
+        }
+
+        /* show the theme you would switch to: a sun while dark, a moon while light */
+        .theme-toggle .icon-moon { display: none; }
+        :root[data-theme="light"] .theme-toggle .icon-sun { display: none; }
+        :root[data-theme="light"] .theme-toggle .icon-moon { display: block; }
+
+        @media (max-width: 600px) {
+            .theme-toggle {
+                top: 0.75rem;
+                right: 0.75rem;
+                width: 34px;
+                height: 34px;
+            }
+
+            .theme-toggle svg { width: 16px; height: 16px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { transition: none !important; }
+        }
     </style>
 </head>
 
 <body>
+    <button type="button" class="theme-toggle" id="themeToggle" aria-label="Switch to light mode"
+        title="Switch to light mode">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.5"></circle>
+            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4">
+            </path>
+        </svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
+        </svg>
+    </button>
+
     <div class="container">
         <header>
             <h1>Vinoth's AI Tools</h1>
@@ -138,7 +264,7 @@
         </header>
 
         <main class="grid">
-            <div class="card" style="border-top: 3px solid #9a6614;">
+            <div class="card" style="--card-accent: var(--accent-mortgage);">
                 <h2>Mortgage — True Cost</h2>
                 <p>The monthly payment is the advertised number, not the real one. See how much of each
                     early payment is pure interest, what happens to your budget on the day the fixed rate
@@ -148,7 +274,7 @@
                 <a href="mortgage/index.html" class="btn" target="_blank">Open Tool</a>
             </div>
 
-            <div class="card" style="border-top: 3px solid #8c3a2e;">
+            <div class="card" style="--card-accent: var(--accent-term-sheet);">
                 <h2>Term Sheet — Exit Waterfall</h2>
                 <p>Model what a venture round actually costs you. Set the pre-money, decide who pays for the
                     option pool, build the preference stack, then watch the exit waterfall decide who gets paid
@@ -157,7 +283,7 @@
                 <a href="term-sheet/index.html" class="btn" target="_blank">Open Tool</a>
             </div>
 
-            <div class="card" style="border-top: 3px solid #2a6259;">
+            <div class="card" style="--card-accent: var(--accent-intrinsic-dcf);">
                 <h2>Intrinsic Valuation — DCF</h2>
                 <p>A guided, step-by-step discounted-cash-flow workbench. Enter today's figures, forecast ten years
                     of free cash flow, discount them back, and see what the business is worth — plus what you'd have
@@ -165,7 +291,7 @@
                 <a href="intrinsic-dcf-valuation/index.html" class="btn" target="_blank">Open Tool</a>
             </div>
 
-            <div class="card" style="border-top: 3px solid #1f4e6b;">
+            <div class="card" style="--card-accent: var(--accent-relative-valuation);">
                 <h2>Relative Valuation — Peer Multiples</h2>
                 <p>Value a company against its peers. Pick the multiples that fit (P/E, EV/EBITDA, P/B and more),
                     enter the target and a set of comparables, and get a fair-value range with built-in sanity
@@ -173,7 +299,7 @@
                 <a href="relative-valuation/index.html" class="btn" target="_blank">Open Tool</a>
             </div>
 
-            <div class="card" style="border-top: 3px solid #38bdf8;">
+            <div class="card" style="--card-accent: var(--accent-protocol-lab);">
                 <h2>Protocol Lab</h2>
                 <p>An interactive, animated explainer for foundational internet protocols. Pick a scenario — DNS lookup,
                     TCP handshake, HTTP request, TLS handshake — and watch packets fly between nodes with synced
@@ -181,7 +307,7 @@
                 <a href="protocol-lab/index.html" class="btn" target="_blank">Open Lab</a>
             </div>
 
-            <div class="card" style="border-top: 3px solid #2d5a3d;">
+            <div class="card" style="--card-accent: var(--accent-compound);">
                 <h2>Compound Investment Calculator</h2>
                 <p>A calm what-if for your savings. Drag sliders for lump sum, monthly contribution, return,
                     inflation and retirement age — watch the pot grow on a live chart, with side-by-side readings
@@ -189,7 +315,7 @@
                 <a href="compound-viz/index.html" class="btn" target="_blank">Open Calculator</a>
             </div>
 
-            <div class="card" style="border-top: 3px solid #0969da;">
+            <div class="card" style="--card-accent: var(--accent-md-viewer);">
                 <h2>Markdown Viewer</h2>
                 <p>Drop a <code>.md</code> file and view it rendered with GFM tables, task lists, syntax-highlighted
                     code, KaTeX math, and Mermaid diagrams. Save as PDF, download as HTML, or copy with one click.
@@ -197,35 +323,35 @@
                 <a href="md-viewer/index.html" class="btn" target="_blank">Open Tool</a>
             </div>
 
-            <div class="card" style="border-top: 3px solid #06b6d4;">
+            <div class="card" style="--card-accent: var(--accent-mcp-unpack);">
                 <h2>MCP Unpack</h2>
                 <p>Paste any remote MCP server URL and get a clean, shareable reference of every tool, resource, and
                     prompt it exposes: "the npm package page, but for an MCP server."</p>
                 <a href="mcp-unpack/index.html" class="btn" target="_blank">Open Tool</a>
             </div>
 
-            <div class="card" style="border-top: 3px solid #fb923c;">
+            <div class="card" style="--card-accent: var(--accent-pdf-play);">
                 <h2>PDF Merge &amp; Split</h2>
                 <p>Combine multiple PDFs into one, or split a PDF at specified page numbers. Runs entirely in your
                     browser. Files are never uploaded.</p>
                 <a href="pdf-play/index.html" class="btn" target="_blank">Open Tool</a>
             </div>
 
-            <div class="card" style="border-top: 3px solid #00ffa3;">
+            <div class="card" style="--card-accent: var(--accent-fourier);">
                 <h2>Fourier Audio Lab + AI</h2>
                 <p>Build complex sounds from sine waves, visualize the Fourier transform in real-time, and train a
                     neural network in the browser to classify them.</p>
                 <a href="fourier-lab/index.html" class="btn" target="_blank">Open Lab</a>
             </div>
 
-            <div class="card" style="border-top: 3px solid #f472b6;">
+            <div class="card" style="--card-accent: var(--accent-trig);">
                 <h2>Trigonometry Visualized</h2>
                 <p>An interactive educational tool for exploring the unit circle. Visualize sine, cosine, and tangent
                     in real-time, and understand their connection to sine waves through guided lessons.</p>
                 <a href="trig-viz/index.html" class="btn" target="_blank">Explore Trig</a>
             </div>
 
-            <div class="card" style="border-top: 3px solid #a78bfa;">
+            <div class="card" style="--card-accent: var(--accent-chi-square-tool);">
                 <h2>Chi-Square Goodness of Fit Tool</h2>
                 <p>A professional statistical calculator for goodness-of-fit testing. Upload your datasets (CSV/Excel)
                     or enter data manually to calculate P-Values, Critical Values, and visualize distributions
@@ -233,14 +359,14 @@
                 <a href="goodness-of-fit/index.html" class="btn" target="_blank">Open Tool</a>
             </div>
 
-            <div class="card" style="border-top: 3px solid #6366f1;">
+            <div class="card" style="--card-accent: var(--accent-chi-square-explorer);">
                 <h2>Chi-Square Goodness of Fit Explorer</h2>
                 <p>Interactive statistical workbench for hypothesis testing. Learn Chi-Square concepts through
                     real-world scenarios (Genetics, Fair Dice), dynamic visualizations, and step-by-step tutorials.</p>
                 <a href="chi-square-viz/index.html" class="btn" target="_blank">Launch Experiment</a>
             </div>
 
-            <div class="card" style="border-top: 3px solid #48bb78;">
+            <div class="card" style="--card-accent: var(--accent-tariff);">
                 <h2>Interactive Tariff Economics Platform</h2>
                 <p>A comprehensive educational tool for understanding trade economics. Features interactive
                     supply/demand simulations, real-world scenarios, guided tutorials, and quizzes to master concepts
@@ -248,7 +374,7 @@
                 <a href="tariff-viz/index.html" class="btn" target="_blank">Start Learning</a>
             </div>
 
-            <div class="card" style="border-top: 3px solid #d292ff;">
+            <div class="card" style="--card-accent: var(--accent-anthropic);">
                 <h2>Anthropic Efficiency Visualizations</h2>
                 <p>Experimental visualizations illustrating how AI transforms engineering work at Anthropic. Includes
                     productivity velocity, organic metaphors, and xenographic workflows.</p>
@@ -257,6 +383,40 @@
             <!-- More tools can be added here in the future -->
         </main>
     </div>
+    <script>
+        (function () {
+            var root = document.documentElement,
+                btn = document.getElementById("themeToggle"),
+                mq = window.matchMedia("(prefers-color-scheme: light)");
+
+            function stored() {
+                try { return localStorage.getItem("vat-theme"); } catch (e) { return null; }
+            }
+
+            function apply(theme) {
+                root.setAttribute("data-theme", theme);
+                var text = theme === "light" ? "Switch to dark mode" : "Switch to light mode";
+                btn.setAttribute("aria-label", text);
+                btn.setAttribute("title", text);
+            }
+
+            apply(root.getAttribute("data-theme") === "light" ? "light" : "dark");
+
+            btn.addEventListener("click", function () {
+                var next = root.getAttribute("data-theme") === "light" ? "dark" : "light";
+                apply(next);
+                try { localStorage.setItem("vat-theme", next); } catch (e) { /* storage blocked */ }
+            });
+
+            /* Until a choice has been made, keep following the operating system live. */
+            function follow(e) {
+                var s = stored();
+                if (s !== "light" && s !== "dark") apply(e.matches ? "light" : "dark");
+            }
+            if (mq.addEventListener) mq.addEventListener("change", follow);
+            else if (mq.addListener) mq.addListener(follow);
+        })();
+    </script>
 </body>
 
 </html>

@@ -342,14 +342,13 @@ body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:
 "use strict";
 
 /* ---------------- state ---------------- */
-var S = {
-  co:{name:"", ccy:"£", founders:"", common:"", pool:""},
-  rd:{pre:"", inv:"", poolPct:"", poolFrom:"pre"},
-  classes:[],
-  seniority:"stacked",
-  exit:"",
-  chartMode:"abs"
-};
+/* the opening screen, Clear all and the blank template all come from blankState() */
+function blankState(){
+  return { co:{name:"", ccy:"£", founders:"", common:"", pool:""},
+           rd:{pre:"", inv:"", poolPct:"", poolFrom:"pre"},
+           classes:[newRoundRow()], seniority:"stacked", exit:"", chartMode:"abs" };
+}
+var S = blankState();
 function blankClass(){
   return {id:Math.random().toString(36).slice(2,9), inc:true, isNew:false,
           name:"", amt:"", sh:"", mult:"1", part:false, cap:""};
@@ -1285,12 +1284,7 @@ function loadExample(){
   S.chartMode="abs";
   render();
 }
-function clearAll(){
-  S={ co:{name:"", ccy:"£", founders:"", common:"", pool:""},
-      rd:{pre:"", inv:"", poolPct:"", poolFrom:"pre"},
-      classes:[newRoundRow()], seniority:"stacked", exit:"", chartMode:"abs" };
-  render();
-}
+function clearAll(){ S=blankState(); render(); }
 
 document.getElementById("bEg").addEventListener("click",function(){
   if(confirm("Load the worked example? This replaces what's on screen.")) loadExample();
@@ -1316,7 +1310,8 @@ document.getElementById("segChart").addEventListener("click",function(e){
 
 document.getElementById("bTpl").addEventListener("click",function(){
   var keep=S;
-  S=adopt({classes:[{isNew:true, name:"New round", mult:"1"}, {isNew:false, mult:"1"}]});
+  S=blankState();
+  S.classes.push(blankClass());     /* a second row so the table shape is obvious */
   var csv=toCSV(); S=keep;
   downloadCSV(csv,"term-sheet-template.csv");
 });

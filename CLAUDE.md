@@ -78,12 +78,14 @@ There are **two distinct design systems** in this repo. Match whichever family t
 - Fonts loaded from Google Fonts: Inter (UI), JetBrains Mono / IBM Plex Mono (code/data display).
 
 **Finance tools** (`mortgage`, `term-sheet`, `intrinsic-dcf-valuation`, `relative-valuation`) — a newer "print broadsheet" system:
-- **Zero dependencies.** No CDN, no Google Fonts, no charting library. System font stacks only (`--sans`/`--mono`/`--serif`), and the three share a byte-identical `:root` palette.
+- **Zero dependencies.** No CDN, no Google Fonts, no charting library, no spreadsheet library. System font stacks only (`--sans`/`--mono`/`--serif`), and all four share a byte-identical `:root` palette.
 - Light theme only — no dark mode, no `prefers-color-scheme`.
 - Single scrolling column of numbered `.step` sections; no tabs and no wizard. A fixed `.verdict` bar at the bottom is the footer.
 - No tutorial mode, glossary or quiz. Pedagogy is inline editorial prose: a serif-italic `.step-why` per step, amber `.f-tip` under each field label, and a `.note`/`.warn`/`.stop` severity ladder for conditional warnings.
 - ES5 script style (`var`, `function(){}`, string concatenation), a single global `S` state object, and a two-tier render: `render()` rebuilds inputs, `rest()` recomputes outputs only so focus is never lost mid-typing.
-- Toolbar of worked example / save to file / load from file / print / clear, with state persisted to a `cftr_<toolslug>_v1` localStorage key.
+- Identical toolbar in all four, in this order: **Load a worked example · Download a template · Save to file · Load from file · Print · Clear all**. State persists to a `cftr_<toolslug>_v1` localStorage key.
+- **CSV is the file format**, for the template, for saving and for loading alike — it opens directly in Excel, Numbers and Sheets and stays readable as text. Sectioned as `[SECTION]` blocks with Field/Value/Guidance columns; repeatable data (peers, preference classes) as real tables with a header row. Guidance is generated from the same field-definition arrays that build the form, so it cannot drift. A UTF-8 BOM is written or Excel mangles `£`. Reading is forgiving — labels matched loosely via `norm()`, table columns matched by header, booleans accept `yes/y/true/1/x`, unknown rows ignored — and the loader still accepts older `.json` files by sniffing the first character.
+- Every entry point (restore, file load, template) is funnelled through one `adopt()` per tool that coerces any input into a complete, well-formed state, and file loads snapshot `S` and roll back on failure.
 - **Latest-tool-first ordering:** the root `index.html` portal lists tools with the most recently added tool at the top. When adding a new tool, insert its card/link at the start of the tool list — do not append.
 - **Toolshelf back-button:** every tool's `index.html` must include a "⬅ Toolshelf" button (or equivalently styled link) in its top-left corner that navigates back to the root `index.html`. The link target is typically `../index.html` since tools live one directory below the root. Style it consistently with the rest of the tool's palette using the existing CSS custom properties.
 

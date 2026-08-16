@@ -813,11 +813,18 @@ function downloadCSV(text,filename){
   a.download=filename; a.click(); URL.revokeObjectURL(a.href);
 }
 
+/* the pristine state lives in one place, so Clear all and the blank template can never
+   drift apart — they did once already over the currency default */
+function blankState(){
+  return {tgt:{ccy:"GBP", pxu:1}, cc:{},
+          a:{g:{y1:"",y10:""}, m:{y1:"",y10:""}, t:{y1:"",y10:""}, roic:{y1:"",y10:""}},
+          gT:"", roicT:"", tv:"1"};
+}
+function clearAll(){ S=blankState(); render(); }
+
 /* ---------------- toolbar ---------------- */
 document.getElementById("bTpl").addEventListener("click",function(){
-  var keep=S;
-  S={tgt:{ccy:"GBP",pxu:1}, cc:{}, a:{g:{y1:"",y10:""},m:{y1:"",y10:""},t:{y1:"",y10:""},roic:{y1:"",y10:""}}, gT:"", roicT:"", tv:"1"};
-  var csv=toCSV(); S=keep;
+  var keep=S; S=blankState(); var csv=toCSV(); S=keep;
   downloadCSV(csv,"dcf-valuation-template.csv");
 });
 document.getElementById("segTV").addEventListener("click",function(e){
@@ -831,9 +838,7 @@ document.getElementById("bEg").addEventListener("click",function(){
   if(confirm("Load the Marks & Spencer worked example? The figures are rounded and illustrative — check them against the annual report before you rely on them.\n\nThis replaces what's on screen.")) loadExample();
 });
 document.getElementById("bClear").addEventListener("click",function(){
-  if(!confirm("Clear every figure and start again?")) return;
-  S={tgt:{ccy:"GBP",pxu:1}, cc:{}, a:{g:{y1:"",y10:""},m:{y1:"",y10:""},t:{y1:"",y10:""},roic:{y1:"",y10:""}}, gT:"", roicT:"", tv:"1"};
-  render();
+  if(confirm("Clear every figure and start again?")) clearAll();
 });
 document.getElementById("bSave").addEventListener("click",function(){
   downloadCSV(toCSV(),((S.tgt.name||"dcf-valuation").replace(/[^A-Za-z0-9]+/g,"-").toLowerCase())+".csv");

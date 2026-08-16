@@ -169,7 +169,7 @@ body{
 
 @media print{
   body{background:#fff;padding-bottom:0;font-size:11pt}
-  .toolbar,.rm,.btn,.toolshelf{display:none!important}
+  .toolbar,.btn,.toolshelf,.rm{display:none!important}
   .verdict{position:static;border-top:2px solid #000}
   .step{page-break-inside:avoid}
   .scroller{overflow:visible}
@@ -341,14 +341,9 @@ var PCOLS = [
 ];
 
 /* ============ state ============ */
-var S = {
-  tgt:{ccy:"GBp"},
-  on:{pe:true, evebitda:true},
-  stat:"median",
-  peers:[]
-};
 function blankPeer(){ return {id:Math.random().toString(36).slice(2,9), inc:true, rat:""}; }
-for(var i=0;i<5;i++) S.peers.push(blankPeer());
+/* the opening screen, Clear all and the blank template all come from blankState() */
+var S = blankState();
 
 /* ============ helpers ============ */
 function num(v){ if(v===undefined||v===null||v==="") return null; var n=parseFloat(String(v).replace(/[, ]/g,"")); return isFinite(n)?n:null; }
@@ -823,12 +818,19 @@ function downloadCSV(text,filename){
   a.download=filename; a.click(); URL.revokeObjectURL(a.href);
 }
 
+/* The pristine state lives in one place, so the opening screen, Clear all and the blank
+   template can never drift apart — they did: the template offered pxu 100 to reconcile a
+   pence quote against £m accounts, while Clear all left it blank and silently used 1. */
+function blankState(){
+  var s={tgt:{ccy:"GBp", pxu:100}, on:{pe:true, evebitda:true}, stat:"median", peers:[]}, i;
+  for(i=0;i<5;i++) s.peers.push(blankPeer());
+  return s;
+}
+function clearAll(){ S=blankState(); render(); }
+
 /* ============ toolbar ============ */
 document.getElementById("bTpl").addEventListener("click",function(){
-  var keep=S, i;
-  S={tgt:{ccy:"GBp", pxu:100}, on:{pe:true, evebitda:true}, stat:"median", peers:[]};
-  for(i=0;i<5;i++) S.peers.push(blankPeer());
-  var csv=toCSV(); S=keep;
+  var keep=S; S=blankState(); var csv=toCSV(); S=keep;
   downloadCSV(csv,"relative-valuation-template.csv");
 });
 document.getElementById("bAdd").addEventListener("click",function(){ S.peers.push(blankPeer()); render(); });
@@ -843,10 +845,7 @@ document.getElementById("bEg").addEventListener("click",function(){
   if(confirm("Load the Marks & Spencer worked example? The figures are rounded and illustrative — check them against the annual report before you rely on them.\n\nThis replaces what's on screen.")) loadExample();
 });
 document.getElementById("bClear").addEventListener("click",function(){
-  if(!confirm("Clear every figure and start again?")) return;
-  S.tgt={ccy:"GBp"}; S.on={pe:true, evebitda:true}; S.stat="median"; S.peers=[];
-  for(var i=0;i<5;i++) S.peers.push(blankPeer());
-  render();
+  if(confirm("Clear every figure and start again?")) clearAll();
 });
 document.getElementById("bSave").addEventListener("click",function(){
   downloadCSV(toCSV(),((S.tgt.name||"relative-valuation").replace(/[^A-Za-z0-9]+/g,"-").toLowerCase())+".csv");

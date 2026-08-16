@@ -399,8 +399,11 @@ function runSchedule(o){
   if(!isFinite(r1)||r1<0||!isFinite(r2)||r2<0) return out;
 
   var io=!!o.interestOnly;
-  var over0=o.overMonthly||0, lump=o.lumpAmt||0, lumpM=o.lumpMonth||0;
-  var allow=o.allowancePct||0;
+  /* clamped here rather than only at the caller: a negative overpayment would otherwise
+     grow the balance every month and report the result as a working mortgage */
+  var over0=Math.max(0,o.overMonthly||0), lump=Math.max(0,o.lumpAmt||0);
+  var lumpM=Math.round(o.lumpMonth||0);
+  var allow=Math.max(0,o.allowancePct||0);
 
   var bal=L, pay=io ? L*r1 : pmt(L,r1,n);
   out.payFix=pay;
@@ -460,6 +463,9 @@ function opts(ov){
   ov=ov||{};
   var L=loanAmt(), n=termMonths(), r1=pct(S.rt.init);
   var fy=num(S.rt.fixYears), rv=pct(S.rt.revert);
+  /* a lump with no month named lands at the first payment — otherwise it would be
+     silently discarded, since the schedule starts at month 1 */
+  var lm=num(S.op.lumpMonth); lm=(lm===null||lm<1)?1:Math.round(lm);
   var o={
     loan:      ov.loan!==undefined      ? ov.loan      : L,
     termMonths:ov.termMonths!==undefined? ov.termMonths: n,
@@ -469,7 +475,7 @@ function opts(ov){
     interestOnly: ov.interestOnly!==undefined ? ov.interestOnly : (S.rt.mode==="io"),
     overMonthly:  ov.overMonthly!==undefined  ? ov.overMonthly  : (num(S.op.monthly)||0),
     lumpAmt:      ov.lumpAmt!==undefined      ? ov.lumpAmt      : (num(S.op.lump)||0),
-    lumpMonth:    ov.lumpMonth!==undefined    ? ov.lumpMonth    : (num(S.op.lumpMonth)||0),
+    lumpMonth:    ov.lumpMonth!==undefined    ? ov.lumpMonth    : lm,
     allowancePct: ov.allowancePct!==undefined ? ov.allowancePct : (num(S.op.allowance)||0)
   };
   if(o.initRate===null) o.initRate=NaN;
@@ -762,6 +768,13 @@ function rest(){
     ]);
   } else { cells("dOp",[{c:"Interest saved", v:"—", s:"needs a working mortgage above"}]); }
   var wOp=[];
+  var rawMo=num(S.op.monthly), rawLump=num(S.op.lump), rawLm=num(S.op.lumpMonth);
+  if((rawMo!==null&&rawMo<0)||(rawLump!==null&&rawLump<0))
+    wOp.push({c:"warn", t:"An overpayment cannot be negative — that would be borrowing more, not paying down. It is being treated as zero."});
+  if(rawLump!==null&&rawLump>0&&(rawLm===null||rawLm<1))
+    wOp.push("No month given for the lump sum, so it is applied at the first payment. Enter a month to place it later — 12 is the end of year one.");
+  if(rawLump!==null&&rawLump>0&&n!==null&&rawLm!==null&&rawLm>n)
+    wOp.push({c:"warn", t:"The lump sum lands in month "+fmt(rawLm,0)+", after the mortgage has already ended at month "+fmt(n,0)+". It does nothing."});
   if(s.ercBreach)
     wOp.push({c:"warn", t:"That overpayment exceeds the "+fmt(num(S.op.allowance),0)+
       "% annual allowance while you are still inside the fix, so an early repayment charge would normally apply. "+

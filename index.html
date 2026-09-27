@@ -395,8 +395,11 @@
             .theme-toggle {
                 top: 0.75rem;
                 right: 0.75rem;
-                width: 34px;
-                height: 34px;
+                /* Tucked closer to the corner on a phone, but not smaller: 34px
+                   was under the 44px touch floor the rest of the chrome meets,
+                   and this is the one control on the page. */
+                width: 44px;
+                height: 44px;
             }
 
             .theme-toggle svg { width: 16px; height: 16px; }

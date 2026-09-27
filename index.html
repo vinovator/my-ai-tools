@@ -13,7 +13,12 @@
     <meta property="og:description" content="A collection of AI-powered tools, experiments, and visualizations.">
     <meta name="description"
         content="A collection of self-contained browser tools for finance, learning and everyday tasks. No installs, no accounts, and nothing leaves your device.">
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%238250df'/%3E%3Cpath d='M9 10l7 13 7-13' stroke='white' stroke-width='3.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+    <!-- Brand icons, mirrored from vinothhaldorai.com/public. The tab identity
+         is shared across vinothhaldorai.com, guides. and tools. so every tab
+         reads as the same body of work. Re-copy if the main site's change. -->
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <meta property="og:image" content="https://vinovator.github.io/my-ai-tools/og-image.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -133,6 +138,113 @@
         .subtitle {
             color: var(--text-secondary);
             font-size: 1.25rem;
+        }
+
+        /* ---------- shared site chrome ----------
+           Wordmark and footer mirror vinothhaldorai.com so every tab reads as one
+           body of work, but they use this site's own tokens rather than importing
+           the main site's CSS. URLs are absolute so they resolve from any
+           subdomain. If the main site's footer changes, mirror it here and in
+           my-ai-guides. */
+        .site-bar {
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+            margin-bottom: 2.5rem;
+            font-size: 0.95rem;
+        }
+
+        .site-bar .wordmark {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 4px;
+            min-height: 44px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 600;
+            letter-spacing: -0.012em;
+            transition: color 0.2s;
+        }
+
+        .site-bar .wordmark:hover { color: var(--accent); }
+        .site-bar .wordmark .dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: currentColor;
+            transform: translateY(-1px);
+        }
+
+        .site-bar .sep { color: var(--border); }
+        .site-bar .here { color: var(--text-primary); font-weight: 600; }
+
+        .site-footer {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.25rem;
+        }
+
+        .footer-nav {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.35rem 1.5rem;
+            font-size: 0.95rem;
+        }
+
+        .footer-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            min-height: 44px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer-link:hover { color: var(--accent); }
+
+        .now-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #3fb950;
+        }
+
+        .socials { display: flex; align-items: center; gap: 0.25rem; }
+
+        .social {
+            width: 44px;
+            height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            color: var(--text-secondary);
+            transition: color 0.2s, background-color 0.2s;
+        }
+
+        .social:hover { color: var(--accent); background: var(--card-bg); }
+        .social svg { width: 18px; height: 18px; display: block; }
+
+        .colophon {
+            width: 100%;
+            margin: 0;
+            padding-top: 1.25rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+        }
+
+        @media (min-width: 1024px) {
+            .footer-link { min-height: 0; }
+            .site-bar .wordmark { min-height: 0; }
+            .social { width: 36px; height: 36px; }
         }
 
         /* ---------- sections ---------- */
@@ -317,6 +429,14 @@
     </button>
 
     <div class="container">
+        <div class="site-bar">
+            <a class="wordmark" href="https://vinothhaldorai.com" aria-label="Vinoth Haldorai, home">
+                Vinoth Haldorai<span class="dot" aria-hidden="true"></span>
+            </a>
+            <span class="sep" aria-hidden="true">/</span>
+            <span class="here">Tools</span>
+        </div>
+
         <header>
             <h1>Vinoth's AI Tools</h1>
             <p class="subtitle">A collection of AI-powered tools, experiments, and visualizations.</p>
@@ -414,7 +534,43 @@
             </div>
         </section>
         </main>
+
+        <footer class="site-footer">
+            <nav class="footer-nav" aria-label="Vinoth Haldorai">
+                <a class="footer-link" href="https://vinothhaldorai.com/now/">
+                    <span class="now-dot" aria-hidden="true"></span>Now
+                </a>
+                <a class="footer-link" href="https://vinothhaldorai.com/work-with-me/">Work with me</a>
+                <a class="footer-link" href="https://vinothhaldorai.com/contact/">Contact</a>
+            </nav>
+
+            <div class="socials">
+                <a class="social" href="https://www.linkedin.com/in/vinothhaldorai/" aria-label="LinkedIn" rel="me noopener" target="_blank">
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.98 3.5A2.5 2.5 0 1 1 0 3.5a2.5 2.5 0 0 1 4.98 0zM.5 8.5h4v12h-4v-12zM8 8.5h3.8v1.64h.05c.53-1 1.83-2.05 3.77-2.05 4.03 0 4.78 2.65 4.78 6.1V20.5h-4v-5.6c0-1.33-.03-3.05-1.86-3.05-1.87 0-2.15 1.45-2.15 2.95v5.7H8v-12z"/></svg>
+                </a>
+                <a class="social" href="https://github.com/vinovator" aria-label="GitHub" rel="me noopener" target="_blank">
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.25.8-.56v-2c-3.2.7-3.9-1.54-3.9-1.54-.53-1.34-1.3-1.7-1.3-1.7-1.05-.72.08-.7.08-.7 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.73 1.26 3.4.96.1-.75.4-1.26.73-1.55-2.57-.3-5.27-1.28-5.27-5.7 0-1.26.45-2.3 1.2-3.1-.13-.3-.52-1.48.1-3.1 0 0 .98-.31 3.2 1.18a11.1 11.1 0 0 1 5.83 0c2.2-1.49 3.18-1.18 3.18-1.18.63 1.62.24 2.8.12 3.1.74.8 1.19 1.84 1.19 3.1 0 4.43-2.7 5.4-5.28 5.69.41.36.78 1.07.78 2.16v3.2c0 .31.2.67.81.56A11.5 11.5 0 0 0 23.5 12C23.5 5.7 18.3.5 12 .5z"/></svg>
+                </a>
+                <a class="social" href="#" data-user="haldorai.vinoth" data-domain="gmail.com" aria-label="Email">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 7 8.5 5.5L20.5 7"/></svg>
+                </a>
+                <a class="social" href="https://vinothhaldorai.com/thoughts/rss.xml" aria-label="RSS feed" rel="noopener" target="_blank">
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.18 15.64a2.18 2.18 0 1 1 0 4.36 2.18 2.18 0 0 1 0-4.36zM4 4.44A15.56 15.56 0 0 1 19.56 20h-3.1A12.46 12.46 0 0 0 4 7.54V4.44zm0 5.16A10.4 10.4 0 0 1 14.4 20h-3.1A7.3 7.3 0 0 0 4 12.7V9.6z"/></svg>
+                </a>
+            </div>
+
+            <p class="colophon">&copy; <span id="year">2026</span> Vinoth Haldorai</p>
+        </footer>
     </div>
+
+    <script>
+        /* Mirrors vinothhaldorai.com: fills the year and de-obfuscates the email
+           link, which is stored split so scrapers do not read it. */
+        document.getElementById("year").textContent = new Date().getFullYear();
+        document.querySelectorAll("[data-user][data-domain]").forEach(function (el) {
+            el.setAttribute("href", "mailto:" + el.dataset.user + "@" + el.dataset.domain);
+        });
+    </script>
     <script>
         (function () {
             var root = document.documentElement,

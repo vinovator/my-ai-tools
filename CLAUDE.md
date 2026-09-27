@@ -95,3 +95,28 @@ There are **two distinct design systems** in this repo. Match whichever family t
 ## Deployment
 
 Push to `main` — GitHub Pages auto-deploys. No CI/CD configuration file exists in the repo.
+
+## Shared site chrome (mirrored from vh-site)
+
+This site is one of three sharing an identity: `vinothhaldorai.com` (the Astro repo
+`vh-site`), `tools.vinothhaldorai.com` (this repo) and `guides.vinothhaldorai.com`
+(`my-ai-guides`). The Tools tab on the main site opens in a new tab, so without shared
+chrome it reads as an orphan.
+
+Mirrored, and only this:
+
+- `favicon.svg`, `favicon.ico`, `apple-touch-icon.png` at the repo root, copied byte for
+  byte from `vh-site/public/`. **All 19 HTML files link all three**; sub-pages use `../`.
+  Add these to any new tool page. The old inline purple-V data URI is gone.
+- `.site-bar` above the header: the wordmark `Vinoth Haldorai.` linking to the main site,
+  then `/ Tools`.
+- `.site-footer`: nav (`Now`, `Work with me`, `Contact`) plus four socials (LinkedIn,
+  GitHub, obfuscated email, RSS), with the same `data-user`/`data-domain` email trick and
+  year script as the main site.
+
+Not mirrored: fonts, colours, layout. The chrome uses this site's own tokens
+(`--text-secondary`, `--accent`, `--border`) so it inherits both themes rather than
+importing the main site's CSS. Identity is shared, the design system is not.
+
+All URLs are absolute so they resolve from any host. If the footer on `vh-site` changes,
+mirror it here and in `my-ai-guides/index.html`. Do not fetch a shared partial at runtime.

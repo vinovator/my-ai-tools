@@ -1,0 +1,28 @@
+# This repo has no build step: Cloudflare Pages serves it exactly as committed.
+# So CI asserts the structural invariants instead of building, and checks that
+# the generated sitemap still matches the pages on disk.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Structural invariants
+        run: node scripts/check-site.mjs
+
+      # Fails if a tool page was added or removed without re-running
+      # `node scripts/generate.mjs`.
+      - name: Generated files are current
+        run: node scripts/generate.mjs --check

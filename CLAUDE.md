@@ -120,3 +120,22 @@ importing the main site's CSS. Identity is shared, the design system is not.
 
 All URLs are absolute so they resolve from any host. If the footer on `vh-site` changes,
 mirror it here and in `my-ai-guides/index.html`. Do not fetch a shared partial at runtime.
+
+## Checks and generated files
+
+`sitemap.xml` is generated, not hand-written. After adding or removing a tool page:
+
+```bash
+node scripts/generate.mjs      # rewrite sitemap.xml
+node scripts/check-site.mjs    # assert the structural invariants
+```
+
+`check-site.mjs` asserts that every page has a viewport meta, the brand favicon,
+a non-empty title and a canonical on `tools.vinothhaldorai.com`; that no page has
+regressed to the old inline data-URI favicon; that the landing page only links
+tools that exist; and that the shared chrome is present.
+
+`.github/workflows/ci.yml` runs both on push and pull request. `generate.mjs
+--check` fails with the expected url count if the committed sitemap has drifted,
+so it cannot quietly go stale. There is no build step: Cloudflare Pages serves
+this repo exactly as committed, which is why the generated file is committed too.

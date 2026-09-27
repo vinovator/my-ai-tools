@@ -1,0 +1,9 @@
+# https://tools.vinothhaldorai.com
+# Mirrors the crawler posture on vinothhaldorai.com. Without this file,
+# Cloudflare serves a default that declares no Content-Signal at all.
+
+User-agent: *
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+Sitemap: https://tools.vinothhaldorai.com/sitemap.xml

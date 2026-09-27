@@ -244,16 +244,6 @@
             color: var(--text-secondary);
         }
 
-        /* Touch floor, same 1024px boundary as the rest of the chrome. A tablet
-           at 768px is touch-first, so `sm`-sized breakpoints are the wrong place
-           to shrink a control. */
-        @media (max-width: 1023.98px) {
-            .theme-toggle {
-                width: 44px;
-                height: 44px;
-            }
-        }
-
         @media (min-width: 1024px) {
             .footer-link { min-height: 0; }
             .site-bar .wordmark { min-height: 0; }
@@ -412,6 +402,17 @@
 
             .theme-toggle svg { width: 16px; height: 16px; }
         }
+
+        /* Touch floor, same 1024px boundary as the rest of the chrome. A tablet
+           at 768px is touch-first, so `sm`-sized breakpoints are the wrong place
+           to shrink a control. */
+        @media (max-width: 1023.98px) {
+            .theme-toggle {
+                width: 44px;
+                height: 44px;
+            }
+        }
+
 
         /* High Contrast Mode drops the gradient, which would leave the title invisible */
         @media (forced-colors: active) {
